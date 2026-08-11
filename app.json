@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "kristek-scaffold",
+    "slug": "kristek-scaffold",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.anonymous.kristekscaffold"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Aplikasi butuh akses galeri untuk memilih foto bukti pekerjaan.",
+          "cameraPermission": "Aplikasi butuh akses kamera untuk mengambil foto bukti pekerjaan."
+        }
+      ]
+    ]
+  }
+}

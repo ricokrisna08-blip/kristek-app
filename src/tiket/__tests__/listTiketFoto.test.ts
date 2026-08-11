@@ -1,0 +1,74 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { listTiketFoto } from "../listTiketFoto";
+
+function fakeClient(rows: unknown[]): SupabaseClient {
+  return {
+    from: (table: string) => {
+      if (table === "tiket_foto") {
+        return {
+          select: () => ({
+            eq: () => ({
+              order: () => Promise.resolve({ data: rows, error: null }),
+            }),
+          }),
+        };
+      }
+      throw new Error(`Unexpected table: ${table}`);
+    },
+  } as unknown as SupabaseClient;
+}
+
+test("returns photos within the 7-day retention window", async () => {
+  const client = fakeClient([
+    {
+      id: "foto-1",
+      type: "before",
+      url: "https://example.test/before.jpg",
+      path: "tiket-1/before-1.jpg",
+      uploaded_at: "2026-08-06T00:00:00.000Z",
+    },
+  ]);
+
+  const result = await listTiketFoto(client, "tiket-1", new Date("2026-08-07T00:00:00.000Z"));
+
+  expect(result).toEqual([
+    {
+      id: "foto-1",
+      type: "before",
+      url: "https://example.test/before.jpg",
+      path: "tiket-1/before-1.jpg",
+      uploadedAt: "2026-08-06T00:00:00.000Z",
+    },
+  ]);
+});
+
+test("excludes photos older than 7 days", async () => {
+  const client = fakeClient([
+    {
+      id: "foto-old",
+      type: "before",
+      url: "https://example.test/old.jpg",
+      path: "tiket-1/before-old.jpg",
+      uploaded_at: "2026-07-01T00:00:00.000Z",
+    },
+    {
+      id: "foto-fresh",
+      type: "after",
+      url: "https://example.test/fresh.jpg",
+      path: "tiket-1/after-fresh.jpg",
+      uploaded_at: "2026-08-06T00:00:00.000Z",
+    },
+  ]);
+
+  const result = await listTiketFoto(client, "tiket-1", new Date("2026-08-07T00:00:00.000Z"));
+
+  expect(result).toEqual([
+    {
+      id: "foto-fresh",
+      type: "after",
+      url: "https://example.test/fresh.jpg",
+      path: "tiket-1/after-fresh.jpg",
+      uploadedAt: "2026-08-06T00:00:00.000Z",
+    },
+  ]);
+});

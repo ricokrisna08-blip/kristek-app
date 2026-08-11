@@ -1,0 +1,3 @@
+# Model Wilayah as an entity from day one, even with a single value
+
+Kristek currently operates in one kelurahan, but the owner has confirmed plans to expand to more areas. We chose to add a `Wilayah` field to Users, Pelanggan, and Tiket now — populated with just one value today — rather than hard-coding a single-region assumption and retrofitting a region concept later. The trade-off is a small amount of unused-looking complexity today (a dropdown with one option, a scoping field that doesn't yet scope anything) in exchange for avoiding a schema migration and an access-control retrofit across every table once expansion actually happens.
