@@ -9,6 +9,7 @@ export type PelangganDetail = {
   wilayahNama: string | null;
   odpLabel: string | null;
   paketNama: string | null;
+  harga: number | null;
 };
 
 export async function getPelangganDetail(
@@ -18,7 +19,7 @@ export async function getPelangganDetail(
   const { data, error } = await client
     .from("pelanggan")
     .select(
-      "id, nama, alamat, no_hp, nomor_pelanggan, wilayah:wilayah_id (nama), odp:odp_id (label), paket:paket_id (nama)"
+      "id, nama, alamat, no_hp, nomor_pelanggan, wilayah:wilayah_id (nama), odp:odp_id (label), paket:paket_id (nama), harga"
     )
     .eq("id", id)
     .single();
@@ -38,5 +39,6 @@ export async function getPelangganDetail(
     wilayahNama: row.wilayah?.nama ?? null,
     odpLabel: row.odp?.label ?? null,
     paketNama: row.paket?.nama ?? null,
+    harga: row.harga ?? null,
   };
 }

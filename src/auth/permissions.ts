@@ -32,6 +32,10 @@ export function canDeletePelanggan(role: Role): boolean {
   return role === "pemilik";
 }
 
+export function canEditPelangganHarga(role: Role): boolean {
+  return role === "admin";
+}
+
 export function canManagePaket(role: Role): boolean {
   return role === "pemilik";
 }

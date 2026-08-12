@@ -9,6 +9,7 @@ import {
   canCreateTiket,
   canDeleteOdp,
   canDeletePelanggan,
+  canEditPelangganHarga,
   canViewAllTiket,
   canViewLaporanPerforma,
 } from "../permissions";
@@ -123,6 +124,18 @@ test("Pemilik can delete Pelanggan", () => {
 
 test("Admin cannot delete Pelanggan", () => {
   expect(canDeletePelanggan("admin")).toBe(false);
+});
+
+test("Admin can edit Pelanggan harga", () => {
+  expect(canEditPelangganHarga("admin")).toBe(true);
+});
+
+test("Pemilik cannot edit Pelanggan harga", () => {
+  expect(canEditPelangganHarga("pemilik")).toBe(false);
+});
+
+test("Teknisi cannot edit Pelanggan harga", () => {
+  expect(canEditPelangganHarga("teknisi")).toBe(false);
 });
 
 test("Pemilik can view all Tiket", () => {

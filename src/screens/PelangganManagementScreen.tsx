@@ -18,7 +18,12 @@ import {
 import { listOdp, type OdpListItem } from "../odp/listOdp";
 import { listPaket, type Paket } from "../paket/listPaket";
 import { deletePelanggan } from "../pelanggan/deletePelanggan";
-import { canCreatePelanggan, canDeletePelanggan } from "../auth/permissions";
+import { updatePelangganHarga } from "../pelanggan/updatePelangganHarga";
+import {
+  canCreatePelanggan,
+  canDeletePelanggan,
+  canEditPelangganHarga,
+} from "../auth/permissions";
 import type { UserProfile } from "../auth/profile";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
@@ -28,6 +33,11 @@ type Props = {
   profile: UserProfile;
   onBack: () => void;
 };
+
+function formatHarga(harga: number | null): string {
+  if (harga == null) return "Belum diisi";
+  return `Rp${harga.toLocaleString("id-ID")}`;
+}
 
 export function PelangganManagementScreen({ profile, onBack }: Props) {
   const [query, setQuery] = useState("");
@@ -52,6 +62,10 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
   const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [hargaInput, setHargaInput] = useState("");
+  const [hargaError, setHargaError] = useState<string | null>(null);
+  const [isSavingHarga, setIsSavingHarga] = useState(false);
 
   async function reload() {
     setIsLoading(true);
@@ -122,6 +136,30 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
   async function handleSelect(item: PelangganListItem) {
     const detail = await getPelangganDetail(supabase, item.id);
     setSelectedDetail(detail);
+    setHargaInput(detail?.harga != null ? String(detail.harga) : "");
+    setHargaError(null);
+  }
+
+  async function handleSaveHarga() {
+    if (!selectedDetail) return;
+
+    const parsed = Number(hargaInput);
+    if (!hargaInput.trim() || !Number.isFinite(parsed) || parsed < 0) {
+      setHargaError("Harga harus berupa angka, 0 atau lebih.");
+      return;
+    }
+
+    setHargaError(null);
+    setIsSavingHarga(true);
+    const result = await updatePelangganHarga(supabase, selectedDetail.id, parsed);
+    setIsSavingHarga(false);
+
+    if (!result.success) {
+      setHargaError(result.error);
+      return;
+    }
+
+    setSelectedDetail({ ...selectedDetail, harga: parsed });
   }
 
   async function handleDeletePelanggan() {
@@ -149,6 +187,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
       { label: "Wilayah", value: selectedDetail.wilayahNama ?? "-" },
       { label: "ODP asal", value: selectedDetail.odpLabel ?? "-" },
       { label: "Paket", value: selectedDetail.paketNama ?? "-" },
+      { label: "Harga Langganan", value: formatHarga(selectedDetail.harga) },
     ];
 
     return (
@@ -178,6 +217,30 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
             </View>
           ))}
         </View>
+
+        {canEditPelangganHarga(profile.role) ? (
+          <>
+            <Text style={styles.subtitle}>Edit Harga Langganan</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Contoh: 165000"
+              placeholderTextColor="#9ca3af"
+              keyboardType="numeric"
+              value={hargaInput}
+              onChangeText={setHargaInput}
+            />
+            {hargaError ? <Text style={styles.error}>{hargaError}</Text> : null}
+            <TouchableOpacity
+              style={[styles.button, isSavingHarga && styles.buttonDisabled]}
+              onPress={handleSaveHarga}
+              disabled={isSavingHarga}
+            >
+              <Text style={styles.buttonText}>
+                {isSavingHarga ? "Menyimpan..." : "Simpan Harga"}
+              </Text>
+            </TouchableOpacity>
+          </>
+        ) : null}
 
         <Text style={styles.subtitle}>Riwayat Tiket</Text>
         <Text style={styles.emptyText}>Belum ada Tiket.</Text>
