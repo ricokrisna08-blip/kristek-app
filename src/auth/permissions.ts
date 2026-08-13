@@ -63,3 +63,7 @@ export function canViewAllTiket(role: Role): boolean {
 export function canViewLaporanPerforma(role: Role): boolean {
   return role === "pemilik";
 }
+
+export function canViewLaporanKeuangan(role: Role): boolean {
+  return role === "pemilik";
+}

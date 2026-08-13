@@ -18,6 +18,7 @@ import { CreateTiketScreen } from "./src/screens/CreateTiketScreen";
 import { MyTiketScreen } from "./src/screens/MyTiketScreen";
 import { InstallationEvidenceScreen } from "./src/screens/InstallationEvidenceScreen";
 import { LaporanPerformaScreen } from "./src/screens/LaporanPerformaScreen";
+import { LaporanKeuanganScreen } from "./src/screens/LaporanKeuanganScreen";
 
 type Screen =
   | "home"
@@ -29,6 +30,7 @@ type Screen =
   | "createTiket"
   | "daftarTiket"
   | "laporanPerforma"
+  | "laporanKeuangan"
   | "myTiketInstalasi"
   | "myTiketMaintenance"
   | "myTiketGangguan"
@@ -164,6 +166,9 @@ export default function App() {
     if (screen === "laporanPerforma") {
       return <LaporanPerformaScreen onBack={() => setScreen("home")} />;
     }
+    if (screen === "laporanKeuangan") {
+      return <LaporanKeuanganScreen onBack={() => setScreen("home")} />;
+    }
     if (screen === "myTiketInstalasi") {
       return (
         <MyTiketScreen
@@ -213,6 +218,7 @@ export default function App() {
         onNavigateToCreateTiket={() => setScreen("createTiket")}
         onNavigateToDaftarTiket={() => setScreen("daftarTiket")}
         onNavigateToLaporanPerforma={() => setScreen("laporanPerforma")}
+        onNavigateToLaporanKeuangan={() => setScreen("laporanKeuangan")}
         onNavigateToInstalasi={() => setScreen("myTiketInstalasi")}
         onNavigateToInstallationEvidence={() => setScreen("installationEvidence")}
         onNavigateToMaintenance={() => setScreen("myTiketMaintenance")}

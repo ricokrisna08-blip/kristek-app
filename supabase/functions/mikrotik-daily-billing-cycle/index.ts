@@ -13,9 +13,13 @@
 // tanggal 7 doang) supaya kalau cron sempat gagal jalan tanggal 7 persis,
 // masih ke-tangkep di hari-hari berikutnya sebelum reset tanggal 15
 // (idempotent -- Pelanggan yang sudah is_isolir=true dilewati).
-// Tanggal 15: reset `sudah_bayar_bulan_ini` ke false untuk semua Pelanggan
-// -- bukan awal siklus baru, tapi mengosongkan status "Sudah Bayar" bulan
-// ini supaya siap dipakai lagi buat siklus jatuh-tempo-tanggal-3 berikutnya
+// Tanggal 15: SEBELUM reset, snapshot angka bulan yang baru saja berjalan
+// (Total User, Omset, Sudah Bayar, Belum Bayar) ke tabel `laporan_bulanan`
+// -- ini yang bikin Laporan Keuangan Pemilik otomatis nambah baris baru
+// tiap bulan tanpa kerja manual. Baru setelah itu, reset
+// `sudah_bayar_bulan_ini` ke false untuk semua Pelanggan -- bukan awal
+// siklus baru, tapi mengosongkan status "Sudah Bayar" bulan ini supaya
+// siap dipakai lagi buat siklus jatuh-tempo-tanggal-3 berikutnya
 // (Pelanggan yang sempat dicentang lunas bulan ini tetap kelihatan lunas
 // sampai tanggal 15, baru habis itu di-reset).
 //
@@ -79,6 +83,19 @@ function jakartaDayOfMonth(): number {
   }).formatToParts(new Date());
   const day = parts.find((p) => p.type === "day")?.value;
   return day ? parseInt(day, 10) : new Date().getDate();
+}
+
+// Tanggal 1 dari bulan berjalan (waktu Asia/Jakarta), format "YYYY-MM-01"
+// -- dipakai sebagai kunci `periode` di laporan_bulanan.
+function jakartaCurrentPeriode(): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+  const year = parts.find((p) => p.type === "year")?.value;
+  const month = parts.find((p) => p.type === "month")?.value;
+  return `${year}-${month}-01`;
 }
 
 async function setMikrotikSecretDisabled(
@@ -174,6 +191,48 @@ Deno.serve(async (req) => {
   const dayOfMonth = jakartaDayOfMonth();
 
   if (dayOfMonth === 15) {
+    const { data: semuaPelanggan, error: snapshotFetchError } = await adminClient
+      .from("pelanggan")
+      .select("harga, sudah_bayar_bulan_ini");
+
+    if (snapshotFetchError) {
+      return jsonResponse({ error: snapshotFetchError.message }, 500);
+    }
+
+    const totalUser = semuaPelanggan?.length ?? 0;
+    let omset = 0;
+    let sudahBayar = 0;
+    let belumBayar = 0;
+    for (const p of semuaPelanggan ?? []) {
+      const harga = p.harga ?? 0;
+      omset += harga;
+      if (p.sudah_bayar_bulan_ini) {
+        sudahBayar += harga;
+      } else {
+        belumBayar += harga;
+      }
+    }
+
+    // upsert (bukan insert biasa) -- kalau cron ini kebetulan jalan lebih
+    // dari sekali di tanggal 15 (retry, dsb.), snapshot bulan ini cuma
+    // ke-update ulang, bukan bikin baris duplikat.
+    const { error: snapshotError } = await adminClient
+      .from("laporan_bulanan")
+      .upsert(
+        {
+          periode: jakartaCurrentPeriode(),
+          total_user: totalUser,
+          omset,
+          sudah_bayar: sudahBayar,
+          belum_bayar: belumBayar,
+        },
+        { onConflict: "periode" }
+      );
+
+    if (snapshotError) {
+      return jsonResponse({ error: snapshotError.message }, 500);
+    }
+
     const { error: resetError, count } = await adminClient
       .from("pelanggan")
       .update({ sudah_bayar_bulan_ini: false }, { count: "exact" })
@@ -183,7 +242,10 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: resetError.message }, 500);
     }
 
-    return jsonResponse({ action: "reset", resetCount: count ?? 0 }, 200);
+    return jsonResponse(
+      { action: "reset", resetCount: count ?? 0, snapshot: { totalUser, omset, sudahBayar, belumBayar } },
+      200
+    );
   }
 
   if (dayOfMonth < 7 || dayOfMonth > 14) {

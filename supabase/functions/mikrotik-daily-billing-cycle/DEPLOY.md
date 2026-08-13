@@ -2,10 +2,12 @@
 
 ⚠️ Ini function yang **otomatis motong internet pelanggan**. Siklus
 billing KRISTEK: jatuh tempo tanggal 3, masa tenggang sampai tanggal 6,
-kalau belum bayar diisolir otomatis jam 00:00 WIB tanggal 7. Status
-"Sudah Bayar" di-reset tanggal 15 (bukan awal siklus, cuma ngosongin
-status biar siap dipakai lagi buat siklus jatuh-tempo berikutnya). Baca
-seluruh file ini sebelum lanjut ke bagian jadwal cron.
+kalau belum bayar diisolir otomatis jam 00:00 WIB tanggal 7. Tanggal 15,
+angka bulan berjalan (Total User/Omset/Sudah Bayar/Belum Bayar) di-snapshot
+ke tabel `laporan_bulanan` (buat Laporan Keuangan Pemilik di app), baru
+setelah itu status "Sudah Bayar" di-reset (bukan awal siklus, cuma
+ngosongin status biar siap dipakai lagi buat siklus jatuh-tempo
+berikutnya). Baca seluruh file ini sebelum lanjut ke bagian jadwal cron.
 
 ## 1. Deploy function-nya
 
@@ -46,8 +48,9 @@ ini saat kamu tes):
 - Kalau tanggal hari ini 1-6 atau 15-31 (di luar jendela isolir):
   `{"action":"none","reason":"outside jendela isolir (7-14)"}` — aman,
   tidak ada aksi (kecuali tanggal 15, lihat di bawah).
-- Kalau tanggal 15: `{"action":"reset","resetCount":N}` — mereset N
-  Pelanggan yang tadinya "Sudah Bayar" balik ke "Belum Bayar".
+- Kalau tanggal 15: `{"action":"reset","resetCount":N,"snapshot":{...}}` —
+  mencatat baris baru di Laporan Keuangan buat bulan berjalan, lalu
+  mereset N Pelanggan yang tadinya "Sudah Bayar" balik ke "Belum Bayar".
 - Kalau tanggal 7-14: `{"action":"isolir","isolirCount":N,"failed":[...]}`
   — **ini yang benar-benar memutus akses N Pelanggan**. Cek dulu
   `isolirCount` masuk akal (bandingkan manual ke daftar Pelanggan yang

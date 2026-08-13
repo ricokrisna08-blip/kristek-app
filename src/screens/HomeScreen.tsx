@@ -10,6 +10,7 @@ import {
   canCreateTiket,
   canViewAllTiket,
   canViewLaporanPerforma,
+  canViewLaporanKeuangan,
 } from "../auth/permissions";
 import { NotifikasiBell } from "../components/NotifikasiBell";
 
@@ -29,6 +30,7 @@ type Props = {
   onNavigateToCreateTiket: () => void;
   onNavigateToDaftarTiket: () => void;
   onNavigateToLaporanPerforma: () => void;
+  onNavigateToLaporanKeuangan: () => void;
   onNavigateToInstalasi: () => void;
   onNavigateToInstallationEvidence: () => void;
   onNavigateToMaintenance: () => void;
@@ -53,6 +55,7 @@ export function HomeScreen({
   onNavigateToCreateTiket,
   onNavigateToDaftarTiket,
   onNavigateToLaporanPerforma,
+  onNavigateToLaporanKeuangan,
   onNavigateToInstalasi,
   onNavigateToInstallationEvidence,
   onNavigateToMaintenance,
@@ -89,6 +92,14 @@ export function HomeScreen({
       icon: "📊",
       label: "Laporan Performa",
       onPress: onNavigateToLaporanPerforma,
+    });
+  }
+  if (canViewLaporanKeuangan(profile.role)) {
+    menuItems.push({
+      key: "laporanKeuangan",
+      icon: "💰",
+      label: "Laporan Keuangan",
+      onPress: onNavigateToLaporanKeuangan,
     });
   }
   if (profile.role === "teknisi") {

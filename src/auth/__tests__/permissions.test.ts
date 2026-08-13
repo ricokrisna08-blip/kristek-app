@@ -15,6 +15,7 @@ import {
   canManageIsolir,
   canViewAllTiket,
   canViewLaporanPerforma,
+  canViewLaporanKeuangan,
 } from "../permissions";
 
 test("Pemilik can manage accounts", () => {
@@ -199,4 +200,16 @@ test("Admin cannot view Laporan Performa", () => {
 
 test("Teknisi cannot view Laporan Performa", () => {
   expect(canViewLaporanPerforma("teknisi")).toBe(false);
+});
+
+test("Pemilik can view Laporan Keuangan", () => {
+  expect(canViewLaporanKeuangan("pemilik")).toBe(true);
+});
+
+test("Admin cannot view Laporan Keuangan", () => {
+  expect(canViewLaporanKeuangan("admin")).toBe(false);
+});
+
+test("Teknisi cannot view Laporan Keuangan", () => {
+  expect(canViewLaporanKeuangan("teknisi")).toBe(false);
 });
