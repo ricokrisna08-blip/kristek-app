@@ -4,13 +4,14 @@ export type OdpListItem = {
   id: string;
   label: string;
   lokasi: string;
+  wilayahId: string;
   wilayahNama: string | null;
 };
 
 export async function listOdp(client: SupabaseClient): Promise<OdpListItem[]> {
   const { data, error } = await client
     .from("odp")
-    .select("id, label, lokasi, wilayah:wilayah_id (nama)")
+    .select("id, label, lokasi, wilayah_id, wilayah:wilayah_id (nama)")
     .order("label");
 
   if (error || !data) {
@@ -21,6 +22,7 @@ export async function listOdp(client: SupabaseClient): Promise<OdpListItem[]> {
     id: row.id,
     label: row.label,
     lokasi: row.lokasi,
+    wilayahId: row.wilayah_id,
     wilayahNama: row.wilayah?.nama ?? null,
   }));
 }

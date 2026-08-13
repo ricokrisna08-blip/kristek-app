@@ -6,10 +6,16 @@ export type PelangganDetail = {
   alamat: string;
   noHp: string;
   nomorPelanggan: string;
+  wilayahId: string;
   wilayahNama: string | null;
+  odpId: string;
   odpLabel: string | null;
+  paketId: string | null;
   paketNama: string | null;
   harga: number | null;
+  mikrotikUsername: string | null;
+  sudahBayarBulanIni: boolean;
+  isIsolir: boolean;
 };
 
 export async function getPelangganDetail(
@@ -19,7 +25,7 @@ export async function getPelangganDetail(
   const { data, error } = await client
     .from("pelanggan")
     .select(
-      "id, nama, alamat, no_hp, nomor_pelanggan, wilayah:wilayah_id (nama), odp:odp_id (label), paket:paket_id (nama), harga"
+      "id, nama, alamat, no_hp, nomor_pelanggan, wilayah_id, wilayah:wilayah_id (nama), odp_id, odp:odp_id (label), paket_id, paket:paket_id (nama), harga, mikrotik_username, sudah_bayar_bulan_ini, is_isolir"
     )
     .eq("id", id)
     .single();
@@ -36,9 +42,15 @@ export async function getPelangganDetail(
     alamat: row.alamat,
     noHp: row.no_hp,
     nomorPelanggan: row.nomor_pelanggan,
+    wilayahId: row.wilayah_id,
     wilayahNama: row.wilayah?.nama ?? null,
+    odpId: row.odp_id,
     odpLabel: row.odp?.label ?? null,
+    paketId: row.paket_id,
     paketNama: row.paket?.nama ?? null,
     harga: row.harga ?? null,
+    mikrotikUsername: row.mikrotik_username ?? null,
+    sudahBayarBulanIni: row.sudah_bayar_bulan_ini ?? false,
+    isIsolir: row.is_isolir ?? false,
   };
 }

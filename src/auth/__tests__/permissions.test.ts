@@ -9,7 +9,10 @@ import {
   canCreateTiket,
   canDeleteOdp,
   canDeletePelanggan,
+  canEditPelanggan,
   canEditPelangganHarga,
+  canMarkSudahBayarBulanIni,
+  canManageIsolir,
   canViewAllTiket,
   canViewLaporanPerforma,
 } from "../permissions";
@@ -86,6 +89,30 @@ test("Teknisi cannot create Pelanggan", () => {
   expect(canCreatePelanggan("teknisi")).toBe(false);
 });
 
+test("Admin can mark Sudah Bayar Bulan Ini", () => {
+  expect(canMarkSudahBayarBulanIni("admin")).toBe(true);
+});
+
+test("Pemilik can mark Sudah Bayar Bulan Ini", () => {
+  expect(canMarkSudahBayarBulanIni("pemilik")).toBe(true);
+});
+
+test("Teknisi cannot mark Sudah Bayar Bulan Ini", () => {
+  expect(canMarkSudahBayarBulanIni("teknisi")).toBe(false);
+});
+
+test("Pemilik can manage isolir", () => {
+  expect(canManageIsolir("pemilik")).toBe(true);
+});
+
+test("Admin cannot manage isolir", () => {
+  expect(canManageIsolir("admin")).toBe(false);
+});
+
+test("Teknisi cannot manage isolir", () => {
+  expect(canManageIsolir("teknisi")).toBe(false);
+});
+
 test("Pemilik can manage Paket", () => {
   expect(canManagePaket("pemilik")).toBe(true);
 });
@@ -124,6 +151,18 @@ test("Pemilik can delete Pelanggan", () => {
 
 test("Admin cannot delete Pelanggan", () => {
   expect(canDeletePelanggan("admin")).toBe(false);
+});
+
+test("Pemilik can edit Pelanggan", () => {
+  expect(canEditPelanggan("pemilik")).toBe(true);
+});
+
+test("Admin cannot edit Pelanggan", () => {
+  expect(canEditPelanggan("admin")).toBe(false);
+});
+
+test("Teknisi cannot edit Pelanggan", () => {
+  expect(canEditPelanggan("teknisi")).toBe(false);
 });
 
 test("Admin can edit Pelanggan harga", () => {
