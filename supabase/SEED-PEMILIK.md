@@ -1,12 +1,12 @@
 # Seed akun Pemilik pertama
 
-Migration `0001_init.sql` sudah membuat skema dan Wilayah default, tapi akun
+Migration `20260101000000_init.sql` sudah membuat skema dan Wilayah default, tapi akun
 Pemilik bootstrap harus dibuat lewat Supabase Dashboard karena melibatkan
 Supabase Auth (bukan sekadar insert SQL biasa).
 
 ## Langkah
 
-1. Jalankan `supabase/migrations/0001_init.sql` di **SQL Editor** Supabase Dashboard (kalau belum).
+1. Jalankan `supabase/migrations/20260101000000_init.sql` di **SQL Editor** Supabase Dashboard (kalau belum).
 2. Buka **Authentication → Users → Add user → Create new user**.
    - **Email**: `<username-pilihan-anda>@internal.kristek.app` (contoh: `pemilik@internal.kristek.app`) — sesuai pemetaan `usernameToEmail`, ini bukan email sungguhan.
    - **Password**: password yang akan dipakai untuk login Pemilik di app.
@@ -17,10 +17,10 @@ Supabase Auth (bukan sekadar insert SQL biasa).
 ```sql
 insert into public.users (id, nama, alamat, no_telp, username, role, wilayah_id)
 values (
-  'a38b2fef-1649-47e1-880e-04bfa50e2523',
-  'Nama Pemilik',
-  'Alamat Pemilik',
-  '08xxxxxxxxxx',
+  'c78f1a85-81de-4d57-a14a-588f18d08ce7',
+  'ricokrisna',
+  'JL.GOBANG',
+  '089699680859',
   'pemilik',
   'pemilik',
   (select id from public.wilayah limit 1)
