@@ -12,6 +12,9 @@ function notif(readAt: string | null): Notifikasi {
     pelangganNama: "Budi",
     odpLabel: null,
     notes: null,
+    cutiTeknisiNama: null,
+    cutiTanggalMulai: null,
+    cutiTanggalSelesai: null,
   };
 }
 

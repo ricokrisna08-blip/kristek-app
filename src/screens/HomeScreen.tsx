@@ -11,6 +11,8 @@ import {
   canViewAllTiket,
   canViewLaporanPerforma,
   canViewLaporanKeuangan,
+  canSubmitCuti,
+  canViewPengajuanCuti,
 } from "../auth/permissions";
 import { NotifikasiBell } from "../components/NotifikasiBell";
 
@@ -31,6 +33,8 @@ type Props = {
   onNavigateToDaftarTiket: () => void;
   onNavigateToLaporanPerforma: () => void;
   onNavigateToLaporanKeuangan: () => void;
+  onNavigateToPengajuanCuti: () => void;
+  onNavigateToDaftarPengajuanCuti: () => void;
   onNavigateToInstalasi: () => void;
   onNavigateToInstallationEvidence: () => void;
   onNavigateToMaintenance: () => void;
@@ -56,6 +60,8 @@ export function HomeScreen({
   onNavigateToDaftarTiket,
   onNavigateToLaporanPerforma,
   onNavigateToLaporanKeuangan,
+  onNavigateToPengajuanCuti,
+  onNavigateToDaftarPengajuanCuti,
   onNavigateToInstalasi,
   onNavigateToInstallationEvidence,
   onNavigateToMaintenance,
@@ -102,6 +108,14 @@ export function HomeScreen({
       onPress: onNavigateToLaporanKeuangan,
     });
   }
+  if (canViewPengajuanCuti(profile.role)) {
+    menuItems.push({
+      key: "daftarPengajuanCuti",
+      icon: "📅",
+      label: "Pengajuan Cuti",
+      onPress: onNavigateToDaftarPengajuanCuti,
+    });
+  }
   if (profile.role === "teknisi") {
     menuItems.push(
       { key: "instalasi", icon: "🛠️", label: "Instalasi", onPress: onNavigateToInstalasi },
@@ -114,6 +128,14 @@ export function HomeScreen({
       { key: "maintenance", icon: "🔧", label: "Maintenance", onPress: onNavigateToMaintenance },
       { key: "gangguan", icon: "⚠️", label: "Gangguan-Komplain", onPress: onNavigateToGangguan }
     );
+  }
+  if (canSubmitCuti(profile.role)) {
+    menuItems.push({
+      key: "pengajuanCuti",
+      icon: "🏖️",
+      label: "Ajukan Cuti/Izin",
+      onPress: onNavigateToPengajuanCuti,
+    });
   }
 
   return (

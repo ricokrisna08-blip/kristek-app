@@ -19,6 +19,8 @@ import { MyTiketScreen } from "./src/screens/MyTiketScreen";
 import { InstallationEvidenceScreen } from "./src/screens/InstallationEvidenceScreen";
 import { LaporanPerformaScreen } from "./src/screens/LaporanPerformaScreen";
 import { LaporanKeuanganScreen } from "./src/screens/LaporanKeuanganScreen";
+import { PengajuanCutiScreen } from "./src/screens/PengajuanCutiScreen";
+import { DaftarPengajuanCutiScreen } from "./src/screens/DaftarPengajuanCutiScreen";
 
 type Screen =
   | "home"
@@ -31,6 +33,8 @@ type Screen =
   | "daftarTiket"
   | "laporanPerforma"
   | "laporanKeuangan"
+  | "pengajuanCuti"
+  | "daftarPengajuanCuti"
   | "myTiketInstalasi"
   | "myTiketMaintenance"
   | "myTiketGangguan"
@@ -169,6 +173,14 @@ export default function App() {
     if (screen === "laporanKeuangan") {
       return <LaporanKeuanganScreen onBack={() => setScreen("home")} />;
     }
+    if (screen === "pengajuanCuti") {
+      return (
+        <PengajuanCutiScreen profile={currentProfile} onBack={() => setScreen("home")} />
+      );
+    }
+    if (screen === "daftarPengajuanCuti") {
+      return <DaftarPengajuanCutiScreen onBack={() => setScreen("home")} />;
+    }
     if (screen === "myTiketInstalasi") {
       return (
         <MyTiketScreen
@@ -219,6 +231,8 @@ export default function App() {
         onNavigateToDaftarTiket={() => setScreen("daftarTiket")}
         onNavigateToLaporanPerforma={() => setScreen("laporanPerforma")}
         onNavigateToLaporanKeuangan={() => setScreen("laporanKeuangan")}
+        onNavigateToPengajuanCuti={() => setScreen("pengajuanCuti")}
+        onNavigateToDaftarPengajuanCuti={() => setScreen("daftarPengajuanCuti")}
         onNavigateToInstalasi={() => setScreen("myTiketInstalasi")}
         onNavigateToInstallationEvidence={() => setScreen("installationEvidence")}
         onNavigateToMaintenance={() => setScreen("myTiketMaintenance")}

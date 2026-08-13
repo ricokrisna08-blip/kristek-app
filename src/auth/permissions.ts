@@ -67,3 +67,11 @@ export function canViewLaporanPerforma(role: Role): boolean {
 export function canViewLaporanKeuangan(role: Role): boolean {
   return role === "pemilik";
 }
+
+export function canSubmitCuti(role: Role): boolean {
+  return role === "teknisi";
+}
+
+export function canViewPengajuanCuti(role: Role): boolean {
+  return role === "admin" || role === "pemilik";
+}

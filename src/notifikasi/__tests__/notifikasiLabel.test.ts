@@ -12,6 +12,9 @@ function baseNotif(overrides: Partial<Notifikasi>): Notifikasi {
     pelangganNama: null,
     odpLabel: null,
     notes: null,
+    cutiTeknisiNama: null,
+    cutiTanggalMulai: null,
+    cutiTanggalSelesai: null,
     ...overrides,
   };
 }
@@ -61,4 +64,34 @@ test("Pending notification includes the technician's notes when present", () => 
   expect(label).toBe(
     "Instalasi — Budi masuk status Pending — Catatan: Menunggu material dari gudang"
   );
+});
+
+test("Cuti submission includes the teknisi name, date range, and alasan", () => {
+  const label = notifikasiLabel(
+    baseNotif({
+      type: "cuti_diajukan",
+      tiketId: null,
+      cutiTeknisiNama: "Ahmad Wahyudi",
+      cutiTanggalMulai: "2026-08-20",
+      cutiTanggalSelesai: "2026-08-22",
+      notes: "Sakit demam",
+    })
+  );
+
+  expect(label).toBe(
+    "Ahmad Wahyudi mengajukan cuti/izin (20 Agu - 22 Agu) — Alasan: Sakit demam"
+  );
+});
+
+test("Cuti submission falls back gracefully when the teknisi name is missing", () => {
+  const label = notifikasiLabel(
+    baseNotif({
+      type: "cuti_diajukan",
+      tiketId: null,
+      cutiTanggalMulai: "2026-08-20",
+      cutiTanggalSelesai: "2026-08-22",
+    })
+  );
+
+  expect(label).toBe("Teknisi mengajukan cuti/izin (20 Agu - 22 Agu)");
 });

@@ -1,10 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type NotifikasiType = "ditugaskan" | "pending" | "selesai";
+export type NotifikasiType = "ditugaskan" | "pending" | "selesai" | "cuti_diajukan";
 
 export type Notifikasi = {
   id: string;
-  tiketId: string;
+  tiketId: string | null;
   type: NotifikasiType;
   readAt: string | null;
   createdAt: string;
@@ -12,6 +12,9 @@ export type Notifikasi = {
   pelangganNama: string | null;
   odpLabel: string | null;
   notes: string | null;
+  cutiTeknisiNama: string | null;
+  cutiTanggalMulai: string | null;
+  cutiTanggalSelesai: string | null;
 };
 
 export async function listNotifikasi(
@@ -22,7 +25,8 @@ export async function listNotifikasi(
     .from("notifikasi")
     .select(
       `id, tiket_id, type, read_at, created_at, notes,
-       tiket:tiket_id ( jenis, pelanggan:pelanggan_id ( nama ), odp:odp_id ( label ) )`
+       tiket:tiket_id ( jenis, pelanggan:pelanggan_id ( nama ), odp:odp_id ( label ) ),
+       cuti:cuti_id ( tanggal_mulai, tanggal_selesai, teknisi:teknisi_id ( nama ) )`
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
@@ -41,5 +45,8 @@ export async function listNotifikasi(
     tiketJenis: row.tiket?.jenis ?? null,
     pelangganNama: row.tiket?.pelanggan?.nama ?? null,
     odpLabel: row.tiket?.odp?.label ?? null,
+    cutiTeknisiNama: row.cuti?.teknisi?.nama ?? null,
+    cutiTanggalMulai: row.cuti?.tanggal_mulai ?? null,
+    cutiTanggalSelesai: row.cuti?.tanggal_selesai ?? null,
   }));
 }

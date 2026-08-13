@@ -16,6 +16,8 @@ import {
   canViewAllTiket,
   canViewLaporanPerforma,
   canViewLaporanKeuangan,
+  canSubmitCuti,
+  canViewPengajuanCuti,
 } from "../permissions";
 
 test("Pemilik can manage accounts", () => {
@@ -212,4 +214,22 @@ test("Admin cannot view Laporan Keuangan", () => {
 
 test("Teknisi cannot view Laporan Keuangan", () => {
   expect(canViewLaporanKeuangan("teknisi")).toBe(false);
+});
+
+test("Teknisi can submit pengajuan cuti", () => {
+  expect(canSubmitCuti("teknisi")).toBe(true);
+});
+
+test("Admin and Pemilik cannot submit pengajuan cuti", () => {
+  expect(canSubmitCuti("admin")).toBe(false);
+  expect(canSubmitCuti("pemilik")).toBe(false);
+});
+
+test("Admin and Pemilik can view all pengajuan cuti", () => {
+  expect(canViewPengajuanCuti("admin")).toBe(true);
+  expect(canViewPengajuanCuti("pemilik")).toBe(true);
+});
+
+test("Teknisi cannot view all pengajuan cuti (only their own via submission screen)", () => {
+  expect(canViewPengajuanCuti("teknisi")).toBe(false);
 });
