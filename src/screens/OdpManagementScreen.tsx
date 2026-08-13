@@ -118,52 +118,21 @@ export function OdpManagementScreen({ profile, onBack }: Props) {
       <Text style={styles.title}>Manajemen ODP</Text>
       <Text style={styles.count}>{odpList.length} ODP terdaftar</Text>
 
-      {isLoading ? (
-        <ActivityIndicator style={styles.loading} />
-      ) : odpList.length === 0 ? (
-        <Text style={styles.emptyText}>Belum ada ODP.</Text>
-      ) : (
-        <View style={styles.list}>
-          {odpList.map((item) => (
-            <View key={item.id} style={styles.card}>
-              <View style={styles.cardIcon}>
-                <Text style={styles.cardIconText}>📡</Text>
-              </View>
-              <View style={styles.cardBody}>
-                <Text style={styles.cardLabel}>{item.label}</Text>
-                <Text style={styles.cardDetail}>
-                  {item.lokasi} · {item.wilayahNama ?? "Wilayah tidak diketahui"}
-                </Text>
-              </View>
-              {canDeleteOdp(profile.role) ? (
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => {
-                    setDeleteError(null);
-                    setDeleteTarget(item);
-                  }}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Text style={styles.deleteLink}>Hapus</Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
-          ))}
-        </View>
-      )}
-
       {canCreateOdp(profile.role) ? (
-        <>
+        <View style={styles.sectionCard}>
           <Text style={styles.subtitle}>Tambah ODP Baru</Text>
 
+          <Text style={styles.fieldLabel}>Label</Text>
           <TextInput
             style={styles.input}
-            placeholder="Label (misal ODP-KRTK-001)"
+            placeholder="Misal ODP-KRTK-0001"
             placeholderTextColor="#9ca3af"
             autoCapitalize="characters"
             value={label}
             onChangeText={setLabel}
           />
+
+          <Text style={styles.fieldLabel}>Lokasi</Text>
           <TextInput
             style={styles.input}
             placeholder="Lokasi / alamat singkat"
@@ -241,8 +210,44 @@ export function OdpManagementScreen({ profile, onBack }: Props) {
             onCancel={() => setIsConfirmVisible(false)}
             onConfirm={handleConfirm}
           />
-        </>
+        </View>
       ) : null}
+
+      <Text style={styles.subtitle}>Daftar ODP</Text>
+
+      {isLoading ? (
+        <ActivityIndicator style={styles.loading} />
+      ) : odpList.length === 0 ? (
+        <Text style={styles.emptyText}>Belum ada ODP.</Text>
+      ) : (
+        <View style={styles.list}>
+          {odpList.map((item) => (
+            <View key={item.id} style={styles.card}>
+              <View style={styles.cardIcon}>
+                <Text style={styles.cardIconText}>📡</Text>
+              </View>
+              <View style={styles.cardBody}>
+                <Text style={styles.cardLabel}>{item.label}</Text>
+                <Text style={styles.cardDetail}>
+                  {item.lokasi} · {item.wilayahNama ?? "Wilayah tidak diketahui"}
+                </Text>
+              </View>
+              {canDeleteOdp(profile.role) ? (
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => {
+                    setDeleteError(null);
+                    setDeleteTarget(item);
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.deleteLink}>Hapus</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      )}
 
       <DeleteConfirmModal
         visible={deleteTarget !== null}
@@ -260,7 +265,7 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: 24,
-    backgroundColor: "#fff",
+    backgroundColor: "#F8FAFC",
   },
   title: {
     fontSize: 22,
@@ -273,6 +278,19 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     marginTop: 2,
     marginBottom: 16,
+  },
+  sectionCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E4E7EB",
+    padding: 16,
+    marginBottom: 8,
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   subtitle: {
     fontSize: 15,
@@ -294,12 +312,17 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#f0f0f0",
+    borderColor: "#E4E7EB",
     padding: 12,
     marginBottom: 10,
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   cardIcon: {
     width: 40,
@@ -333,7 +356,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   deleteLink: {
-    color: "#c0392b",
+    color: "#DC2626",
     fontSize: 13,
     fontWeight: "600",
   },
@@ -349,9 +372,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   fieldLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
-    color: "#374151",
+    color: "#6b7280",
     marginBottom: 8,
   },
   pillRow: {
@@ -369,8 +392,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   pillSelected: {
-    backgroundColor: "#2563eb",
-    borderColor: "#2563eb",
+    backgroundColor: "#1B7396",
+    borderColor: "#1B7396",
   },
   pillText: {
     color: "#374151",
@@ -382,15 +405,15 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   error: {
-    color: "#c0392b",
+    color: "#DC2626",
     marginBottom: 10,
   },
   button: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#1B7396",
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: "center",
-    shadowColor: "#2563eb",
+    shadowColor: "#1B7396",
     shadowOpacity: 0.25,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },

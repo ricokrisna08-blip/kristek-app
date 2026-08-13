@@ -16,12 +16,12 @@ const JENIS_ICON: Record<string, string> = {
 };
 
 const STATUS_BADGE_COLOR: Record<string, { bg: string; text: string }> = {
-  baru: { bg: "#f3f4f6", text: "#374151" },
-  ditugaskan: { bg: "#dbeafe", text: "#1e40af" },
-  dikerjakan: { bg: "#dbeafe", text: "#1e40af" },
-  pending: { bg: "#fef3c7", text: "#92400e" },
-  selesai: { bg: "#dcfce7", text: "#166534" },
-  dibatalkan: { bg: "#fee2e2", text: "#991b1b" },
+  baru: { bg: "#F1F5F9", text: "#475569" },
+  ditugaskan: { bg: "#E7F1F5", text: "#1B7396" },
+  dikerjakan: { bg: "#E7F1F5", text: "#1B7396" },
+  pending: { bg: "#FEF3C7", text: "#92400E" },
+  selesai: { bg: "#DCFCE7", text: "#15803D" },
+  dibatalkan: { bg: "#FEE2E2", text: "#DC2626" },
 };
 
 function formatTanggal(iso: string): string {
@@ -132,6 +132,7 @@ export function MyTiketScreen({ profile, title, jenisFilter, onBack }: Props) {
                   <Text style={styles.itemDetail}>{JENIS_LABEL[item.jenis] ?? item.jenis}</Text>
                   <Text style={styles.itemDate}>{formatTanggal(item.createdAt)}</Text>
                 </View>
+                <Text style={styles.chevron}>›</Text>
               </TouchableOpacity>
             );
           }}
@@ -141,16 +142,18 @@ export function MyTiketScreen({ profile, title, jenisFilter, onBack }: Props) {
   );
 }
 
+const KRISTEK_NAVY = "#0B2D5B";
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: "#fff",
+    backgroundColor: "#F8FAFC",
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#111827",
+    color: KRISTEK_NAVY,
     marginTop: 16,
   },
   count: {
@@ -169,18 +172,23 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#f0f0f0",
+    borderColor: "#E4E7EB",
     padding: 12,
     marginBottom: 10,
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   cardIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#eff6ff",
+    backgroundColor: "#E7F1F5",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -222,5 +230,10 @@ const styles = StyleSheet.create({
     color: "#9ca3af",
     fontSize: 11,
     marginTop: 2,
+  },
+  chevron: {
+    fontSize: 22,
+    color: "#c7cdd6",
+    marginLeft: 4,
   },
 });

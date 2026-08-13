@@ -61,6 +61,7 @@ export function AccountManagementScreen({ onBack }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
+  const [isExitConfirmVisible, setIsExitConfirmVisible] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -93,6 +94,13 @@ export function AccountManagementScreen({ onBack }: Props) {
   useEffect(() => {
     reload();
   }, []);
+
+  function closeFormDiscardingChanges() {
+    setIsExitConfirmVisible(false);
+    setIsFormVisible(false);
+    setError(null);
+    setForm({ ...EMPTY_FORM, wilayahId: form.wilayahId });
+  }
 
   function openCreateForm() {
     setError(null);
@@ -319,7 +327,7 @@ export function AccountManagementScreen({ onBack }: Props) {
         visible={isFormVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setIsFormVisible(false)}
+        onRequestClose={() => setIsExitConfirmVisible(true)}
       >
         <View style={styles.backdrop}>
           <View style={styles.formCard}>
@@ -424,6 +432,37 @@ export function AccountManagementScreen({ onBack }: Props) {
                 </TouchableOpacity>
               </View>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Konfirmasi keluar dari form saat back HP ditekan */}
+      <Modal
+        visible={isExitConfirmVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsExitConfirmVisible(false)}
+      >
+        <View style={styles.backdrop}>
+          <View style={styles.card2}>
+            <Text style={styles.title}>Yakin Keluar?</Text>
+            <Text style={styles.subtitleText}>
+              Data yang sudah diisi di form Tambah Akun akan hilang jika keluar sekarang.
+            </Text>
+            <View style={styles.resetButtonRow}>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton]}
+                onPress={() => setIsExitConfirmVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.dangerButton]}
+                onPress={closeFormDiscardingChanges}
+              >
+                <Text style={styles.buttonText}>Ya, Keluar</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -534,11 +573,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   back: {
-    color: "#2563eb",
+    color: "#1B7396",
     fontSize: 15,
   },
   addButton: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#1B7396",
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 16,
@@ -607,7 +646,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#2563eb",
+    backgroundColor: "#1B7396",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -681,7 +720,7 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
   actionRowDanger: {
-    color: "#c0392b",
+    color: "#DC2626",
   },
   actionCancel: {
     marginTop: 8,
@@ -739,8 +778,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   pillSelected: {
-    backgroundColor: "#2563eb",
-    borderColor: "#2563eb",
+    backgroundColor: "#1B7396",
+    borderColor: "#1B7396",
   },
   pillText: {
     color: "#374151",
@@ -752,15 +791,15 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   error: {
-    color: "#c0392b",
+    color: "#DC2626",
     marginBottom: 10,
   },
   button: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#1B7396",
     borderRadius: 12,
     padding: 15,
     alignItems: "center",
-    shadowColor: "#2563eb",
+    shadowColor: "#1B7396",
     shadowOpacity: 0.25,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
@@ -792,6 +831,11 @@ const styles = StyleSheet.create({
   },
   resetSubmitButton: {
     flex: 1,
+  },
+  dangerButton: {
+    flex: 1,
+    backgroundColor: "#DC2626",
+    shadowColor: "#DC2626",
   },
   cancelButtonText: {
     color: "#333",

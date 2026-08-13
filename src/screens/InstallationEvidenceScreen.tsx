@@ -120,16 +120,19 @@ export function InstallationEvidenceScreen({ profile, onBack }: Props) {
   );
 }
 
+const KRISTEK_TEAL = "#1B7396";
+const KRISTEK_NAVY = "#0B2D5B";
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: "#fff",
+    backgroundColor: "#F8FAFC",
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#111827",
+    color: KRISTEK_NAVY,
     marginTop: 16,
     marginBottom: 4,
   },
@@ -166,18 +169,23 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#f0f0f0",
+    borderColor: "#E4E7EB",
     padding: 12,
     marginBottom: 10,
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   avatar: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "#2563eb",
+    backgroundColor: KRISTEK_TEAL,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -203,12 +211,18 @@ const styles = StyleSheet.create({
   },
   cameraBadge: {
     marginLeft: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#E7F1F5",
+    alignItems: "center",
+    justifyContent: "center",
   },
   cameraBadgeText: {
-    fontSize: 18,
+    fontSize: 15,
   },
   error: {
-    color: "#c0392b",
+    color: "#DC2626",
     marginBottom: 10,
   },
 });

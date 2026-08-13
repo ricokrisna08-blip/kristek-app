@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,6 +22,7 @@ import { listOdp, type OdpListItem } from "../odp/listOdp";
 import { listPaket, type Paket } from "../paket/listPaket";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { BackButton } from "../components/BackButton";
+import { Dropdown } from "../components/Dropdown";
 import type { UserProfile } from "../auth/profile";
 
 const JENIS_OPTIONS: { value: TiketJenis; label: string }[] = [
@@ -172,18 +172,20 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
     .map((t) => t.nama)
     .join(", ");
 
+  const jenisLabel = JENIS_OPTIONS.find((o) => o.value === jenis)?.label ?? jenis;
+  const odpBaruLabel = odpList.find((o) => o.id === odpBaruId)?.label ?? "";
+  const paketBaruNama = paketList.find((p) => p.id === paketBaruId)?.nama ?? "";
+  const maintenanceOdpLabel = odpList.find((o) => o.id === maintenanceOdpId)?.label ?? "";
+
   function confirmFields() {
-    const jenisLabel = JENIS_OPTIONS.find((o) => o.value === jenis)?.label ?? jenis;
     if (jenis === "instalasi") {
-      const odpLabel = odpList.find((o) => o.id === odpBaruId)?.label ?? "-";
-      const paketNama = paketList.find((p) => p.id === paketBaruId)?.nama ?? "-";
       return [
         { label: "Jenis", value: jenisLabel },
         { label: "Nama Pelanggan Baru", value: namaBaru },
         { label: "Alamat", value: alamatBaru },
         { label: "No. HP", value: noHpBaru },
-        { label: "ODP", value: odpLabel },
-        { label: "Paket", value: paketNama },
+        { label: "ODP", value: odpBaruLabel || "-" },
+        { label: "Paket", value: paketBaruNama || "-" },
         { label: "Teknisi", value: teknisiNames },
       ];
     }
@@ -195,10 +197,9 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
         { label: "Teknisi", value: teknisiNames },
       ];
     }
-    const odpLabel = odpList.find((o) => o.id === maintenanceOdpId)?.label ?? "-";
     return [
       { label: "Jenis", value: jenisLabel },
-      { label: "ODP", value: odpLabel },
+      { label: "ODP", value: maintenanceOdpLabel || "-" },
       { label: "Deskripsi Pekerjaan", value: deskripsiPekerjaan },
       { label: "Teknisi", value: teknisiNames },
     ];
@@ -209,110 +210,91 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
       <BackButton onPress={onBack} />
 
       <Text style={styles.title}>Buat Tiket Baru</Text>
+      <Text style={styles.count}>Isi detail Tiket sesuai jenis pekerjaan</Text>
 
-      <Text style={styles.subtitle}>Jenis</Text>
-      <View style={styles.optionRow}>
-        {JENIS_OPTIONS.map((option) => (
-          <TouchableOpacity
-            key={option.value}
-            style={[
-              styles.option,
-              jenis === option.value && styles.optionSelected,
-            ]}
-            onPress={() => setJenis(option.value)}
-          >
-            <Text
-              style={
-                jenis === option.value
-                  ? styles.optionTextSelected
-                  : styles.optionText
-              }
-            >
-              {option.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      <View style={styles.sectionCard}>
+        <Text style={styles.fieldLabel}>Jenis Tiket</Text>
+        <Dropdown
+          variant="field"
+          title="Pilih Jenis Tiket"
+          valueLabel={jenisLabel}
+          options={JENIS_OPTIONS.map((option) => ({ id: option.value, label: option.label }))}
+          onSelect={(value) => setJenis(value as TiketJenis)}
+        />
       </View>
 
       {jenis === "instalasi" ? (
-        <>
+        <View style={styles.sectionCard}>
           <Text style={styles.subtitle}>Data Pelanggan Baru</Text>
+
+          <Text style={styles.fieldLabel}>Nama</Text>
           <TextInput
             style={styles.input}
-            placeholder="Nama"
+            placeholder="Nama Pelanggan"
+            placeholderTextColor="#9ca3af"
             value={namaBaru}
             onChangeText={setNamaBaru}
           />
+
+          <Text style={styles.fieldLabel}>Alamat</Text>
           <TextInput
             style={styles.input}
-            placeholder="Alamat"
+            placeholder="Alamat lengkap"
+            placeholderTextColor="#9ca3af"
             value={alamatBaru}
             onChangeText={setAlamatBaru}
           />
+
+          <Text style={styles.fieldLabel}>No. HP</Text>
           <TextInput
             style={styles.input}
-            placeholder="No. HP"
+            placeholder="08xxxxxxxxxx"
+            placeholderTextColor="#9ca3af"
             keyboardType="phone-pad"
             value={noHpBaru}
             onChangeText={setNoHpBaru}
           />
 
-          <Text style={styles.subtitle}>ODP</Text>
-          <View style={styles.optionRow}>
-            {odpList.map((odp) => (
-              <TouchableOpacity
-                key={odp.id}
-                style={[
-                  styles.option,
-                  odpBaruId === odp.id && styles.optionSelected,
-                ]}
-                onPress={() => setOdpBaruId(odp.id)}
-              >
-                <Text
-                  style={
-                    odpBaruId === odp.id
-                      ? styles.optionTextSelected
-                      : styles.optionText
-                  }
-                >
-                  {odp.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <Text style={styles.fieldLabel}>ODP</Text>
+          {odpList.length === 0 ? (
+            <Text style={styles.error}>Belum ada ODP — buat ODP dulu di Kelola ODP.</Text>
+          ) : (
+            <Dropdown
+              variant="field"
+              searchable
+              title="Pilih ODP"
+              valueLabel={odpBaruLabel}
+              options={odpList.map((odp) => ({
+                id: odp.id,
+                label: odp.wilayahNama ? `${odp.label} (${odp.wilayahNama})` : odp.label,
+              }))}
+              onSelect={setOdpBaruId}
+            />
+          )}
 
-          <Text style={styles.subtitle}>Paket</Text>
-          <View style={styles.optionRow}>
-            {paketList.map((paket) => (
-              <TouchableOpacity
-                key={paket.id}
-                style={[
-                  styles.option,
-                  paketBaruId === paket.id && styles.optionSelected,
-                ]}
-                onPress={() => setPaketBaruId(paket.id)}
-              >
-                <Text
-                  style={
-                    paketBaruId === paket.id
-                      ? styles.optionTextSelected
-                      : styles.optionText
-                  }
-                >
-                  {paket.nama}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </>
+          <Text style={styles.fieldLabel}>Paket</Text>
+          {paketList.length === 0 ? (
+            <Text style={styles.error}>
+              Belum ada Paket — minta Pemilik menambah Paket dulu.
+            </Text>
+          ) : (
+            <Dropdown
+              variant="field"
+              title="Pilih Paket"
+              valueLabel={paketBaruNama}
+              options={paketList.map((paket) => ({ id: paket.id, label: paket.nama }))}
+              onSelect={setPaketBaruId}
+            />
+          )}
+        </View>
       ) : null}
 
       {jenis === "gangguan_komplain" ? (
-        <>
+        <View style={styles.sectionCard}>
           <Text style={styles.subtitle}>Pelanggan</Text>
           {selectedPelanggan ? (
             <View style={styles.selectedBox}>
-              <Text>
+              <Text style={styles.selectedBoxText}>
                 {selectedPelanggan.nama} ({selectedPelanggan.nomorPelanggan})
               </Text>
               <TouchableOpacity onPress={() => setSelectedPelanggan(null)}>
@@ -321,12 +303,16 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
             </View>
           ) : (
             <>
-              <TextInput
-                style={styles.input}
-                placeholder="Cari nama atau Nomor Pelanggan"
-                value={pelangganQuery}
-                onChangeText={setPelangganQuery}
-              />
+              <View style={styles.searchBox}>
+                <Text style={styles.searchIcon}>🔍</Text>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Cari nama atau Nomor Pelanggan"
+                  placeholderTextColor="#9ca3af"
+                  value={pelangganQuery}
+                  onChangeText={setPelangganQuery}
+                />
+              </View>
               <View style={styles.list}>
                 {pelangganResults.map((item) => (
                   <TouchableOpacity
@@ -334,7 +320,7 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
                     style={styles.listItem}
                     onPress={() => setSelectedPelanggan(item)}
                   >
-                    <Text>
+                    <Text style={styles.listItemText}>
                       {item.nama} ({item.nomorPelanggan})
                     </Text>
                   </TouchableOpacity>
@@ -343,85 +329,74 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
             </>
           )}
 
-          <Text style={styles.subtitle}>Keluhan</Text>
+          <Text style={[styles.fieldLabel, styles.fieldLabelSpacing]}>Keluhan</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
             placeholder="Tulis keluhan Pelanggan"
+            placeholderTextColor="#9ca3af"
             value={keluhan}
             onChangeText={setKeluhan}
             multiline
           />
-        </>
+        </View>
       ) : null}
 
       {jenis === "maintenance" ? (
-        <>
-          <Text style={styles.subtitle}>ODP</Text>
-          <View style={styles.optionRow}>
-            {odpList.map((odp) => (
-              <TouchableOpacity
-                key={odp.id}
-                style={[
-                  styles.option,
-                  maintenanceOdpId === odp.id && styles.optionSelected,
-                ]}
-                onPress={() => setMaintenanceOdpId(odp.id)}
-              >
-                <Text
-                  style={
-                    maintenanceOdpId === odp.id
-                      ? styles.optionTextSelected
-                      : styles.optionText
-                  }
-                >
-                  {odp.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        <View style={styles.sectionCard}>
+          <Text style={styles.fieldLabel}>ODP</Text>
+          {odpList.length === 0 ? (
+            <Text style={styles.error}>Belum ada ODP — buat ODP dulu di Kelola ODP.</Text>
+          ) : (
+            <Dropdown
+              variant="field"
+              searchable
+              title="Pilih ODP"
+              valueLabel={maintenanceOdpLabel}
+              options={odpList.map((odp) => ({
+                id: odp.id,
+                label: odp.wilayahNama ? `${odp.label} (${odp.wilayahNama})` : odp.label,
+              }))}
+              onSelect={setMaintenanceOdpId}
+            />
+          )}
 
-          <Text style={styles.subtitle}>Deskripsi Pekerjaan</Text>
+          <Text style={[styles.fieldLabel, styles.fieldLabelSpacing]}>Deskripsi Pekerjaan</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
             placeholder="Misal: migrasi kabel ke ODC baru"
+            placeholderTextColor="#9ca3af"
             value={deskripsiPekerjaan}
             onChangeText={setDeskripsiPekerjaan}
             multiline
           />
-        </>
+        </View>
       ) : null}
 
-      <Text style={styles.subtitle}>Teknisi (semua Wilayah)</Text>
-      {teknisiList.length === 0 ? (
-        <Text style={styles.error}>
-          Belum ada akun Teknisi — buat dulu di Kelola Akun.
-        </Text>
-      ) : (
-        <View style={styles.optionRow}>
-          {teknisiList.map((teknisi) => (
-            <TouchableOpacity
-              key={teknisi.id}
-              style={[
-                styles.option,
-                selectedTeknisiIds.includes(teknisi.id) && styles.optionSelected,
-              ]}
-              onPress={() => toggleTeknisi(teknisi.id)}
-            >
-              <Text
-                style={
-                  selectedTeknisiIds.includes(teknisi.id)
-                    ? styles.optionTextSelected
-                    : styles.optionText
-                }
-              >
-                {teknisi.nama} ({teknisi.wilayahNama ?? "Wilayah tidak diketahui"})
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+      <View style={styles.sectionCard}>
+        <Text style={styles.subtitle}>Teknisi (semua Wilayah)</Text>
+        {teknisiList.length === 0 ? (
+          <Text style={styles.error}>Belum ada akun Teknisi — buat dulu di Kelola Akun.</Text>
+        ) : (
+          <View style={styles.chipRow}>
+            {teknisiList.map((teknisi) => {
+              const isSelected = selectedTeknisiIds.includes(teknisi.id);
+              return (
+                <TouchableOpacity
+                  key={teknisi.id}
+                  style={[styles.chip, isSelected && styles.chipSelected]}
+                  onPress={() => toggleTeknisi(teknisi.id)}
+                >
+                  <Text style={isSelected ? styles.chipTextSelected : styles.chipText}>
+                    {teknisi.nama} ({teknisi.wilayahNama ?? "Wilayah tidak diketahui"})
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+      </View>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text style={[styles.error, styles.errorSpacing]}>{error}</Text> : null}
 
       <TouchableOpacity
         style={[styles.button, !canSubmit && styles.buttonDisabled]}
@@ -447,21 +422,47 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: 24,
-    backgroundColor: "#fff",
+    backgroundColor: "#F8FAFC",
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
     color: "#111827",
     marginTop: 16,
-    marginBottom: 4,
+  },
+  count: {
+    fontSize: 13,
+    color: "#6b7280",
+    marginTop: 2,
+    marginBottom: 16,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
-    color: "#374151",
-    marginTop: 18,
+    color: "#111827",
+    marginBottom: 12,
+  },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#6b7280",
     marginBottom: 8,
+  },
+  fieldLabelSpacing: {
+    marginTop: 4,
+  },
+  sectionCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E4E7EB",
+    padding: 16,
+    marginBottom: 14,
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   selectedBox: {
     flexDirection: "row",
@@ -472,9 +473,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#f9fafb",
     borderRadius: 12,
     padding: 14,
+    marginBottom: 12,
+  },
+  selectedBoxText: {
+    fontSize: 15,
+    color: "#111827",
+    flex: 1,
+    marginRight: 12,
   },
   changeLink: {
-    color: "#2563eb",
+    color: "#1B7396",
     fontWeight: "600",
   },
   input: {
@@ -486,27 +494,49 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     fontSize: 15,
     color: "#111827",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   textArea: {
-    minHeight: 80,
+    minHeight: 90,
     textAlignVertical: "top",
+  },
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f3f4f6",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    marginBottom: 8,
+  },
+  searchIcon: {
+    fontSize: 14,
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 11,
+    fontSize: 14,
+    color: "#111827",
   },
   list: {
     marginBottom: 4,
   },
   listItem: {
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 4,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: "#eef0f2",
   },
-  optionRow: {
+  listItemText: {
+    fontSize: 14,
+    color: "#111827",
+  },
+  chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
   },
-  option: {
+  chip: {
     borderWidth: 1,
     borderColor: "#e5e7eb",
     backgroundColor: "#f9fafb",
@@ -514,31 +544,33 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     paddingHorizontal: 14,
   },
-  optionSelected: {
-    backgroundColor: "#2563eb",
-    borderColor: "#2563eb",
+  chipSelected: {
+    backgroundColor: "#1B7396",
+    borderColor: "#1B7396",
   },
-  optionText: {
+  chipText: {
     color: "#374151",
     fontSize: 13,
   },
-  optionTextSelected: {
+  chipTextSelected: {
     color: "#fff",
     fontSize: 13,
     fontWeight: "600",
   },
   error: {
-    color: "#c0392b",
-    marginTop: 8,
-    marginBottom: 8,
+    color: "#DC2626",
+    fontSize: 13,
+  },
+  errorSpacing: {
+    marginBottom: 12,
   },
   button: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#1B7396",
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: "center",
-    marginTop: 20,
-    shadowColor: "#2563eb",
+    marginTop: 4,
+    shadowColor: "#1B7396",
     shadowOpacity: 0.25,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },

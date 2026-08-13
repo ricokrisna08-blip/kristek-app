@@ -82,6 +82,40 @@ export function WilayahManagementScreen({ onBack }: Props) {
       <Text style={styles.title}>Manajemen Wilayah</Text>
       <Text style={styles.count}>{wilayahList.length} Wilayah terdaftar</Text>
 
+      <View style={styles.sectionCard}>
+        <Text style={styles.subtitle}>Tambah Wilayah Baru</Text>
+
+        <Text style={styles.fieldLabel}>Nama Wilayah</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Misal: Kelurahan Kemiri Muka"
+          placeholderTextColor="#9ca3af"
+          value={nama}
+          onChangeText={setNama}
+        />
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <TouchableOpacity
+          style={[styles.button, !nama.trim() && styles.buttonDisabled]}
+          onPress={() => setIsConfirmVisible(true)}
+          disabled={!nama.trim()}
+        >
+          <Text style={styles.buttonText}>Tambah Wilayah</Text>
+        </TouchableOpacity>
+
+        <ConfirmModal
+          visible={isConfirmVisible}
+          title="Konfirmasi Wilayah Baru"
+          fields={[{ label: "Nama Wilayah", value: nama }]}
+          isSubmitting={isSubmitting}
+          onCancel={() => setIsConfirmVisible(false)}
+          onConfirm={handleConfirm}
+        />
+      </View>
+
+      <Text style={styles.subtitle}>Daftar Wilayah</Text>
+
       {isLoading ? (
         <ActivityIndicator style={styles.loading} />
       ) : wilayahList.length === 0 ? (
@@ -106,35 +140,6 @@ export function WilayahManagementScreen({ onBack }: Props) {
         </View>
       )}
 
-      <Text style={styles.subtitle}>Tambah Wilayah Baru</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Nama Wilayah"
-        placeholderTextColor="#9ca3af"
-        value={nama}
-        onChangeText={setNama}
-      />
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      <TouchableOpacity
-        style={[styles.button, !nama.trim() && styles.buttonDisabled]}
-        onPress={() => setIsConfirmVisible(true)}
-        disabled={!nama.trim()}
-      >
-        <Text style={styles.buttonText}>Tambah Wilayah</Text>
-      </TouchableOpacity>
-
-      <ConfirmModal
-        visible={isConfirmVisible}
-        title="Konfirmasi Wilayah Baru"
-        fields={[{ label: "Nama Wilayah", value: nama }]}
-        isSubmitting={isSubmitting}
-        onCancel={() => setIsConfirmVisible(false)}
-        onConfirm={handleConfirm}
-      />
-
       <DeleteConfirmModal
         visible={deleteTarget !== null}
         itemLabel={deleteTarget?.nama ?? ""}
@@ -151,7 +156,7 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: 24,
-    backgroundColor: "#fff",
+    backgroundColor: "#F8FAFC",
   },
   title: {
     fontSize: 22,
@@ -164,6 +169,19 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     marginTop: 2,
     marginBottom: 16,
+  },
+  sectionCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E4E7EB",
+    padding: 16,
+    marginBottom: 8,
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   subtitle: {
     fontSize: 15,
@@ -186,13 +204,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#f0f0f0",
+    borderColor: "#E4E7EB",
     paddingVertical: 14,
     paddingHorizontal: 16,
     marginBottom: 10,
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   cardName: {
     flex: 1,
@@ -207,7 +230,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   deleteLink: {
-    color: "#c0392b",
+    color: "#DC2626",
     fontSize: 13,
     fontWeight: "600",
   },
@@ -222,16 +245,22 @@ const styles = StyleSheet.create({
     color: "#111827",
     marginBottom: 12,
   },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#6b7280",
+    marginBottom: 8,
+  },
   error: {
-    color: "#c0392b",
+    color: "#DC2626",
     marginBottom: 10,
   },
   button: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#1B7396",
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: "center",
-    shadowColor: "#2563eb",
+    shadowColor: "#1B7396",
     shadowOpacity: 0.25,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },

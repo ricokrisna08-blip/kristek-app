@@ -1,4 +1,5 @@
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { UserProfile } from "../auth/profile";
 import {
   canManageAccounts,
@@ -58,6 +59,7 @@ export function HomeScreen({
   onNavigateToGangguan,
   onLogout,
 }: Props) {
+  const insets = useSafeAreaInsets();
   const menuItems: MenuItem[] = [];
 
   if (canManageAccounts(profile.role)) {
@@ -105,22 +107,30 @@ export function HomeScreen({
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.headerRow}>
-        <Image
-          source={require("../../assets/Logo-kristek-transparent.png")}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        <NotifikasiBell userId={profile.id} />
+      <View style={[styles.hero, { paddingTop: insets.top + 20 }]}>
+        <View style={styles.heroRow}>
+          <Image
+            source={require("../../assets/Logo_kristek_apps.png")}
+            style={styles.logo}
+            resizeMode="cover"
+          />
+          <View style={styles.bellWrap}>
+            <NotifikasiBell userId={profile.id} />
+          </View>
+        </View>
       </View>
 
       <Text style={styles.title}>{GREETING_BY_ROLE[profile.role]}</Text>
-      <Text style={styles.subtitle}>Halo, {profile.nama}</Text>
+      <Text style={styles.subtitle}>
+        Halo, <Text style={styles.subtitleName}>{profile.nama}</Text>
+      </Text>
 
       <View style={styles.grid}>
         {menuItems.map((item) => (
           <TouchableOpacity key={item.key} style={styles.gridItem} onPress={item.onPress}>
-            <Text style={styles.gridIcon}>{item.icon}</Text>
+            <View style={styles.gridIconBadge}>
+              <Text style={styles.gridIcon}>{item.icon}</Text>
+            </View>
             <Text style={styles.gridLabel}>{item.label}</Text>
           </TouchableOpacity>
         ))}
@@ -133,27 +143,49 @@ export function HomeScreen({
   );
 }
 
+const KRISTEK_TEAL = "#1B7396";
+const KRISTEK_NAVY = "#0B2D5B";
+
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    padding: 24,
-    backgroundColor: "#fff",
+    paddingBottom: 32,
+    backgroundColor: "#F8FAFC",
   },
-  headerRow: {
+  hero: {
+    backgroundColor: KRISTEK_NAVY,
+    paddingBottom: 28,
+    paddingHorizontal: 24,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    marginBottom: 20,
+  },
+  heroRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   logo: {
-    width: 44,
-    height: 36,
+    width: 54,
+    height: 45,
+    borderRadius: 12,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  bellWrap: {
+    backgroundColor: "rgba(255,255,255,0.14)",
+    borderRadius: 20,
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#111827",
+    color: KRISTEK_NAVY,
     textAlign: "center",
-    marginTop: 20,
+    paddingHorizontal: 24,
   },
   subtitle: {
     marginTop: 6,
@@ -161,6 +193,11 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     textAlign: "center",
     marginBottom: 8,
+    paddingHorizontal: 24,
+  },
+  subtitleName: {
+    color: KRISTEK_TEAL,
+    fontWeight: "700",
   },
   grid: {
     flexDirection: "row",
@@ -168,44 +205,53 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     gap: 12,
     marginTop: 16,
+    paddingHorizontal: 24,
   },
   gridItem: {
     width: "30%",
-    minHeight: 90,
-    backgroundColor: "#eff6ff",
+    minHeight: 100,
+    backgroundColor: "#FFFFFF",
     borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E4E7EB",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 6,
-    shadowColor: "#1e3a8a",
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
-  gridIcon: {
-    fontSize: 28,
+  gridIconBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#E7F1F5",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 8,
+  },
+  gridIcon: {
+    fontSize: 22,
   },
   gridLabel: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#1e3a8a",
+    color: KRISTEK_NAVY,
     textAlign: "center",
   },
   logoutButton: {
     marginTop: 28,
     alignSelf: "center",
-    borderWidth: 1,
-    borderColor: "#fecaca",
-    backgroundColor: "#fef2f2",
+    backgroundColor: "#FEE2E2",
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 24,
   },
   logoutButtonText: {
-    color: "#c0392b",
-    fontWeight: "600",
+    color: "#DC2626",
+    fontWeight: "700",
   },
 });

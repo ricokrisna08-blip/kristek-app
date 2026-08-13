@@ -13,9 +13,9 @@ const STEPS: { key: ProgressStepKey; label: string }[] = [
 ];
 
 const COLOR_BY_STATE: Record<ProgressStepState, string> = {
-  done: "#16a34a",
-  active: "#2563eb",
-  blocked: "#d97706",
+  done: "#059669",
+  active: "#1B7396",
+  blocked: "#D97706",
   upcoming: "#d1d5db",
 };
 
@@ -108,13 +108,13 @@ const styles = StyleSheet.create({
   cancelledBanner: {
     marginTop: 8,
     marginBottom: 8,
-    backgroundColor: "#fee2e2",
+    backgroundColor: "#FEE2E2",
     borderRadius: 8,
     paddingVertical: 8,
     alignItems: "center",
   },
   cancelledText: {
-    color: "#dc2626",
+    color: "#DC2626",
     fontWeight: "700",
   },
 });

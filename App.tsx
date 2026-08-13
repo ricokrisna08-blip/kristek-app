@@ -222,16 +222,21 @@ export default function App() {
     );
   }
 
+  const hasDarkHeader = !profile || screen === "home";
+
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView
+        style={styles.safeArea}
+        edges={hasDarkHeader ? ["bottom", "left", "right"] : ["top", "bottom", "left", "right"]}
+      >
         {profile ? (
           renderSignedIn(profile)
         ) : (
           <LoginScreen onSignedIn={handleSignedIn} />
         )}
       </SafeAreaView>
-      <StatusBar style="auto" />
+      <StatusBar style={hasDarkHeader ? "light" : "auto"} />
     </SafeAreaProvider>
   );
 }

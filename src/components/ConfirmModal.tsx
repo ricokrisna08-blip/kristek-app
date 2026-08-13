@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   confirmButton: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#1B7396",
   },
   confirmButtonText: {
     color: "#fff",

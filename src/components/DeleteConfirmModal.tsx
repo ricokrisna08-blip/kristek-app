@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   error: {
-    color: "#c0392b",
+    color: "#DC2626",
     marginBottom: 12,
   },
   buttonRow: {
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   deleteButton: {
-    backgroundColor: "#c0392b",
+    backgroundColor: "#DC2626",
   },
   deleteButtonText: {
     color: "#fff",

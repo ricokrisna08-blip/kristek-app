@@ -73,16 +73,19 @@ export function LaporanPerformaScreen({ onBack }: Props) {
   );
 }
 
+const KRISTEK_TEAL = "#1B7396";
+const KRISTEK_NAVY = "#0B2D5B";
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: "#fff",
+    backgroundColor: "#F8FAFC",
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#111827",
+    color: KRISTEK_NAVY,
     marginTop: 16,
   },
   count: {
@@ -99,12 +102,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   card: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#FFFFFF",
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#f0f0f0",
+    borderColor: "#E4E7EB",
     padding: 16,
     marginBottom: 12,
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   cardHeader: {
     flexDirection: "row",
@@ -115,7 +123,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#2563eb",
+    backgroundColor: KRISTEK_TEAL,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
@@ -141,7 +149,7 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 32,
-    backgroundColor: "#e5e7eb",
+    backgroundColor: "#E4E7EB",
   },
   statLabel: {
     color: "#6b7280",
@@ -152,6 +160,6 @@ const styles = StyleSheet.create({
   statValue: {
     fontWeight: "700",
     fontSize: 16,
-    color: "#2563eb",
+    color: KRISTEK_TEAL,
   },
 });
