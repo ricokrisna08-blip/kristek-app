@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -82,6 +83,7 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
   const [cancelError, setCancelError] = useState<string | null>(null);
 
   const [fotoList, setFotoList] = useState<TiketFoto[]>([]);
+  const [viewingFoto, setViewingFoto] = useState<TiketFoto | null>(null);
   const [deleteFotoTarget, setDeleteFotoTarget] = useState<TiketFoto | null>(null);
   const [deleteFotoError, setDeleteFotoError] = useState<string | null>(null);
   const [isDeletingFoto, setIsDeletingFoto] = useState(false);
@@ -439,7 +441,9 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
           <View style={styles.fotoRow}>
             {fotoList.map((foto) => (
               <View key={foto.id} style={styles.fotoItem}>
-                <Image source={{ uri: foto.url }} style={styles.fotoImage} />
+                <TouchableOpacity activeOpacity={0.85} onPress={() => setViewingFoto(foto)}>
+                  <Image source={{ uri: foto.url }} style={styles.fotoImage} />
+                </TouchableOpacity>
                 <Text style={styles.fotoLabel}>
                   {foto.type === "before" ? "Before" : "After"}
                 </Text>
@@ -661,6 +665,34 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
         onCancel={() => setDeleteFotoTarget(null)}
         onConfirm={handleDeleteFoto}
       />
+
+      <Modal
+        visible={viewingFoto !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setViewingFoto(null)}
+      >
+        <TouchableOpacity
+          style={styles.fotoViewerBackdrop}
+          activeOpacity={1}
+          onPress={() => setViewingFoto(null)}
+        >
+          {viewingFoto ? (
+            <Image
+              source={{ uri: viewingFoto.url }}
+              style={styles.fotoViewerImage}
+              resizeMode="contain"
+            />
+          ) : null}
+          <TouchableOpacity
+            style={styles.fotoViewerCloseButton}
+            onPress={() => setViewingFoto(null)}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Text style={styles.fotoViewerCloseText}>✕</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </ScrollView>
   );
 }
@@ -913,6 +945,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#DC2626",
     fontWeight: "600",
+  },
+  fotoViewerBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.92)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fotoViewerImage: {
+    width: "100%",
+    height: "80%",
+  },
+  fotoViewerCloseButton: {
+    position: "absolute",
+    top: 48,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fotoViewerCloseText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "700",
   },
   timeline: {
     marginTop: 8,
