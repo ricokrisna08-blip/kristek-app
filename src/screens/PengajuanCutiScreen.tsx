@@ -23,8 +23,21 @@ type Props = {
   onBack: () => void;
 };
 
+// tanggal_mulai/tanggal_selesai adalah kolom `date` murni ("YYYY-MM-DD"),
+// jadi perlu ditambah "T00:00:00" supaya di-parse sebagai waktu lokal,
+// bukan tengah malam UTC yang bisa geser mundur satu hari.
 function formatTanggal(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+// created_at sudah timestamp lengkap (dengan jam & timezone) -- JANGAN
+// ditambah "T00:00:00" lagi, itu yang bikin hasilnya "Invalid Date".
+function formatWaktuDiajukan(iso: string): string {
+  return new Date(iso).toLocaleDateString("id-ID", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -207,7 +220,7 @@ export function PengajuanCutiScreen({ profile, onBack }: Props) {
                 {formatTanggal(item.tanggalMulai)} — {formatTanggal(item.tanggalSelesai)}
               </Text>
               <Text style={styles.cardAlasan}>{item.alasan}</Text>
-              <Text style={styles.cardDate}>Diajukan {formatTanggal(item.createdAt)}</Text>
+              <Text style={styles.cardDate}>Diajukan {formatWaktuDiajukan(item.createdAt)}</Text>
             </View>
           ))}
         </View>
