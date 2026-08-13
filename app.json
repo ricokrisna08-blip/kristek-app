@@ -31,7 +31,8 @@
           "photosPermission": "Aplikasi butuh akses galeri untuk memilih foto bukti pekerjaan.",
           "cameraPermission": "Aplikasi butuh akses kamera untuk mengambil foto bukti pekerjaan."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ]
   }
 }

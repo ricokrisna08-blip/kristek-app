@@ -8,6 +8,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import { supabase } from "../lib/supabase";
 import { submitPengajuanCuti } from "../cuti/submitPengajuanCuti";
 import { listPengajuanCuti, type PengajuanCutiItem } from "../cuti/listPengajuanCuti";
@@ -21,11 +24,28 @@ type Props = {
 };
 
 function formatTanggal(iso: string): string {
-  return new Date(iso).toLocaleDateString("id-ID", {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("id-ID", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
+}
+
+function toDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateString(value: string): Date {
+  return value ? new Date(`${value}T00:00:00`) : new Date();
+}
+
+function startOfToday(): Date {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now;
 }
 
 export function PengajuanCutiScreen({ profile, onBack }: Props) {
@@ -38,6 +58,8 @@ export function PengajuanCutiScreen({ profile, onBack }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
+  const [isMulaiPickerVisible, setIsMulaiPickerVisible] = useState(false);
+  const [isSelesaiPickerVisible, setIsSelesaiPickerVisible] = useState(false);
 
   async function reload() {
     setIsLoading(true);
@@ -75,6 +97,23 @@ export function PengajuanCutiScreen({ profile, onBack }: Props) {
 
   const canSubmit = Boolean(tanggalMulai.trim() && tanggalSelesai.trim() && alasan.trim());
 
+  function handleChangeMulai(event: DateTimePickerEvent, selectedDate?: Date) {
+    setIsMulaiPickerVisible(false);
+    if (event.type !== "set" || !selectedDate) return;
+
+    const value = toDateString(selectedDate);
+    setTanggalMulai(value);
+    if (tanggalSelesai && tanggalSelesai < value) {
+      setTanggalSelesai(value);
+    }
+  }
+
+  function handleChangeSelesai(event: DateTimePickerEvent, selectedDate?: Date) {
+    setIsSelesaiPickerVisible(false);
+    if (event.type !== "set" || !selectedDate) return;
+    setTanggalSelesai(toDateString(selectedDate));
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <BackButton onPress={onBack} />
@@ -84,22 +123,41 @@ export function PengajuanCutiScreen({ profile, onBack }: Props) {
 
       <View style={styles.sectionCard}>
         <Text style={styles.fieldLabel}>Tanggal Mulai</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Contoh: 2026-08-20"
-          placeholderTextColor="#9ca3af"
-          value={tanggalMulai}
-          onChangeText={setTanggalMulai}
-        />
+        <TouchableOpacity style={styles.dateField} onPress={() => setIsMulaiPickerVisible(true)}>
+          <Text style={tanggalMulai ? styles.dateFieldText : styles.dateFieldPlaceholder}>
+            {tanggalMulai ? formatTanggal(tanggalMulai) : "Pilih tanggal mulai"}
+          </Text>
+          <Text style={styles.dateFieldIcon}>📅</Text>
+        </TouchableOpacity>
+        {isMulaiPickerVisible ? (
+          <DateTimePicker
+            value={parseDateString(tanggalMulai)}
+            mode="date"
+            display="default"
+            minimumDate={startOfToday()}
+            onChange={handleChangeMulai}
+          />
+        ) : null}
 
         <Text style={styles.fieldLabel}>Tanggal Selesai</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Contoh: 2026-08-22"
-          placeholderTextColor="#9ca3af"
-          value={tanggalSelesai}
-          onChangeText={setTanggalSelesai}
-        />
+        <TouchableOpacity
+          style={styles.dateField}
+          onPress={() => setIsSelesaiPickerVisible(true)}
+        >
+          <Text style={tanggalSelesai ? styles.dateFieldText : styles.dateFieldPlaceholder}>
+            {tanggalSelesai ? formatTanggal(tanggalSelesai) : "Pilih tanggal selesai"}
+          </Text>
+          <Text style={styles.dateFieldIcon}>📅</Text>
+        </TouchableOpacity>
+        {isSelesaiPickerVisible ? (
+          <DateTimePicker
+            value={parseDateString(tanggalSelesai || tanggalMulai)}
+            mode="date"
+            display="default"
+            minimumDate={parseDateString(tanggalMulai || toDateString(startOfToday()))}
+            onChange={handleChangeSelesai}
+          />
+        ) : null}
 
         <Text style={styles.fieldLabel}>Alasan</Text>
         <TextInput
@@ -218,6 +276,29 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 90,
     textAlignVertical: "top",
+  },
+  dateField: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    backgroundColor: "#f9fafb",
+    borderRadius: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    marginBottom: 12,
+  },
+  dateFieldText: {
+    fontSize: 15,
+    color: "#111827",
+  },
+  dateFieldPlaceholder: {
+    fontSize: 15,
+    color: "#9ca3af",
+  },
+  dateFieldIcon: {
+    fontSize: 15,
   },
   error: {
     color: "#DC2626",
