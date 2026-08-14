@@ -25,7 +25,7 @@ export function canViewPelanggan(role: Role): boolean {
 }
 
 export function canCreatePelanggan(role: Role): boolean {
-  return role === "admin";
+  return role === "admin" || role === "pemilik";
 }
 
 export function canDeletePelanggan(role: Role): boolean {
@@ -46,6 +46,10 @@ export function canMarkSudahBayarBulanIni(role: Role): boolean {
 
 export function canManageIsolir(role: Role): boolean {
   return role === "pemilik";
+}
+
+export function canManageMikrotikUsername(role: Role): boolean {
+  return role === "admin" || role === "pemilik";
 }
 
 export function canManagePaket(role: Role): boolean {
@@ -74,4 +78,12 @@ export function canSubmitCuti(role: Role): boolean {
 
 export function canViewPengajuanCuti(role: Role): boolean {
   return role === "admin" || role === "pemilik";
+}
+
+export function canDeletePengajuanCuti(role: Role): boolean {
+  return role === "admin" || role === "pemilik";
+}
+
+export function canTriggerWaBlast(role: Role): boolean {
+  return role === "pemilik";
 }

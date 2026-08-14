@@ -21,6 +21,7 @@ import { LaporanPerformaScreen } from "./src/screens/LaporanPerformaScreen";
 import { LaporanKeuanganScreen } from "./src/screens/LaporanKeuanganScreen";
 import { PengajuanCutiScreen } from "./src/screens/PengajuanCutiScreen";
 import { DaftarPengajuanCutiScreen } from "./src/screens/DaftarPengajuanCutiScreen";
+import { WaBlastScreen } from "./src/screens/WaBlastScreen";
 
 type Screen =
   | "home"
@@ -35,6 +36,7 @@ type Screen =
   | "laporanKeuangan"
   | "pengajuanCuti"
   | "daftarPengajuanCuti"
+  | "waBlast"
   | "myTiketInstalasi"
   | "myTiketMaintenance"
   | "myTiketGangguan"
@@ -179,7 +181,12 @@ export default function App() {
       );
     }
     if (screen === "daftarPengajuanCuti") {
-      return <DaftarPengajuanCutiScreen onBack={() => setScreen("home")} />;
+      return (
+        <DaftarPengajuanCutiScreen profile={currentProfile} onBack={() => setScreen("home")} />
+      );
+    }
+    if (screen === "waBlast") {
+      return <WaBlastScreen profile={currentProfile} onBack={() => setScreen("home")} />;
     }
     if (screen === "myTiketInstalasi") {
       return (
@@ -233,6 +240,7 @@ export default function App() {
         onNavigateToLaporanKeuangan={() => setScreen("laporanKeuangan")}
         onNavigateToPengajuanCuti={() => setScreen("pengajuanCuti")}
         onNavigateToDaftarPengajuanCuti={() => setScreen("daftarPengajuanCuti")}
+        onNavigateToWaBlast={() => setScreen("waBlast")}
         onNavigateToInstalasi={() => setScreen("myTiketInstalasi")}
         onNavigateToInstallationEvidence={() => setScreen("installationEvidence")}
         onNavigateToMaintenance={() => setScreen("myTiketMaintenance")}

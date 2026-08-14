@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { supabase } from "../lib/supabase";
 import { listPengajuanCuti, type PengajuanCutiItem } from "../cuti/listPengajuanCuti";
+import { deletePengajuanCuti } from "../cuti/deletePengajuanCuti";
+import { canDeletePengajuanCuti } from "../auth/permissions";
+import type { UserProfile } from "../auth/profile";
 import { BackButton } from "../components/BackButton";
+import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
 
 type Props = {
+  profile: UserProfile;
   onBack: () => void;
 };
 
@@ -29,16 +34,42 @@ function formatWaktuDiajukan(iso: string): string {
   });
 }
 
-export function DaftarPengajuanCutiScreen({ onBack }: Props) {
+export function DaftarPengajuanCutiScreen({ profile, onBack }: Props) {
   const [items, setItems] = useState<PengajuanCutiItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<PengajuanCutiItem | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const canDelete = canDeletePengajuanCuti(profile.role);
+
+  async function reload() {
+    setIsLoading(true);
+    const result = await listPengajuanCuti(supabase);
+    setItems(result);
+    setIsLoading(false);
+  }
 
   useEffect(() => {
-    listPengajuanCuti(supabase).then((result) => {
-      setItems(result);
-      setIsLoading(false);
-    });
+    reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleteError(null);
+    setIsDeleting(true);
+    const result = await deletePengajuanCuti(supabase, deleteTarget.id);
+    setIsDeleting(false);
+
+    if (!result.success) {
+      setDeleteError(result.error);
+      return;
+    }
+
+    setDeleteTarget(null);
+    await reload();
+  }
 
   return (
     <View style={styles.container}>
@@ -70,10 +101,28 @@ export function DaftarPengajuanCutiScreen({ onBack }: Props) {
                 <Text style={styles.cardAlasan}>{item.alasan}</Text>
                 <Text style={styles.cardDate}>Diajukan {formatWaktuDiajukan(item.createdAt)}</Text>
               </View>
+              {canDelete ? (
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => setDeleteTarget(item)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.deleteLink}>Hapus</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           )}
         />
       )}
+
+      <DeleteConfirmModal
+        visible={deleteTarget !== null}
+        itemLabel={`pengajuan cuti ${deleteTarget?.teknisiNama ?? ""}`}
+        error={deleteError}
+        isDeleting={isDeleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+      />
     </View>
   );
 }
@@ -111,6 +160,7 @@ const styles = StyleSheet.create({
   },
   card: {
     flexDirection: "row",
+    alignItems: "flex-start",
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     borderWidth: 1,
@@ -161,5 +211,15 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#9ca3af",
     marginTop: 6,
+  },
+  deleteButton: {
+    marginLeft: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  deleteLink: {
+    color: "#DC2626",
+    fontSize: 12,
+    fontWeight: "700",
   },
 });

@@ -81,3 +81,21 @@ test("persen is 0 when omset is 0, not NaN or Infinity", async () => {
   expect(result[0].persen).toBe(0);
   expect(result[0].totalUser).toBe(0);
 });
+
+test("only returns the last 3 months (2 historical + the live current month)", async () => {
+  const client = fakeClient({
+    history: [
+      { periode: "2025-06-01", total_user: 50, omset: 9000000, sudah_bayar: 9000000, belum_bayar: 0 },
+      { periode: "2025-07-01", total_user: 55, omset: 10000000, sudah_bayar: 9000000, belum_bayar: 1000000 },
+      { periode: "2025-08-01", total_user: 60, omset: 11000000, sudah_bayar: 11000000, belum_bayar: 0 },
+    ],
+    pelanggan: [{ harga: 165000, sudah_bayar_bulan_ini: true }],
+  });
+
+  const result = await getLaporanKeuangan(client);
+
+  expect(result).toHaveLength(3);
+  expect(result[0].periode).toBe("2025-07-01");
+  expect(result[1].periode).toBe("2025-08-01");
+  expect(result[2].isBulanIni).toBe(true);
+});

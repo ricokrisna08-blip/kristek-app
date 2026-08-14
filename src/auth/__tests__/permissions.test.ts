@@ -13,11 +13,13 @@ import {
   canEditPelangganHarga,
   canMarkSudahBayarBulanIni,
   canManageIsolir,
+  canManageMikrotikUsername,
   canViewAllTiket,
   canViewLaporanPerforma,
   canViewLaporanKeuangan,
   canSubmitCuti,
   canViewPengajuanCuti,
+  canTriggerWaBlast,
 } from "../permissions";
 
 test("Pemilik can manage accounts", () => {
@@ -84,8 +86,8 @@ test("Admin can create Pelanggan", () => {
   expect(canCreatePelanggan("admin")).toBe(true);
 });
 
-test("Pemilik cannot create Pelanggan", () => {
-  expect(canCreatePelanggan("pemilik")).toBe(false);
+test("Pemilik can create Pelanggan", () => {
+  expect(canCreatePelanggan("pemilik")).toBe(true);
 });
 
 test("Teknisi cannot create Pelanggan", () => {
@@ -114,6 +116,18 @@ test("Admin cannot manage isolir", () => {
 
 test("Teknisi cannot manage isolir", () => {
   expect(canManageIsolir("teknisi")).toBe(false);
+});
+
+test("Admin can manage Username Mikrotik", () => {
+  expect(canManageMikrotikUsername("admin")).toBe(true);
+});
+
+test("Pemilik can manage Username Mikrotik", () => {
+  expect(canManageMikrotikUsername("pemilik")).toBe(true);
+});
+
+test("Teknisi cannot manage Username Mikrotik", () => {
+  expect(canManageMikrotikUsername("teknisi")).toBe(false);
 });
 
 test("Pemilik can manage Paket", () => {
@@ -232,4 +246,13 @@ test("Admin and Pemilik can view all pengajuan cuti", () => {
 
 test("Teknisi cannot view all pengajuan cuti (only their own via submission screen)", () => {
   expect(canViewPengajuanCuti("teknisi")).toBe(false);
+});
+
+test("Pemilik can trigger WA blast", () => {
+  expect(canTriggerWaBlast("pemilik")).toBe(true);
+});
+
+test("Admin and Teknisi cannot trigger WA blast", () => {
+  expect(canTriggerWaBlast("admin")).toBe(false);
+  expect(canTriggerWaBlast("teknisi")).toBe(false);
 });

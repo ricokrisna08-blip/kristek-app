@@ -95,5 +95,6 @@ export async function getLaporanKeuangan(
     isBulanIni: true,
   });
 
-  return items;
+  // Tampilkan cuma 3 bulan terakhir (termasuk bulan berjalan yang live).
+  return items.slice(-3);
 }

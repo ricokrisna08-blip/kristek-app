@@ -17,6 +17,7 @@ import {
   canViewLaporanKeuangan,
   canSubmitCuti,
   canViewPengajuanCuti,
+  canTriggerWaBlast,
 } from "../auth/permissions";
 import { NotifikasiBell } from "../components/NotifikasiBell";
 
@@ -58,6 +59,7 @@ type Props = {
   onNavigateToLaporanKeuangan: () => void;
   onNavigateToPengajuanCuti: () => void;
   onNavigateToDaftarPengajuanCuti: () => void;
+  onNavigateToWaBlast: () => void;
   onNavigateToInstalasi: () => void;
   onNavigateToInstallationEvidence: () => void;
   onNavigateToMaintenance: () => void;
@@ -85,6 +87,7 @@ export function HomeScreen({
   onNavigateToLaporanKeuangan,
   onNavigateToPengajuanCuti,
   onNavigateToDaftarPengajuanCuti,
+  onNavigateToWaBlast,
   onNavigateToInstalasi,
   onNavigateToInstallationEvidence,
   onNavigateToMaintenance,
@@ -145,6 +148,14 @@ export function HomeScreen({
       icon: "calendar",
       label: "Pengajuan Cuti",
       onPress: onNavigateToDaftarPengajuanCuti,
+    });
+  }
+  if (canTriggerWaBlast(profile.role)) {
+    menuItems.push({
+      key: "waBlast",
+      icon: "send",
+      label: "Blast Tagihan WA",
+      onPress: onNavigateToWaBlast,
     });
   }
   if (profile.role === "teknisi") {

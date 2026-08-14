@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  BackHandler,
   FlatList,
   Modal,
   ScrollView,
@@ -19,11 +20,12 @@ import {
 } from "../pelanggan/getPelangganDetail";
 import { listOdp, type OdpListItem } from "../odp/listOdp";
 import { listPaket, type Paket } from "../paket/listPaket";
-import { deletePelanggan } from "../pelanggan/deletePelanggan";
+import { deletePelanggan, checkPelangganCanBeDeleted } from "../pelanggan/deletePelanggan";
 import { updatePelanggan } from "../pelanggan/updatePelanggan";
 import { updatePelangganHarga } from "../pelanggan/updatePelangganHarga";
 import { updateSudahBayarBulanIni } from "../pelanggan/updateSudahBayarBulanIni";
-import { updateMikrotikUsername } from "../pelanggan/updateMikrotikUsername";
+import { createMikrotikSecret } from "../pelanggan/createMikrotikSecret";
+import { deleteMikrotikSecret } from "../pelanggan/deleteMikrotikSecret";
 import { setPelangganIsolir } from "../pelanggan/setPelangganIsolir";
 import { endPelangganConnection } from "../pelanggan/endPelangganConnection";
 import {
@@ -33,6 +35,7 @@ import {
   canEditPelangganHarga,
   canMarkSudahBayarBulanIni,
   canManageIsolir,
+  canManageMikrotikUsername,
 } from "../auth/permissions";
 import type { UserProfile } from "../auth/profile";
 import { ConfirmModal } from "../components/ConfirmModal";
@@ -72,6 +75,8 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
   const [noHp, setNoHp] = useState("");
   const [odpId, setOdpId] = useState<string | null>(null);
   const [paketId, setPaketId] = useState<string | null>(null);
+  const [addMikrotikUsernameInput, setAddMikrotikUsernameInput] = useState("");
+  const [addMikrotikWarning, setAddMikrotikWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
@@ -103,6 +108,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
 
   const [mikrotikUsernameInput, setMikrotikUsernameInput] = useState("");
   const [mikrotikError, setMikrotikError] = useState<string | null>(null);
+  const [mikrotikSuccessMessage, setMikrotikSuccessMessage] = useState<string | null>(null);
   const [isSavingMikrotikUsername, setIsSavingMikrotikUsername] = useState(false);
   const [isMikrotikUsernameSaved, setIsMikrotikUsernameSaved] = useState(false);
 
@@ -133,25 +139,42 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
+  // App.tsx punya hardwareBackPress listener sendiri yang langsung lompat
+  // ke Home begitu screen !== "home" -- tapi dia nggak tau soal navigasi
+  // internal di dalam screen ini (list -> detail). Listener di sini
+  // didaftarkan belakangan (RN manggil yang paling baru duluan) dan
+  // return true supaya event-nya berhenti di sini dulu: dari detail,
+  // tombol back Android balik ke list, bukan langsung ke Home. Cuma aktif
+  // selama ada selectedDetail -- begitu balik ke list, listener ini lepas
+  // sendiri dan tombol back berikutnya jatuh ke handler App.tsx seperti
+  // biasa (list -> Home).
+  useEffect(() => {
+    if (!selectedDetail) return;
+
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      setSelectedDetail(null);
+      return true;
+    });
+
+    return () => subscription.remove();
+  }, [selectedDetail]);
+
   function openAddModal() {
     setError(null);
     setNama("");
     setAlamat("");
     setNoHp("");
+    setAddMikrotikUsernameInput("");
+    setAddMikrotikWarning(null);
     setIsAddModalVisible(true);
   }
 
   async function handleConfirm() {
     setError(null);
 
-    if (!profile.wilayahId) {
-      setIsConfirmVisible(false);
-      setError("Akun Anda belum punya Wilayah — hubungi Pemilik.");
-      return;
-    }
     if (!odpId) {
       setIsConfirmVisible(false);
-      setError("Belum ada ODP di Wilayah Anda — buat ODP dulu.");
+      setError("Belum ada ODP — buat ODP dulu.");
       return;
     }
     if (!paketId) {
@@ -160,12 +183,19 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
       return;
     }
 
+    const odp = odpList.find((o) => o.id === odpId);
+    if (!odp) {
+      setIsConfirmVisible(false);
+      setError("ODP yang dipilih tidak valid.");
+      return;
+    }
+
     setIsSubmitting(true);
     const result = await createPelanggan(supabase, {
       nama,
       alamat,
       noHp,
-      wilayahId: profile.wilayahId,
+      wilayahId: odp.wilayahId,
       odpId,
       paketId,
     });
@@ -177,11 +207,30 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
       return;
     }
 
+    // Username Mikrotik di form Tambah itu opsional -- kalau diisi, coba
+    // langsung buat/link secret-nya. Pelanggan-nya sendiri sudah berhasil
+    // dibuat di titik ini, jadi kalau langkah Mikrotik ini gagal, tetap
+    // tutup modal & lanjut seperti biasa, cuma tampilkan warning supaya
+    // Admin/Pemilik tau harus set manual dari layar detail Pelanggan.
+    let mikrotikWarning: string | null = null;
+    if (addMikrotikUsernameInput.trim()) {
+      const mikrotikResult = await createMikrotikSecret(
+        supabase,
+        result.pelanggan.id,
+        addMikrotikUsernameInput.trim()
+      );
+      if (!mikrotikResult.success) {
+        mikrotikWarning = `Pelanggan berhasil dibuat, tapi gagal set Username Mikrotik: ${mikrotikResult.error} Coba set manual di layar detail Pelanggan.`;
+      }
+    }
+
     setIsConfirmVisible(false);
     setIsAddModalVisible(false);
     setNama("");
     setAlamat("");
     setNoHp("");
+    setAddMikrotikUsernameInput("");
+    setAddMikrotikWarning(mikrotikWarning);
     await reload();
   }
 
@@ -205,6 +254,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
     setHargaError(null);
     setMikrotikUsernameInput(detail?.mikrotikUsername ?? "");
     setMikrotikError(null);
+    setMikrotikSuccessMessage(null);
     setIsMikrotikUsernameSaved(false);
     setSudahBayarError(null);
     setIsolirError(null);
@@ -316,7 +366,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
 
     setMikrotikError(null);
     setIsSavingMikrotikUsername(true);
-    const result = await updateMikrotikUsername(
+    const result = await createMikrotikSecret(
       supabase,
       selectedDetail.id,
       mikrotikUsernameInput.trim()
@@ -329,6 +379,13 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
     }
 
     setSelectedDetail({ ...selectedDetail, mikrotikUsername: mikrotikUsernameInput.trim() });
+    setMikrotikSuccessMessage(
+      result.renamedFrom
+        ? `Username Mikrotik diubah dari "${result.renamedFrom}". Secret lama dengan nama itu masih ada di Mikrotik -- cek manual apakah perlu dibereskan.`
+        : result.linked
+        ? "Secret ini sudah ada di Mikrotik dan berhasil di-link ke Pelanggan ini."
+        : "Secret Mikrotik baru berhasil dibuat & tersimpan."
+    );
     setIsMikrotikUsernameSaved(true);
   }
 
@@ -396,6 +453,30 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
     if (!selectedDetail) return;
     setDeleteError(null);
     setIsDeleting(true);
+
+    // Urutan penting: cek dulu apakah Pelanggan ini BOLEH dihapus (Tiket
+    // aktif dst.) SEBELUM menyentuh Mikrotik -- kalau urutannya kebalik,
+    // secret-nya bisa kehapus duluan padahal ternyata Pelanggan-nya gagal
+    // dihapus (masih ada Tiket aktif), yang berarti internet pelanggan itu
+    // keputus padahal dia masih aktif jadi pelanggan.
+    const check = await checkPelangganCanBeDeleted(supabase, selectedDetail.id);
+    if (!check.canDelete) {
+      setIsDeleting(false);
+      setDeleteError(check.error);
+      return;
+    }
+
+    // Baru setelah lolos, hapus secret Mikrotik-nya (kalau ada). Kalau
+    // langkah ini gagal, proses hapus Pelanggan ikut dibatalkan (bukan
+    // lanjut hapus baris DB-nya saja) supaya tidak ada secret yatim yang
+    // ketinggalan aktif di router tanpa ada Pelanggan yang terhubung lagi.
+    const mikrotikResult = await deleteMikrotikSecret(supabase, selectedDetail.id);
+    if (!mikrotikResult.success) {
+      setIsDeleting(false);
+      setDeleteError(`Gagal menghapus secret Mikrotik: ${mikrotikResult.error}`);
+      return;
+    }
+
     const result = await deletePelanggan(supabase, selectedDetail.id);
     setIsDeleting(false);
 
@@ -607,10 +688,13 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
           </View>
         ) : null}
 
-        {canManageIsolir(profile.role) ? (
+        {canManageMikrotikUsername(profile.role) ? (
           <View style={styles.sectionCard}>
-            <Text style={styles.subtitle}>Mikrotik & Isolir</Text>
-            <Text style={styles.sectionHint}>Khusus Pemilik</Text>
+            <Text style={styles.subtitle}>Username Mikrotik</Text>
+            <Text style={styles.sectionHint}>
+              Khusus Admin & Pemilik — isi lalu Simpan akan langsung membuat/menghubungkan PPP
+              secret di Mikrotik (sesuai Paket-nya), bukan cuma menyimpan teks.
+            </Text>
             <TextInput
               style={styles.input}
               placeholder="Username Mikrotik (PPPoE)"
@@ -620,8 +704,8 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
               onChangeText={handleChangeMikrotikUsername}
             />
             {mikrotikError ? <Text style={styles.error}>{mikrotikError}</Text> : null}
-            {isMikrotikUsernameSaved ? (
-              <Text style={styles.success}>Username Mikrotik tersimpan.</Text>
+            {isMikrotikUsernameSaved && mikrotikSuccessMessage ? (
+              <Text style={styles.success}>{mikrotikSuccessMessage}</Text>
             ) : null}
             <TouchableOpacity
               style={[
@@ -633,14 +717,21 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
             >
               <Text style={styles.buttonText}>
                 {isSavingMikrotikUsername
-                  ? "Menyimpan..."
+                  ? "Memproses di Mikrotik..."
                   : isMikrotikUsernameSaved
                   ? "Tersimpan"
-                  : "Simpan Username Mikrotik"}
+                  : selectedDetail.mikrotikUsername
+                  ? "Ubah Username Mikrotik"
+                  : "Buat & Simpan Username Mikrotik"}
               </Text>
             </TouchableOpacity>
+          </View>
+        ) : null}
 
-            <View style={styles.sectionDivider} />
+        {canManageIsolir(profile.role) ? (
+          <View style={styles.sectionCard}>
+            <Text style={styles.subtitle}>Isolir & Koneksi</Text>
+            <Text style={styles.sectionHint}>Khusus Pemilik</Text>
 
             {isolirError ? <Text style={styles.error}>{isolirError}</Text> : null}
             <TouchableOpacity
@@ -724,6 +815,12 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
       <Text style={styles.title}>Manajemen Pelanggan</Text>
       <Text style={styles.count}>{results.length} Pelanggan ditemukan</Text>
 
+      {addMikrotikWarning ? (
+        <TouchableOpacity onPress={() => setAddMikrotikWarning(null)}>
+          <Text style={styles.warningBanner}>{addMikrotikWarning} (ketuk untuk tutup)</Text>
+        </TouchableOpacity>
+      ) : null}
+
       <View style={styles.searchBox}>
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
@@ -781,6 +878,20 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
                     value={nama}
                     onChangeText={setNama}
                   />
+
+                  {canManageMikrotikUsername(profile.role) ? (
+                    <>
+                      <Text style={styles.fieldLabel}>Username Mikrotik (opsional)</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Kosongkan kalau belum ada / diisi belakangan"
+                        placeholderTextColor="#9ca3af"
+                        autoCapitalize="none"
+                        value={addMikrotikUsernameInput}
+                        onChangeText={setAddMikrotikUsernameInput}
+                      />
+                    </>
+                  ) : null}
 
                   <Text style={styles.fieldLabel}>Alamat</Text>
                   <TextInput
@@ -866,6 +977,9 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
             title="Konfirmasi Pelanggan Baru"
             fields={[
               { label: "Nama", value: nama },
+              ...(canManageMikrotikUsername(profile.role)
+                ? [{ label: "Username Mikrotik", value: addMikrotikUsernameInput || "(kosong)" }]
+                : []),
               { label: "Alamat", value: alamat },
               { label: "No. HP", value: noHp },
               { label: "ODP", value: selectedOdpLabel },
@@ -1023,6 +1137,14 @@ const styles = StyleSheet.create({
   error: {
     color: "#DC2626",
     marginBottom: 10,
+  },
+  warningBanner: {
+    backgroundColor: "#FEF3C7",
+    color: "#92400E",
+    fontSize: 12,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
   },
   formErrorSpacing: {
     marginTop: -2,
