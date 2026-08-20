@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   BackHandler,
-  FlatList,
   Modal,
   ScrollView,
+  SectionList,
   StyleSheet,
   Text,
   TextInput,
@@ -42,6 +42,7 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
 import { BackButton } from "../components/BackButton";
 import { Dropdown } from "../components/Dropdown";
+import { AlphabetIndex } from "../components/AlphabetIndex";
 
 type Props = {
   profile: UserProfile;
@@ -51,6 +52,26 @@ type Props = {
 function formatHarga(harga: number | null): string {
   if (harga == null) return "Belum diisi";
   return `Rp${harga.toLocaleString("id-ID")}`;
+}
+
+type PelangganSection = { title: string; data: PelangganListItem[] };
+
+function groupPelangganByLetter(items: PelangganListItem[]): PelangganSection[] {
+  const groups = new Map<string, PelangganListItem[]>();
+  for (const item of items) {
+    const firstChar = item.nama.trim().charAt(0).toUpperCase();
+    const key = /[A-Z]/.test(firstChar) ? firstChar : "#";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(item);
+  }
+
+  return Array.from(groups.entries())
+    .sort(([a], [b]) => {
+      if (a === "#") return -1;
+      if (b === "#") return 1;
+      return a.localeCompare(b);
+    })
+    .map(([title, data]) => ({ title, data }));
 }
 
 type BadgeTone = "success" | "danger" | "neutral";
@@ -135,9 +156,27 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
   }
 
   useEffect(() => {
-    reload();
+    const timeout = setTimeout(() => {
+      reload();
+    }, 300);
+    return () => clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
+
+  const sectionListRef = useRef<SectionList<PelangganListItem>>(null);
+  const sections = useMemo(() => groupPelangganByLetter(results), [results]);
+  const availableLetters = useMemo(() => sections.map((s) => s.title), [sections]);
+
+  function handleSelectLetter(letter: string) {
+    const sectionIndex = sections.findIndex((s) => s.title === letter);
+    if (sectionIndex === -1) return;
+    sectionListRef.current?.scrollToLocation({
+      sectionIndex,
+      itemIndex: 0,
+      animated: true,
+      viewPosition: 0,
+    });
+  }
 
   // App.tsx punya hardwareBackPress listener sendiri yang langsung lompat
   // ke Home begitu screen !== "home" -- tapi dia nggak tau soal navigasi
@@ -834,27 +873,51 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
 
       {isLoading ? (
         <ActivityIndicator style={styles.loading} />
+      ) : results.length === 0 ? (
+        <Text style={styles.emptyText}>
+          {query.trim()
+            ? `Tidak ada Pelanggan yang cocok dengan "${query.trim()}".`
+            : "Belum ada Pelanggan."}
+        </Text>
       ) : (
-        <FlatList
-          style={styles.list}
-          data={results}
-          keyExtractor={(item) => item.id}
-          ListEmptyComponent={<Text style={styles.emptyText}>Belum ada Pelanggan.</Text>}
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.card} onPress={() => handleSelect(item)}>
-              <View style={styles.avatarSmall}>
-                <Text style={styles.avatarSmallText}>
-                  {item.nama.charAt(0).toUpperCase()}
-                </Text>
+        <View style={styles.listRow}>
+          <SectionList
+            ref={sectionListRef}
+            style={styles.list}
+            sections={sections}
+            keyExtractor={(item) => item.id}
+            stickySectionHeadersEnabled
+            initialNumToRender={16}
+            maxToRenderPerBatch={16}
+            windowSize={7}
+            onScrollToIndexFailed={() => {}}
+            renderSectionHeader={({ section }) => (
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionHeaderText}>{section.title}</Text>
               </View>
-              <View style={styles.cardBody}>
-                <Text style={styles.cardName}>{item.nama}</Text>
-                <Text style={styles.cardDetail}>{item.nomorPelanggan}</Text>
-              </View>
-              <Text style={styles.chevron}>›</Text>
-            </TouchableOpacity>
-          )}
-        />
+            )}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={styles.card} onPress={() => handleSelect(item)}>
+                <View style={styles.avatarSmall}>
+                  <Text style={styles.avatarSmallText}>
+                    {item.nama.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View style={styles.cardBody}>
+                  <Text style={styles.cardName}>{item.nama}</Text>
+                  <Text style={styles.cardDetail}>{item.nomorPelanggan}</Text>
+                </View>
+                <Text style={styles.chevron}>›</Text>
+              </TouchableOpacity>
+            )}
+          />
+          {sections.length > 1 ? (
+            <AlphabetIndex
+              availableLetters={availableLetters}
+              onSelectLetter={handleSelectLetter}
+            />
+          ) : null}
+        </View>
       )}
 
       {canCreatePelanggan(profile.role) ? (
@@ -1072,8 +1135,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#111827",
   },
+  listRow: {
+    flex: 1,
+    flexDirection: "row",
+  },
   list: {
     flex: 1,
+    minWidth: 0,
+  },
+  sectionHeader: {
+    backgroundColor: "#F8FAFC",
+    paddingVertical: 6,
+  },
+  sectionHeaderText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#94A3B8",
   },
   card: {
     flexDirection: "row",
