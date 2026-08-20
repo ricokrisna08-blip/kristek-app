@@ -33,7 +33,7 @@ export function canDeletePelanggan(role: Role): boolean {
 }
 
 export function canEditPelanggan(role: Role): boolean {
-  return role === "pemilik";
+  return role === "admin" || role === "pemilik";
 }
 
 export function canEditPelangganHarga(role: Role): boolean {
