@@ -74,6 +74,41 @@ function groupPelangganByLetter(items: PelangganListItem[]): PelangganSection[] 
     .map(([title, data]) => ({ title, data }));
 }
 
+// Fixed row/header heights so SectionList can compute scrollToLocation
+// offsets synchronously (via getItemLayout) instead of relying on async
+// measurement -- without this, jumping far ahead (e.g. tapping "T" from
+// the top of the list) silently fails because the target section hasn't
+// been measured yet.
+const PELANGGAN_ITEM_HEIGHT = 74;
+const PELANGGAN_SECTION_HEADER_HEIGHT = 27;
+
+function getPelangganItemLayout(
+  data: unknown,
+  flatIndex: number
+): { length: number; offset: number; index: number } {
+  const sections = (data ?? []) as PelangganSection[];
+  let offset = 0;
+  let remaining = flatIndex;
+  for (const section of sections) {
+    if (remaining === 0) {
+      return { length: PELANGGAN_SECTION_HEADER_HEIGHT, offset, index: flatIndex };
+    }
+    offset += PELANGGAN_SECTION_HEADER_HEIGHT;
+    remaining -= 1;
+
+    if (remaining < section.data.length) {
+      return {
+        length: PELANGGAN_ITEM_HEIGHT,
+        offset: offset + remaining * PELANGGAN_ITEM_HEIGHT,
+        index: flatIndex,
+      };
+    }
+    offset += section.data.length * PELANGGAN_ITEM_HEIGHT;
+    remaining -= section.data.length;
+  }
+  return { length: 0, offset, index: flatIndex };
+}
+
 type BadgeTone = "success" | "danger" | "neutral";
 
 function Badge({ label, tone }: { label: string; tone: BadgeTone }) {
@@ -890,6 +925,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
             initialNumToRender={16}
             maxToRenderPerBatch={16}
             windowSize={7}
+            getItemLayout={getPelangganItemLayout}
             onScrollToIndexFailed={() => {}}
             renderSectionHeader={({ section }) => (
               <View style={styles.sectionHeader}>
@@ -1138,10 +1174,12 @@ const styles = StyleSheet.create({
   listRow: {
     flex: 1,
     flexDirection: "row",
+    minHeight: 0,
   },
   list: {
     flex: 1,
     minWidth: 0,
+    minHeight: 0,
   },
   sectionHeader: {
     backgroundColor: "#F8FAFC",
