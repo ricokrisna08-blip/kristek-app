@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createPelanggan } from "../pelanggan/createPelanggan";
 import { logTiketStatus } from "./logTiketStatus";
+import { triggerPushNotification } from "../notifikasi/triggerPushNotification";
 
 export type TiketJenis = "instalasi" | "gangguan_komplain" | "maintenance";
 
@@ -103,13 +104,20 @@ export async function createTiketWithAssignment(
     };
   }
 
-  const { error: notifikasiError } = await client.from("notifikasi").insert(
-    input.teknisiIds.map((teknisiId) => ({
-      user_id: teknisiId,
-      tiket_id: tiketId,
-      type: "ditugaskan",
-    }))
-  );
+  const { data: insertedNotifikasi, error: notifikasiError } = await client
+    .from("notifikasi")
+    .insert(
+      input.teknisiIds.map((teknisiId) => ({
+        user_id: teknisiId,
+        tiket_id: tiketId,
+        type: "ditugaskan",
+      }))
+    )
+    .select("id");
+
+  for (const row of insertedNotifikasi ?? []) {
+    triggerPushNotification(client, row.id);
+  }
 
   if (notifikasiError) {
     return {

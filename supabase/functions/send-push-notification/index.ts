@@ -1,12 +1,17 @@
 // Edge Function: send-push-notification
 //
-// Dipicu Database Webhook Supabase (Dashboard -> Database -> Webhooks) tiap
-// ada row baru masuk ke public.notifikasi -- lihat 4 titik insert-nya:
+// Dipanggil langsung dari app (src/notifikasi/triggerPushNotification.ts)
+// abis insert ke public.notifikasi berhasil -- lihat 4 titik insert-nya:
 // createTiketWithAssignment.ts, setTiketPending.ts, endTiket.ts,
 // submitPengajuanCuti.ts. Function ini yang jadi satu titik terpusat buat
-// kirim push notification (bukan diubah di 4 tempat itu), supaya
-// notifikasi juga muncul di notification tray HP (Android APK & browser
-// Web) -- bukan cuma badge lonceng in-app.
+// kirim push notification, supaya notifikasi juga muncul di notification
+// tray HP (Android APK & browser Web) -- bukan cuma badge lonceng in-app.
+//
+// Awalnya dirancang lewat Database Webhook (trigger otomatis di level DB,
+// tanpa perlu diubah di 4 tempat insert itu), tapi project ini belum
+// punya schema `supabase_functions` yang dibutuhkan fitur itu (gap
+// provisioning platform Supabase, bukan sesuatu yang bisa di-fix dari
+// migration biasa) -- jadi dipanggil langsung dari client saja.
 //
 // Dua jalur terpisah karena expo-notifications TIDAK support web sama
 // sekali (dikonfirmasi dari docs resmi Expo):
@@ -20,9 +25,8 @@
 //
 // Cara deploy: Supabase Dashboard -> Edge Functions -> Create a new function
 // -> nama "send-push-notification" -> paste isi file ini -> Deploy, lalu
-// ikuti DEPLOY.md di folder ini untuk set secret VAPID dan bikin Database
-// Webhook-nya. Tidak ada push yang terkirim sampai kedua langkah itu
-// dilakukan manual.
+// ikuti DEPLOY.md di folder ini untuk set secret VAPID. Tidak ada push
+// yang terkirim sampai kedua langkah itu dilakukan manual.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
@@ -146,11 +150,28 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const authHeader = req.headers.get("Authorization");
-  if (authHeader !== `Bearer ${serviceRoleKey}`) {
-    return jsonResponse({ error: "Unauthorized" }, 401);
+  if (!authHeader) {
+    return jsonResponse({ error: "Missing Authorization header" }, 401);
   }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const callerClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+
+  // Sama seperti insert ke tabel notifikasi sendiri (RLS-nya "any
+  // authenticated user can insert"): siapa pun user yang lagi login boleh
+  // memicu push, karena penerimanya ditentukan dari notifikasi.user_id
+  // (record.id), bukan dari identitas si pemanggil -- pemanggilnya sering
+  // beda orang dari penerima (mis. Admin assign Tiket ke Teknisi lain).
+  const { data: userData, error: userError } = await callerClient.auth.getUser();
+  if (userError || !userData.user) {
+    return jsonResponse({ error: "Sesi tidak valid" }, 401);
+  }
+
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
   let payload: { record?: { id?: string; user_id?: string } };
   try {
@@ -161,10 +182,9 @@ Deno.serve(async (req) => {
 
   const notifikasiId = payload.record?.id;
   if (!notifikasiId) {
-    return jsonResponse({ error: "record.id tidak ada di payload webhook" }, 400);
+    return jsonResponse({ error: "record.id tidak ada di body request" }, 400);
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
   const { data: row, error: rowError } = await adminClient

@@ -2,9 +2,14 @@
 
 Function ini yang bikin notifikasi (Tiket ditugaskan/pending/selesai, cuti
 diajukan) muncul di notification tray HP -- Android (APK) dan browser
-(Web) -- bukan cuma badge lonceng in-app. Sampai ketiga langkah di bawah
-ini selesai, notifikasi tetap jalan seperti biasa (badge lonceng), cuma
-belum ada push ke tray.
+(Web) -- bukan cuma badge lonceng in-app. Dipanggil langsung dari app
+(`src/notifikasi/triggerPushNotification.ts`) tiap kali ada notifikasi
+baru -- **bukan** lewat Database Webhook (project ini belum punya schema
+`supabase_functions` yang dibutuhkan fitur itu, jadi didesain ulang supaya
+tidak bergantung ke situ).
+
+Sampai kedua langkah di bawah ini selesai, notifikasi tetap jalan seperti
+biasa (badge lonceng), cuma belum ada push ke tray.
 
 ## 1. Deploy function-nya
 
@@ -36,41 +41,28 @@ Secrets**:
   `mailto:ricokrisna08@gmail.com` (syarat protokol Web Push, dipakai push
   service buat kontak balik kalau ada masalah, bukan dikirim ke user).
 
-## 3. Database Webhook (pemicu otomatis)
+## 3. Tes end-to-end lewat app (bukan curl)
 
-1. Buka **Supabase Dashboard → Database → Webhooks**.
-2. Klik **Create a new hook**.
-3. Isi:
-   - **Name**: `notifikasi-push`
-   - **Table**: `public.notifikasi`
-   - **Events**: centang **Insert** saja.
-   - **Type**: **Supabase Edge Functions**, pilih function
-     `send-push-notification`.
-   - **HTTP Headers**: tambah header `Authorization` dengan value
-     `Bearer <service_role key>` (Project Settings → API → service_role
-     secret) -- ini yang dicek function-nya di `index.ts`, tanpa ini
-     semua request ditolak 401.
-4. Klik **Create webhook**.
+Function ini butuh Authorization header berisi access token USER yang
+login (dicek lewat `auth.getUser()`, sama seperti fungsi Mikrotik lain di
+project ini) -- bukan `service_role` key, jadi tidak praktis dites lewat
+curl manual tanpa login dulu. Cara paling gampang: tes langsung dari app
+setelah kedua langkah di atas selesai dan APK/Web sudah versi terbaru
+(sudah include `triggerPushNotification`):
 
-## 4. Tes manual
+1. Login di APK atau Web (device/browser ini otomatis daftar token/
+   subscription push-nya ke tabel `push_subscriptions`).
+2. Assign Tiket baru ke Teknisi (atau ajukan cuti/izin) dari device/akun
+   lain.
+3. Notifikasi harusnya muncul di tray HP/browser device tadi dalam
+   beberapa detik.
 
-Ambil satu `id` baris dari tabel `notifikasi` (SQL Editor:
-`select id, user_id from public.notifikasi order by created_at desc limit 1;`),
-lalu:
+Kalau tidak muncul, cek **Supabase Dashboard → Edge Functions →
+send-push-notification → Logs** buat lihat error-nya (mis. VAPID belum
+diset, atau `push_subscriptions` masih kosong buat user itu berarti
+belum pernah login di versi app yang sudah punya fitur ini).
 
-```bash
-curl -X POST "https://<project-ref>.supabase.co/functions/v1/send-push-notification" \
-  -H "Authorization: Bearer <service_role key>" \
-  -H "Content-Type: application/json" \
-  -d '{"record": {"id": "<notifikasi-id-dari-query-di-atas>"}}'
-```
-
-Response `{"sent": N, "results": [...]}` -- kalau `N` masih 0, berarti
-user itu belum punya baris di `push_subscriptions` (belum pernah login di
-APK/Web versi baru). Login dulu di APK atau Web supaya token/subscription
-ke-daftar, baru tes ulang.
-
-## 5. Catatan APK
+## 4. Catatan APK
 
 `expo-notifications` nambah native module -- **APK yang sudah ter-install
 sekarang belum punya ini**. Perlu build ulang

@@ -42,7 +42,13 @@ function fakeClient(opts: {
         };
       }
       if (table === "notifikasi") {
-        return { insert: opts.insertNotifikasi ?? jest.fn().mockResolvedValue({ error: null }) };
+        const insertNotifikasi = opts.insertNotifikasi ?? jest.fn();
+        return {
+          insert: (...args: unknown[]) => {
+            insertNotifikasi(...args);
+            return { select: () => Promise.resolve({ data: [], error: null }) };
+          },
+        };
       }
       throw new Error(`Unexpected table: ${table}`);
     },

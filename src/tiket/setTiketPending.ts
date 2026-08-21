@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { applyTiketEvent, type TiketStatus } from "./stateMachine/applyTiketEvent";
 import { logTiketStatus } from "./logTiketStatus";
+import { triggerPushNotification } from "../notifikasi/triggerPushNotification";
 
 export type SetTiketPendingInput = {
   tiketId: string;
@@ -64,14 +65,21 @@ export async function setTiketPending(
     ...(pemilikUsers ?? []).map((u: { id: string }) => u.id),
   ]);
 
-  await client.from("notifikasi").insert(
-    Array.from(notifyUserIds).map((userId) => ({
-      user_id: userId,
-      tiket_id: input.tiketId,
-      type: "pending",
-      notes: input.notes,
-    }))
-  );
+  const { data: insertedNotifikasi } = await client
+    .from("notifikasi")
+    .insert(
+      Array.from(notifyUserIds).map((userId) => ({
+        user_id: userId,
+        tiket_id: input.tiketId,
+        type: "pending",
+        notes: input.notes,
+      }))
+    )
+    .select("id");
+
+  for (const row of insertedNotifikasi ?? []) {
+    triggerPushNotification(client, row.id);
+  }
 
   return { success: true };
 }

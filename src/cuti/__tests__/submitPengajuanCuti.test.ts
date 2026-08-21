@@ -34,7 +34,7 @@ function fakeClient(options: {
         return {
           insert: (rows: unknown) => {
             notifikasiInserts.push(rows);
-            return Promise.resolve({ error: null });
+            return { select: () => Promise.resolve({ data: [], error: null }) };
           },
         };
       }
