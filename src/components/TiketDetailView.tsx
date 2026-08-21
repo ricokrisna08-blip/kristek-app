@@ -30,7 +30,7 @@ import {
 } from "../tiket/listTiketStatusLog";
 import { JENIS_LABEL, STATUS_LABEL } from "../tiket/labels";
 import { TiketStatusBar } from "./TiketStatusBar";
-import { BackButton } from "./BackButton";
+import { ScreenHeader } from "./ScreenHeader";
 import { DeleteConfirmModal } from "./DeleteConfirmModal";
 import type { UserProfile } from "../auth/profile";
 import { isOnline } from "../offline/isOnline";
@@ -372,16 +372,14 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <BackButton onPress={onBack} />
-
-      <Text style={styles.title}>{JENIS_LABEL[detail.jenis] ?? detail.jenis}</Text>
-
+    <View style={styles.screen}>
+      <ScreenHeader
+        title={JENIS_LABEL[detail.jenis] ?? detail.jenis}
+        subtitle={`Status: ${STATUS_LABEL[effectiveStatus] ?? effectiveStatus}`}
+        onBack={onBack}
+      />
+      <ScrollView contentContainerStyle={styles.container}>
       <TiketStatusBar status={effectiveStatus} />
-
-      <Text style={styles.detailLine}>
-        Status: {STATUS_LABEL[effectiveStatus] ?? effectiveStatus}
-      </Text>
 
       {offlineNotice ? <Text style={styles.offlineNotice}>{offlineNotice}</Text> : null}
 
@@ -777,29 +775,22 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const KRISTEK_TEAL = "#1B7396";
-const KRISTEK_NAVY = "#0B2D5B";
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
   container: {
     flexGrow: 1,
     padding: 24,
     backgroundColor: "#F8FAFC",
-  },
-  back: {
-    color: KRISTEK_TEAL,
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: KRISTEK_NAVY,
-    marginTop: 4,
-    marginBottom: 4,
   },
   subtitle: {
     fontSize: 15,
