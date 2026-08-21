@@ -4,10 +4,28 @@ export type KeyValueStorage = {
 };
 
 export type QueuedAction =
-  | { id: string; queuedAt: string; type: "start"; tiketId: string; uploadedBy: string; photoUri: string }
+  | {
+      id: string;
+      queuedAt: string;
+      type: "start";
+      tiketId: string;
+      uploadedBy: string;
+      photoUri: string;
+      latitude?: number | null;
+      longitude?: number | null;
+    }
   | { id: string; queuedAt: string; type: "pending"; tiketId: string; changedBy: string; notes: string }
   | { id: string; queuedAt: string; type: "lanjut"; tiketId: string; changedBy: string }
-  | { id: string; queuedAt: string; type: "end"; tiketId: string; uploadedBy: string; photoUri: string };
+  | {
+      id: string;
+      queuedAt: string;
+      type: "end";
+      tiketId: string;
+      uploadedBy: string;
+      photoUri: string;
+      latitude?: number | null;
+      longitude?: number | null;
+    };
 
 // Omit<Union, K> collapses the union into its shared keys instead of
 // applying per-variant -- this distributes it manually so callers still get

@@ -21,6 +21,8 @@ export async function processQueuedAction(
         tiketId: action.tiketId,
         uploadedBy: action.uploadedBy,
         photoBlob,
+        latitude: action.latitude,
+        longitude: action.longitude,
       });
     }
     case "pending":
@@ -40,6 +42,8 @@ export async function processQueuedAction(
         tiketId: action.tiketId,
         uploadedBy: action.uploadedBy,
         photoBlob,
+        latitude: action.latitude,
+        longitude: action.longitude,
       });
     }
   }

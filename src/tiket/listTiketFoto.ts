@@ -7,6 +7,8 @@ export type TiketFoto = {
   url: string;
   path: string;
   uploadedAt: string;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export async function listTiketFoto(
@@ -16,7 +18,7 @@ export async function listTiketFoto(
 ): Promise<TiketFoto[]> {
   const { data, error } = await client
     .from("tiket_foto")
-    .select("id, type, url, path, uploaded_at")
+    .select("id, type, url, path, uploaded_at, latitude, longitude")
     .eq("tiket_id", tiketId)
     .order("uploaded_at", { ascending: true });
 
@@ -32,5 +34,7 @@ export async function listTiketFoto(
       url: row.url,
       path: row.path,
       uploadedAt: row.uploaded_at,
+      latitude: row.latitude,
+      longitude: row.longitude,
     }));
 }

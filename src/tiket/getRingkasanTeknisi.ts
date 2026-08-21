@@ -1,11 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type RingkasanTeknisi = {
-  tugasAktif: number;
+  baru: number;
+  progress: number;
   selesaiBulanIni: number;
 };
 
-const STATUS_AKTIF = ["ditugaskan", "dikerjakan", "pending"];
+const STATUS_PROGRESS = ["dikerjakan", "pending"];
 
 function startOfCurrentMonthIso(): string {
   const now = new Date();
@@ -19,11 +20,15 @@ function startOfCurrentMonthIso(): string {
 export async function getRingkasanTeknisi(
   client: SupabaseClient
 ): Promise<RingkasanTeknisi> {
-  const [aktifResult, selesaiResult] = await Promise.all([
+  const [baruResult, progressResult, selesaiResult] = await Promise.all([
     client
       .from("tiket")
       .select("id", { count: "exact", head: true })
-      .in("status", STATUS_AKTIF),
+      .eq("status", "ditugaskan"),
+    client
+      .from("tiket")
+      .select("id", { count: "exact", head: true })
+      .in("status", STATUS_PROGRESS),
     client
       .from("tiket")
       .select("id", { count: "exact", head: true })
@@ -32,7 +37,8 @@ export async function getRingkasanTeknisi(
   ]);
 
   return {
-    tugasAktif: aktifResult.count ?? 0,
+    baru: baruResult.count ?? 0,
+    progress: progressResult.count ?? 0,
     selesaiBulanIni: selesaiResult.count ?? 0,
   };
 }

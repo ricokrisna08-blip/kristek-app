@@ -212,7 +212,7 @@ export default function App() {
       return (
         <MyTiketScreen
           profile={currentProfile}
-          title="Gangguan-Komplain"
+          title="Laporan Pelanggan"
           jenisFilter="gangguan_komplain"
           onBack={() => setScreen("home")}
         />

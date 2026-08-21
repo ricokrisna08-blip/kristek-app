@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -11,6 +12,7 @@ import {
   View,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 import { supabase } from "../lib/supabase";
 import { type TiketDetail } from "../tiket/getTiketDetail";
 import { startTiket } from "../tiket/startTiket";
@@ -53,6 +55,29 @@ function formatTanggalJam(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+// Best-effort: kalau izin lokasi ditolak atau GPS gagal ambil titik, foto
+// bukti tetap boleh terus (jangan blokir alur Start/End Tiket cuma gara-gara
+// lokasi) -- geotag ini pelengkap, bukan syarat wajib.
+async function captureCurrentLocation(): Promise<{
+  latitude: number | null;
+  longitude: number | null;
+}> {
+  try {
+    const permission = await Location.requestForegroundPermissionsAsync();
+    if (!permission.granted) {
+      return { latitude: null, longitude: null };
+    }
+
+    const position = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
+
+    return { latitude: position.coords.latitude, longitude: position.coords.longitude };
+  } catch {
+    return { latitude: null, longitude: null };
+  }
 }
 
 type Props = {
@@ -126,6 +151,8 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
 
     setIsStarting(true);
 
+    const { latitude, longitude } = await captureCurrentLocation();
+
     if (!(await isOnline())) {
       const photoUri = await persistCapturedPhoto(
         captured.assets[0].uri,
@@ -136,6 +163,8 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
         tiketId: detail.id,
         uploadedBy: profile.id,
         photoUri,
+        latitude,
+        longitude,
       });
       const machineResult = applyTiketEvent(
         { status: effectiveStatus },
@@ -155,6 +184,8 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
       tiketId: detail.id,
       uploadedBy: profile.id,
       photoBlob,
+      latitude,
+      longitude,
     });
     setIsStarting(false);
 
@@ -260,6 +291,8 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
 
     setIsEnding(true);
 
+    const { latitude, longitude } = await captureCurrentLocation();
+
     if (!(await isOnline())) {
       const photoUri = await persistCapturedPhoto(
         captured.assets[0].uri,
@@ -270,6 +303,8 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
         tiketId: detail.id,
         uploadedBy: profile.id,
         photoUri,
+        latitude,
+        longitude,
       });
       const machineResult = applyTiketEvent(
         { status: effectiveStatus },
@@ -289,6 +324,8 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
       tiketId: detail.id,
       uploadedBy: profile.id,
       photoBlob,
+      latitude,
+      longitude,
     });
     setIsEnding(false);
 
@@ -384,6 +421,18 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Alamat</Text>
               <Text style={styles.infoValue}>{detail.pelanggan.alamat}</Text>
+              <TouchableOpacity
+                style={styles.mapsButton}
+                onPress={() =>
+                  Linking.openURL(
+                    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                      detail.pelanggan!.alamat
+                    )}`
+                  )
+                }
+              >
+                <Text style={styles.mapsButtonText}>📍 Buka Lokasi di Google Maps</Text>
+              </TouchableOpacity>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>No. HP</Text>
@@ -447,6 +496,20 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
                 <Text style={styles.fotoLabel}>
                   {foto.type === "before" ? "Before" : "After"}
                 </Text>
+                <Text style={styles.fotoTimestamp}>{formatTanggalJam(foto.uploadedAt)}</Text>
+                {foto.latitude != null && foto.longitude != null ? (
+                  <TouchableOpacity
+                    onPress={() =>
+                      Linking.openURL(
+                        `https://www.google.com/maps/search/?api=1&query=${foto.latitude},${foto.longitude}`
+                      )
+                    }
+                  >
+                    <Text style={styles.fotoAlamatLink}>📍 Lokasi foto ini</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <Text style={styles.fotoAlamat}>📍 Lokasi tidak tercatat</Text>
+                )}
                 {profile.role === "pemilik" ? (
                   <TouchableOpacity
                     onPress={() => {
@@ -678,11 +741,32 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
           onPress={() => setViewingFoto(null)}
         >
           {viewingFoto ? (
-            <Image
-              source={{ uri: viewingFoto.url }}
-              style={styles.fotoViewerImage}
-              resizeMode="contain"
-            />
+            <>
+              <Image
+                source={{ uri: viewingFoto.url }}
+                style={styles.fotoViewerImage}
+                resizeMode="contain"
+              />
+              <View style={styles.fotoViewerTimestampBadge}>
+                <Text style={styles.fotoViewerTimestampText}>
+                  {viewingFoto.type === "before" ? "Before" : "After"} ·{" "}
+                  {formatTanggalJam(viewingFoto.uploadedAt)}
+                </Text>
+                {viewingFoto.latitude != null && viewingFoto.longitude != null ? (
+                  <TouchableOpacity
+                    onPress={() =>
+                      Linking.openURL(
+                        `https://www.google.com/maps/search/?api=1&query=${viewingFoto.latitude},${viewingFoto.longitude}`
+                      )
+                    }
+                  >
+                    <Text style={styles.fotoViewerAlamatLink}>📍 Buka Lokasi Foto di Maps</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <Text style={styles.fotoViewerAlamatText}>📍 Lokasi tidak tercatat</Text>
+                )}
+              </View>
+            </>
           ) : null}
           <TouchableOpacity
             style={styles.fotoViewerCloseButton}
@@ -758,6 +842,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#111827",
     fontWeight: "500",
+  },
+  mapsButton: {
+    marginTop: 10,
+    backgroundColor: "#E7F1F5",
+    borderRadius: 8,
+    paddingVertical: 9,
+    alignItems: "center",
+  },
+  mapsButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: KRISTEK_TEAL,
   },
   quoteBox: {
     backgroundColor: "#FFFFFF",
@@ -940,6 +1036,22 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#374151",
   },
+  fotoTimestamp: {
+    marginTop: 2,
+    fontSize: 10,
+    color: "#9ca3af",
+  },
+  fotoAlamat: {
+    marginTop: 2,
+    fontSize: 10,
+    color: "#9ca3af",
+  },
+  fotoAlamatLink: {
+    marginTop: 2,
+    fontSize: 10,
+    fontWeight: "700",
+    color: KRISTEK_TEAL,
+  },
   fotoDeleteText: {
     marginTop: 2,
     fontSize: 12,
@@ -971,6 +1083,35 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "700",
+  },
+  fotoViewerTimestampBadge: {
+    position: "absolute",
+    bottom: 48,
+    alignSelf: "center",
+    maxWidth: "85%",
+    backgroundColor: "rgba(0,0,0,0.55)",
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  fotoViewerTimestampText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  fotoViewerAlamatText: {
+    color: "#e5e7eb",
+    fontSize: 12,
+    marginTop: 3,
+    textAlign: "center",
+  },
+  fotoViewerAlamatLink: {
+    color: "#7dd3fc",
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 3,
+    textAlign: "center",
   },
   timeline: {
     marginTop: 8,

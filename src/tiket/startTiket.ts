@@ -8,6 +8,8 @@ export type StartTiketInput = {
   tiketId: string;
   uploadedBy: string;
   photoBlob: Blob;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type StartTiketResult =
@@ -56,6 +58,8 @@ export async function startTiket(
     url: publicUrl,
     path,
     uploaded_by: input.uploadedBy,
+    latitude: input.latitude ?? null,
+    longitude: input.longitude ?? null,
   });
 
   if (fotoError) {

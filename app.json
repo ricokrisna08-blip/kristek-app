@@ -2,6 +2,7 @@
   "expo": {
     "name": "kristek-scaffold",
     "slug": "kristek-scaffold",
+    "owner": "rico.krisna",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,7 +18,9 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "package": "com.anonymous.kristekscaffold"
     },
@@ -32,7 +35,18 @@
           "cameraPermission": "Aplikasi butuh akses kamera untuk mengambil foto bukti pekerjaan."
         }
       ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Aplikasi butuh akses lokasi untuk mencatat titik GPS saat foto bukti pekerjaan diambil."
+        }
+      ],
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "76713942-7adf-4b9f-95f8-5cefc0c41c42"
+      }
+    }
   }
 }

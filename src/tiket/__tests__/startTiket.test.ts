@@ -66,6 +66,8 @@ test("Start succeeds: uploads photo, records tiket_foto, and moves Tiket to Dike
     url: "https://example.test/before.jpg",
     path: expect.any(String),
     uploaded_by: "teknisi-1",
+    latitude: null,
+    longitude: null,
   });
   expect(updateTiket).toHaveBeenCalledWith(
     expect.objectContaining({ status: "dikerjakan" }),
@@ -79,6 +81,25 @@ test("Start succeeds: uploads photo, records tiket_foto, and moves Tiket to Dike
     notes: null,
   });
   expect(result).toEqual({ success: true });
+});
+
+test("Start records the GPS coordinates when provided", async () => {
+  const upload = jest.fn().mockResolvedValue({ error: null });
+  const insertFoto = jest.fn().mockResolvedValue({ error: null });
+  const updateTiket = jest.fn().mockResolvedValue({ error: null });
+  const client = fakeClient({ tiketStatus: "ditugaskan", upload, insertFoto, updateTiket });
+
+  await startTiket(client, {
+    tiketId: "tiket-1",
+    uploadedBy: "teknisi-1",
+    photoBlob: new Blob(["fake"]),
+    latitude: -6.2,
+    longitude: 106.8,
+  });
+
+  expect(insertFoto).toHaveBeenCalledWith(
+    expect.objectContaining({ latitude: -6.2, longitude: 106.8 })
+  );
 });
 
 test("Start is rejected when the Tiket isn't Ditugaskan, without touching Storage or the DB", async () => {

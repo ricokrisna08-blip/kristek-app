@@ -69,7 +69,7 @@ type Props = {
 
 type MenuItem = {
   key: string;
-  icon: keyof typeof Feather.glyphMap;
+  icon: string;
   label: string;
   onPress: () => void;
 };
@@ -106,30 +106,30 @@ export function HomeScreen({
   const menuItems: MenuItem[] = [];
 
   if (canManageAccounts(profile.role)) {
-    menuItems.push({ key: "accounts", icon: "user", label: "Kelola Akun", onPress: onNavigateToAccounts });
+    menuItems.push({ key: "accounts", icon: "👤", label: "Kelola Akun", onPress: onNavigateToAccounts });
   }
   if (canManageWilayah(profile.role)) {
-    menuItems.push({ key: "wilayah", icon: "map", label: "Kelola Wilayah", onPress: onNavigateToWilayah });
+    menuItems.push({ key: "wilayah", icon: "🗺️", label: "Kelola Wilayah", onPress: onNavigateToWilayah });
   }
   if (canViewOdp(profile.role)) {
-    menuItems.push({ key: "odp", icon: "wifi", label: "Kelola ODP", onPress: onNavigateToOdp });
+    menuItems.push({ key: "odp", icon: "📡", label: "Kelola ODP", onPress: onNavigateToOdp });
   }
   if (canViewPelanggan(profile.role)) {
-    menuItems.push({ key: "pelanggan", icon: "users", label: "Kelola Pelanggan", onPress: onNavigateToPelanggan });
+    menuItems.push({ key: "pelanggan", icon: "👥", label: "Kelola Pelanggan", onPress: onNavigateToPelanggan });
   }
   if (canManagePaket(profile.role)) {
-    menuItems.push({ key: "paket", icon: "package", label: "Kelola Paket", onPress: onNavigateToPaket });
+    menuItems.push({ key: "paket", icon: "📦", label: "Kelola Paket", onPress: onNavigateToPaket });
   }
   if (canCreateTiket(profile.role)) {
-    menuItems.push({ key: "createTiket", icon: "file-plus", label: "Buat Tiket", onPress: onNavigateToCreateTiket });
+    menuItems.push({ key: "createTiket", icon: "📝", label: "Buat Tiket", onPress: onNavigateToCreateTiket });
   }
   if (canViewAllTiket(profile.role)) {
-    menuItems.push({ key: "daftarTiket", icon: "clipboard", label: "Daftar Tiket", onPress: onNavigateToDaftarTiket });
+    menuItems.push({ key: "daftarTiket", icon: "📋", label: "Daftar Tiket", onPress: onNavigateToDaftarTiket });
   }
   if (canViewLaporanPerforma(profile.role)) {
     menuItems.push({
       key: "laporanPerforma",
-      icon: "bar-chart-2",
+      icon: "📊",
       label: "Laporan Performa",
       onPress: onNavigateToLaporanPerforma,
     });
@@ -137,7 +137,7 @@ export function HomeScreen({
   if (canViewLaporanKeuangan(profile.role)) {
     menuItems.push({
       key: "laporanKeuangan",
-      icon: "dollar-sign",
+      icon: "💰",
       label: "Laporan Keuangan",
       onPress: onNavigateToLaporanKeuangan,
     });
@@ -145,7 +145,7 @@ export function HomeScreen({
   if (canViewPengajuanCuti(profile.role)) {
     menuItems.push({
       key: "daftarPengajuanCuti",
-      icon: "calendar",
+      icon: "📅",
       label: "Pengajuan Cuti",
       onPress: onNavigateToDaftarPengajuanCuti,
     });
@@ -153,28 +153,28 @@ export function HomeScreen({
   if (canTriggerWaBlast(profile.role)) {
     menuItems.push({
       key: "waBlast",
-      icon: "send",
+      icon: "📲",
       label: "Blast Tagihan WA",
       onPress: onNavigateToWaBlast,
     });
   }
   if (profile.role === "teknisi") {
     menuItems.push(
-      { key: "instalasi", icon: "tool", label: "Instalasi", onPress: onNavigateToInstalasi },
+      { key: "instalasi", icon: "🔧", label: "Instalasi", onPress: onNavigateToInstalasi },
       {
         key: "installationEvidence",
-        icon: "camera",
+        icon: "📸",
         label: "Installation Evidence",
         onPress: onNavigateToInstallationEvidence,
       },
-      { key: "maintenance", icon: "settings", label: "Maintenance", onPress: onNavigateToMaintenance },
-      { key: "gangguan", icon: "alert-triangle", label: "Gangguan-Komplain", onPress: onNavigateToGangguan }
+      { key: "maintenance", icon: "⚙️", label: "Maintenance", onPress: onNavigateToMaintenance },
+      { key: "gangguan", icon: "⚠️", label: "Laporan Pelanggan", onPress: onNavigateToGangguan }
     );
   }
   if (canSubmitCuti(profile.role)) {
     menuItems.push({
       key: "pengajuanCuti",
-      icon: "sun",
+      icon: "🌴",
       label: "Ajukan Cuti/Izin",
       onPress: onNavigateToPengajuanCuti,
     });
@@ -209,34 +209,39 @@ export function HomeScreen({
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.sectionTitle}>Menu utama</Text>
-        <View style={styles.grid}>
-          {menuItems.map((item) => (
-            <TouchableOpacity key={item.key} style={styles.gridItem} onPress={item.onPress}>
-              <View style={styles.gridIconBadge}>
-                <Feather name={item.icon} size={22} color={KRISTEK_NAVY_2} />
-              </View>
-              <Text style={styles.gridLabel}>{item.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
         {profile.role === "teknisi" ? (
           <>
             <Text style={styles.sectionTitle}>Ringkasan hari ini</Text>
             <View style={styles.summaryCard}>
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>{ringkasan?.tugasAktif ?? "-"}</Text>
-                <Text style={styles.summaryLabel}>Tugas aktif</Text>
+                <Text style={styles.summaryValue}>{ringkasan?.baru ?? "-"}</Text>
+                <Text style={styles.summaryLabel}>Baru</Text>
+              </View>
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryValue}>{ringkasan?.progress ?? "-"}</Text>
+                <Text style={styles.summaryLabel}>Progress</Text>
               </View>
               <View style={styles.summaryDivider} />
               <View style={styles.summaryItem}>
                 <Text style={styles.summaryValue}>{ringkasan?.selesaiBulanIni ?? "-"}</Text>
-                <Text style={styles.summaryLabel}>Selesai bulan ini</Text>
+                <Text style={styles.summaryLabel}>Selesai</Text>
               </View>
             </View>
           </>
         ) : null}
+
+        <Text style={styles.sectionTitle}>Menu utama</Text>
+        <View style={styles.grid}>
+          {menuItems.map((item) => (
+            <TouchableOpacity key={item.key} style={styles.gridItem} onPress={item.onPress}>
+              <View style={styles.gridIconBadge}>
+                <Text style={styles.gridIconEmoji}>{item.icon}</Text>
+              </View>
+              <Text style={styles.gridLabel}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
           <Feather name="log-out" size={16} color="#DC2626" style={styles.logoutIcon} />
@@ -383,6 +388,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
+  },
+  gridIconEmoji: {
+    fontSize: 24,
   },
   gridLabel: {
     fontSize: 12.5,

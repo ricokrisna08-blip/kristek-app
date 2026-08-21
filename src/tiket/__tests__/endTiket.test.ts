@@ -90,6 +90,8 @@ test("End succeeds: uploads after-photo, records tiket_foto, moves Tiket to Sele
     url: "https://example.test/after.jpg",
     path: expect.any(String),
     uploaded_by: "teknisi-1",
+    latitude: null,
+    longitude: null,
   });
   expect(updateTiket).toHaveBeenCalledWith(
     expect.objectContaining({ status: "selesai" }),

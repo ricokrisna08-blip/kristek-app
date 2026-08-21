@@ -1,45 +1,41 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getRingkasanTeknisi } from "../getRingkasanTeknisi";
 
-function fakeClient(counts: { aktif: number; selesai: number }): SupabaseClient {
-  let call = 0;
+function fakeClient(counts: {
+  baru: number | null;
+  progress: number | null;
+  selesai: number | null;
+}): SupabaseClient {
+  let selectCall = 0;
   return {
     from: () => ({
       select: () => {
-        call += 1;
-        const isFirstCall = call === 1;
+        selectCall += 1;
+        const isBaruQuery = selectCall === 1;
         return {
-          in: () => Promise.resolve({ count: counts.aktif, error: null }),
-          eq: () => ({
-            gte: () => Promise.resolve({ count: counts.selesai, error: null }),
-          }),
+          eq: () =>
+            isBaruQuery
+              ? Promise.resolve({ count: counts.baru, error: null })
+              : { gte: () => Promise.resolve({ count: counts.selesai, error: null }) },
+          in: () => Promise.resolve({ count: counts.progress, error: null }),
         };
       },
     }),
   } as unknown as SupabaseClient;
 }
 
-test("returns both counts from the two queries", async () => {
-  const client = fakeClient({ aktif: 3, selesai: 12 });
+test("returns all three counts from the three queries", async () => {
+  const client = fakeClient({ baru: 2, progress: 3, selesai: 12 });
 
   const result = await getRingkasanTeknisi(client);
 
-  expect(result).toEqual({ tugasAktif: 3, selesaiBulanIni: 12 });
+  expect(result).toEqual({ baru: 2, progress: 3, selesaiBulanIni: 12 });
 });
 
 test("defaults to 0 instead of null when a count comes back empty", async () => {
-  const client = {
-    from: () => ({
-      select: () => ({
-        in: () => Promise.resolve({ count: null, error: null }),
-        eq: () => ({
-          gte: () => Promise.resolve({ count: null, error: null }),
-        }),
-      }),
-    }),
-  } as unknown as SupabaseClient;
+  const client = fakeClient({ baru: null, progress: null, selesai: null });
 
   const result = await getRingkasanTeknisi(client);
 
-  expect(result).toEqual({ tugasAktif: 0, selesaiBulanIni: 0 });
+  expect(result).toEqual({ baru: 0, progress: 0, selesaiBulanIni: 0 });
 });

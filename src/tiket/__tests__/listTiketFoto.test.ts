@@ -26,6 +26,8 @@ test("returns photos within the 7-day retention window", async () => {
       url: "https://example.test/before.jpg",
       path: "tiket-1/before-1.jpg",
       uploaded_at: "2026-08-06T00:00:00.000Z",
+      latitude: -6.2,
+      longitude: 106.8,
     },
   ]);
 
@@ -38,6 +40,8 @@ test("returns photos within the 7-day retention window", async () => {
       url: "https://example.test/before.jpg",
       path: "tiket-1/before-1.jpg",
       uploadedAt: "2026-08-06T00:00:00.000Z",
+      latitude: -6.2,
+      longitude: 106.8,
     },
   ]);
 });
@@ -50,6 +54,8 @@ test("excludes photos older than 7 days", async () => {
       url: "https://example.test/old.jpg",
       path: "tiket-1/before-old.jpg",
       uploaded_at: "2026-07-01T00:00:00.000Z",
+      latitude: null,
+      longitude: null,
     },
     {
       id: "foto-fresh",
@@ -57,6 +63,8 @@ test("excludes photos older than 7 days", async () => {
       url: "https://example.test/fresh.jpg",
       path: "tiket-1/after-fresh.jpg",
       uploaded_at: "2026-08-06T00:00:00.000Z",
+      latitude: null,
+      longitude: null,
     },
   ]);
 
@@ -69,6 +77,8 @@ test("excludes photos older than 7 days", async () => {
       url: "https://example.test/fresh.jpg",
       path: "tiket-1/after-fresh.jpg",
       uploadedAt: "2026-08-06T00:00:00.000Z",
+      latitude: null,
+      longitude: null,
     },
   ]);
 });

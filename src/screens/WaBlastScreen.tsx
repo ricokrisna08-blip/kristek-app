@@ -1,7 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { supabase } from "../lib/supabase";
 import { createWaBlastJob } from "../wablast/createWaBlastJob";
+import { countBelumBayar } from "../wablast/countBelumBayar";
 import { listWaBlastJobs, type WaBlastJobItem, type WaBlastJobStatus } from "../wablast/listWaBlastJobs";
 import type { UserProfile } from "../auth/profile";
 import { BackButton } from "../components/BackButton";
@@ -34,6 +43,9 @@ export function WaBlastScreen({ profile, onBack }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [isTriggering, setIsTriggering] = useState(false);
   const [triggerError, setTriggerError] = useState<string | null>(null);
+  const [isConfirmVisible, setIsConfirmVisible] = useState(false);
+  const [isCountingConfirm, setIsCountingConfirm] = useState(false);
+  const [confirmCount, setConfirmCount] = useState<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   async function reload() {
@@ -69,7 +81,20 @@ export function WaBlastScreen({ profile, onBack }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasActiveJob]);
 
-  async function handleTrigger() {
+  // Dua langkah sengaja dipisah: tombol utama cuma HITUNG dulu berapa
+  // Pelanggan yang bakal kena kirim (belum tentu langsung kirim), baru
+  // modal konfirmasi yang benar-benar men-trigger job-nya -- supaya nggak
+  // ada pesan WA beneran yang terkirim gara-gara kepencet nggak sengaja.
+  async function handleOpenConfirm() {
+    setTriggerError(null);
+    setIsCountingConfirm(true);
+    const count = await countBelumBayar(supabase);
+    setIsCountingConfirm(false);
+    setConfirmCount(count);
+    setIsConfirmVisible(true);
+  }
+
+  async function handleConfirmTrigger() {
     setTriggerError(null);
     setIsTriggering(true);
     const result = await createWaBlastJob(supabase, profile.id);
@@ -80,6 +105,7 @@ export function WaBlastScreen({ profile, onBack }: Props) {
       return;
     }
 
+    setIsConfirmVisible(false);
     await reload();
   }
 
@@ -94,21 +120,66 @@ export function WaBlastScreen({ profile, onBack }: Props) {
         tanggal 1 jam 09:00.
       </Text>
 
-      {triggerError ? <Text style={styles.error}>{triggerError}</Text> : null}
-
       <TouchableOpacity
-        style={[styles.button, (isTriggering || hasActiveJob) && styles.buttonDisabled]}
-        onPress={handleTrigger}
-        disabled={isTriggering || hasActiveJob}
+        style={[styles.button, (isCountingConfirm || hasActiveJob) && styles.buttonDisabled]}
+        onPress={handleOpenConfirm}
+        disabled={isCountingConfirm || hasActiveJob}
       >
         <Text style={styles.buttonText}>
-          {isTriggering
-            ? "Memproses..."
+          {isCountingConfirm
+            ? "Menghitung..."
             : hasActiveJob
             ? "Masih ada blast berjalan..."
             : "Kirim Blast Tagihan Sekarang"}
         </Text>
       </TouchableOpacity>
+
+      <Modal
+        visible={isConfirmVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsConfirmVisible(false)}
+      >
+        <View style={styles.confirmBackdrop}>
+          <View style={styles.confirmCard}>
+            <Text style={styles.confirmTitle}>
+              {confirmCount === 0
+                ? "Tidak ada Pelanggan yang belum bayar"
+                : `Kirim ke ${confirmCount} Pelanggan?`}
+            </Text>
+            <Text style={styles.confirmSubtitle}>
+              {confirmCount === 0
+                ? "Semua Pelanggan sudah tercatat lunas bulan ini -- tidak ada yang perlu dikirimi reminder."
+                : `Pesan tagihan WhatsApp akan langsung dikirim ke ${confirmCount} Pelanggan yang statusnya belum bayar bulan ini, begitu daemon di laptop memprosesnya. Tindakan ini tidak bisa dibatalkan setelah dikonfirmasi.`}
+            </Text>
+
+            {triggerError ? <Text style={styles.error}>{triggerError}</Text> : null}
+
+            <View style={styles.confirmButtonRow}>
+              <TouchableOpacity
+                style={[styles.confirmButton, styles.confirmCancelButton]}
+                onPress={() => setIsConfirmVisible(false)}
+                disabled={isTriggering}
+              >
+                <Text style={styles.confirmCancelButtonText}>Batal</Text>
+              </TouchableOpacity>
+              {confirmCount !== 0 ? (
+                <TouchableOpacity
+                  style={[styles.confirmButton, styles.confirmSendButton]}
+                  onPress={handleConfirmTrigger}
+                  disabled={isTriggering}
+                >
+                  {isTriggering ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.confirmSendButtonText}>Ya, Kirim Sekarang</Text>
+                  )}
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Text style={styles.subtitle}>Riwayat Blast</Text>
 
@@ -178,6 +249,61 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  confirmBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  confirmCard: {
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    padding: 22,
+    width: "100%",
+    maxWidth: 420,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+  },
+  confirmTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 6,
+  },
+  confirmSubtitle: {
+    color: "#6b7280",
+    fontSize: 13,
+    marginBottom: 12,
+  },
+  confirmButtonRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 8,
+  },
+  confirmButton: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  confirmCancelButton: {
+    backgroundColor: "#f1f1f1",
+  },
+  confirmCancelButtonText: {
+    color: "#333",
+    fontWeight: "600",
+  },
+  confirmSendButton: {
+    backgroundColor: "#DC2626",
+  },
+  confirmSendButtonText: {
     color: "#fff",
     fontWeight: "700",
   },
