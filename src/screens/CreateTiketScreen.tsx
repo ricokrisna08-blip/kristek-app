@@ -40,8 +40,7 @@ type Props = {
 export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
   const [jenis, setJenis] = useState<TiketJenis>("instalasi");
 
-  // Gangguan-Komplain: cari Pelanggan lama.
-  const [pelangganQuery, setPelangganQuery] = useState("");
+  // Gangguan-Komplain: pilih Pelanggan lama.
   const [pelangganResults, setPelangganResults] = useState<PelangganListItem[]>([]);
   const [selectedPelanggan, setSelectedPelanggan] = useState<PelangganListItem | null>(
     null
@@ -81,13 +80,8 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
       setPaketList(result);
       setPaketBaruId((prev) => prev ?? result[0]?.id ?? null);
     });
+    searchPelanggan(supabase, "").then(setPelangganResults);
   }, []);
-
-  useEffect(() => {
-    if (jenis === "gangguan_komplain") {
-      searchPelanggan(supabase, pelangganQuery).then(setPelangganResults);
-    }
-  }, [jenis, pelangganQuery]);
 
   function toggleTeknisi(id: string) {
     setSelectedTeknisiIds((prev) =>
@@ -291,42 +285,27 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
 
       {jenis === "gangguan_komplain" ? (
         <View style={styles.sectionCard}>
-          <Text style={styles.subtitle}>Pelanggan</Text>
-          {selectedPelanggan ? (
-            <View style={styles.selectedBox}>
-              <Text style={styles.selectedBoxText}>
-                {selectedPelanggan.nama} ({selectedPelanggan.nomorPelanggan})
-              </Text>
-              <TouchableOpacity onPress={() => setSelectedPelanggan(null)}>
-                <Text style={styles.changeLink}>Ganti</Text>
-              </TouchableOpacity>
-            </View>
+          <Text style={styles.fieldLabel}>Pelanggan</Text>
+          {pelangganResults.length === 0 ? (
+            <Text style={styles.error}>Belum ada Pelanggan.</Text>
           ) : (
-            <>
-              <View style={styles.searchBox}>
-                <Text style={styles.searchIcon}>🔍</Text>
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Cari nama atau Nomor Pelanggan"
-                  placeholderTextColor="#9ca3af"
-                  value={pelangganQuery}
-                  onChangeText={setPelangganQuery}
-                />
-              </View>
-              <View style={styles.list}>
-                {pelangganResults.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={styles.listItem}
-                    onPress={() => setSelectedPelanggan(item)}
-                  >
-                    <Text style={styles.listItemText}>
-                      {item.nama} ({item.nomorPelanggan})
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </>
+            <Dropdown
+              variant="field"
+              searchable
+              title="Pilih Pelanggan"
+              valueLabel={
+                selectedPelanggan
+                  ? `${selectedPelanggan.nama} (${selectedPelanggan.nomorPelanggan})`
+                  : ""
+              }
+              options={pelangganResults.map((item) => ({
+                id: item.id,
+                label: `${item.nama} (${item.nomorPelanggan})`,
+              }))}
+              onSelect={(id) =>
+                setSelectedPelanggan(pelangganResults.find((item) => item.id === id) ?? null)
+              }
+            />
           )}
 
           <Text style={[styles.fieldLabel, styles.fieldLabelSpacing]}>Keluhan</Text>
@@ -464,27 +443,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
-  selectedBox: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#f9fafb",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-  },
-  selectedBoxText: {
-    fontSize: 15,
-    color: "#111827",
-    flex: 1,
-    marginRight: 12,
-  },
-  changeLink: {
-    color: "#1B7396",
-    fontWeight: "600",
-  },
   input: {
     borderWidth: 1,
     borderColor: "#e5e7eb",
@@ -499,37 +457,6 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 90,
     textAlignVertical: "top",
-  },
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f3f4f6",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    marginBottom: 8,
-  },
-  searchIcon: {
-    fontSize: 14,
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 11,
-    fontSize: 14,
-    color: "#111827",
-  },
-  list: {
-    marginBottom: 4,
-  },
-  listItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eef0f2",
-  },
-  listItemText: {
-    fontSize: 14,
-    color: "#111827",
   },
   chipRow: {
     flexDirection: "row",
