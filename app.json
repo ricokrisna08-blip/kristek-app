@@ -41,6 +41,7 @@
           "locationWhenInUsePermission": "Aplikasi butuh akses lokasi untuk mencatat titik GPS saat foto bukti pekerjaan diambil."
         }
       ],
+      "expo-notifications",
       "@react-native-community/datetimepicker"
     ],
     "extra": {

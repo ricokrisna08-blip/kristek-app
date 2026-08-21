@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, BackHandler, StyleSheet, View } from "react-native";
+import { ActivityIndicator, BackHandler, Platform, StyleSheet, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import * as Notifications from "expo-notifications";
 import NetInfo from "@react-native-community/netinfo";
 import { supabase } from "./src/lib/supabase";
 import { offlineQueueStore } from "./src/offline/offlineQueueStore.instance";
 import { fetchPhotoBlob } from "./src/offline/fetchPhotoBlob";
 import { fetchUserProfile, type UserProfile } from "./src/auth/profile";
+import { registerExpoPush } from "./src/notifikasi/registerExpoPush";
+import { registerWebPush } from "./src/notifikasi/registerWebPush";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { AccountManagementScreen } from "./src/screens/AccountManagementScreen";
@@ -42,6 +45,21 @@ type Screen =
   | "myTiketGangguan"
   | "installationEvidence";
 
+// Web tidak support expo-notifications sama sekali, jadi handler ini cuma
+// perlu di-set di native supaya alert push tetap muncul walau app lagi
+// dibuka (foreground) -- tanpa ini Android/iOS diam-diam nge-skip alert.
+if (Platform.OS !== "web") {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
+
 export default function App() {
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -73,6 +91,15 @@ export default function App() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!profile) return;
+    if (Platform.OS === "web") {
+      registerWebPush(supabase, profile.id);
+    } else {
+      registerExpoPush(supabase, profile.id);
+    }
+  }, [profile]);
 
   useEffect(() => {
     offlineQueueStore.hydrate().then(() => {
