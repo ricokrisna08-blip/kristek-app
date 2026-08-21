@@ -357,18 +357,24 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
         {teknisiList.length === 0 ? (
           <Text style={styles.error}>Belum ada akun Teknisi — buat dulu di Kelola Akun.</Text>
         ) : (
-          <View style={styles.chipRow}>
+          <View style={styles.teknisiList}>
             {teknisiList.map((teknisi) => {
               const isSelected = selectedTeknisiIds.includes(teknisi.id);
               return (
                 <TouchableOpacity
                   key={teknisi.id}
-                  style={[styles.chip, isSelected && styles.chipSelected]}
+                  style={[styles.teknisiRow, isSelected && styles.teknisiRowSelected]}
                   onPress={() => toggleTeknisi(teknisi.id)}
                 >
-                  <Text style={isSelected ? styles.chipTextSelected : styles.chipText}>
-                    {teknisi.nama} ({teknisi.wilayahNama ?? "Wilayah tidak diketahui"})
-                  </Text>
+                  <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                    {isSelected ? <Text style={styles.checkmark}>✓</Text> : null}
+                  </View>
+                  <View style={styles.teknisiInfo}>
+                    <Text style={styles.teknisiName}>{teknisi.nama}</Text>
+                    <Text style={styles.teknisiWilayah} numberOfLines={2}>
+                      {teknisi.wilayahNama ?? "Wilayah tidak diketahui"}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -452,31 +458,57 @@ const styles = StyleSheet.create({
     minHeight: 90,
     textAlignVertical: "top",
   },
-  chipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  teknisiList: {
     gap: 8,
   },
-  chip: {
+  teknisiRow: {
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
     borderColor: "#e5e7eb",
     backgroundColor: "#f9fafb",
-    borderRadius: 20,
-    paddingVertical: 7,
-    paddingHorizontal: 14,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
-  chipSelected: {
+  teknisiRowSelected: {
+    backgroundColor: "#EAF3F7",
+    borderColor: "#1B7396",
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: "#cbd5e1",
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+    flexShrink: 0,
+  },
+  checkboxSelected: {
     backgroundColor: "#1B7396",
     borderColor: "#1B7396",
   },
-  chipText: {
-    color: "#374151",
-    fontSize: 13,
-  },
-  chipTextSelected: {
+  checkmark: {
     color: "#fff",
     fontSize: 13,
+    fontWeight: "700",
+  },
+  teknisiInfo: {
+    flex: 1,
+    flexShrink: 1,
+  },
+  teknisiName: {
+    color: "#111827",
+    fontSize: 14,
     fontWeight: "600",
+  },
+  teknisiWilayah: {
+    color: "#6b7280",
+    fontSize: 12,
+    marginTop: 2,
   },
   error: {
     color: "#DC2626",
