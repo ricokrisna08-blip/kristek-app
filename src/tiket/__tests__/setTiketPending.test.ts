@@ -46,12 +46,13 @@ function fakeClient(opts: {
         return {
           insert: (...args: unknown[]) => {
             insertNotifikasi(...args);
-            return { select: () => Promise.resolve({ data: [], error: null }) };
+            return Promise.resolve({ error: null });
           },
         };
       }
       throw new Error(`Unexpected table: ${table}`);
     },
+    functions: { invoke: jest.fn().mockResolvedValue({ data: null, error: null }) },
   } as unknown as SupabaseClient;
 }
 
@@ -88,12 +89,14 @@ test("Pending succeeds: moves Tiket to Pending and notifies the assigning Admin 
   expect(insertNotifikasi).toHaveBeenCalledWith(
     expect.arrayContaining([
       {
+        id: expect.any(String),
         user_id: "admin-1",
         tiket_id: "tiket-1",
         type: "pending",
         notes: "Menunggu material dari gudang",
       },
       {
+        id: expect.any(String),
         user_id: "pemilik-1",
         tiket_id: "tiket-1",
         type: "pending",

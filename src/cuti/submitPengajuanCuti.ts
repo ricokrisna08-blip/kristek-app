@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { triggerPushNotification } from "../notifikasi/triggerPushNotification";
+import { generateUuid } from "../lib/generateUuid";
 
 export type NewPengajuanCutiInput = {
   teknisiId: string;
@@ -49,20 +50,20 @@ export async function submitPengajuanCuti(
     .in("role", ["admin", "pemilik"]);
 
   if (penerima && penerima.length > 0) {
-    const { data: insertedNotifikasi } = await client
-      .from("notifikasi")
-      .insert(
-        penerima.map((user: { id: string }) => ({
-          user_id: user.id,
-          cuti_id: cuti.id,
-          type: "cuti_diajukan",
-          notes: input.alasan.trim(),
-        }))
-      )
-      .select("id");
+    const notifikasiRows = penerima.map((user: { id: string }) => ({
+      id: generateUuid(),
+      user_id: user.id,
+      cuti_id: cuti.id,
+      type: "cuti_diajukan",
+      notes: input.alasan.trim(),
+    }));
 
-    for (const row of insertedNotifikasi ?? []) {
-      triggerPushNotification(client, row.id);
+    const { error: notifikasiError } = await client.from("notifikasi").insert(notifikasiRows);
+
+    if (!notifikasiError) {
+      for (const row of notifikasiRows) {
+        triggerPushNotification(client, row.id);
+      }
     }
   }
 

@@ -51,7 +51,7 @@ function fakeClient(opts: {
         return {
           insert: (...args: unknown[]) => {
             insertNotifikasi(...args);
-            return { select: () => Promise.resolve({ data: [], error: null }) };
+            return Promise.resolve({ error: null });
           },
         };
       }
@@ -63,6 +63,7 @@ function fakeClient(opts: {
         getPublicUrl: () => ({ data: { publicUrl: "https://example.test/after.jpg" } }),
       }),
     },
+    functions: { invoke: jest.fn().mockResolvedValue({ data: null, error: null }) },
   } as unknown as SupabaseClient;
 }
 
@@ -112,8 +113,8 @@ test("End succeeds: uploads after-photo, records tiket_foto, moves Tiket to Sele
   });
   expect(insertNotifikasi).toHaveBeenCalledWith(
     expect.arrayContaining([
-      { user_id: "admin-1", tiket_id: "tiket-1", type: "selesai" },
-      { user_id: "pemilik-1", tiket_id: "tiket-1", type: "selesai" },
+      { id: expect.any(String), user_id: "admin-1", tiket_id: "tiket-1", type: "selesai" },
+      { id: expect.any(String), user_id: "pemilik-1", tiket_id: "tiket-1", type: "selesai" },
     ])
   );
   expect(result).toEqual({ success: true });

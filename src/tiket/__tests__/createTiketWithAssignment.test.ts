@@ -4,6 +4,7 @@ import { createTiketWithAssignment } from "../createTiketWithAssignment";
 function fakeClient(handlers: Record<string, any>): SupabaseClient {
   return {
     from: (table: string) => handlers[table],
+    functions: { invoke: jest.fn().mockResolvedValue({ data: null, error: null }) },
   } as unknown as SupabaseClient;
 }
 
@@ -34,9 +35,7 @@ test("Instalasi: creates the Pelanggan first, then the Tiket linked to it", asyn
     error: null,
   });
   const tiketTeknisiInsert = jest.fn().mockResolvedValue({ error: null });
-  const notifikasiInsert = jest
-    .fn()
-    .mockReturnValue({ select: () => Promise.resolve({ data: [], error: null }) });
+  const notifikasiInsert = jest.fn().mockResolvedValue({ error: null });
   const statusLogInsert = jest.fn().mockResolvedValue({ error: null });
 
   const client = fakeClient({
@@ -91,9 +90,7 @@ test("Gangguan-Komplain: uses an existing Pelanggan and records the Keluhan", as
     error: null,
   });
   const tiketTeknisiInsert = jest.fn().mockResolvedValue({ error: null });
-  const notifikasiInsert = jest
-    .fn()
-    .mockReturnValue({ select: () => Promise.resolve({ data: [], error: null }) });
+  const notifikasiInsert = jest.fn().mockResolvedValue({ error: null });
   const statusLogInsert = jest.fn().mockResolvedValue({ error: null });
 
   const client = fakeClient({
@@ -135,9 +132,7 @@ test("Maintenance: uses an ODP instead of a Pelanggan and records Deskripsi Peke
     error: null,
   });
   const tiketTeknisiInsert = jest.fn().mockResolvedValue({ error: null });
-  const notifikasiInsert = jest
-    .fn()
-    .mockReturnValue({ select: () => Promise.resolve({ data: [], error: null }) });
+  const notifikasiInsert = jest.fn().mockResolvedValue({ error: null });
   const statusLogInsert = jest.fn().mockResolvedValue({ error: null });
 
   const client = fakeClient({

@@ -34,12 +34,13 @@ function fakeClient(options: {
         return {
           insert: (rows: unknown) => {
             notifikasiInserts.push(rows);
-            return { select: () => Promise.resolve({ data: [], error: null }) };
+            return Promise.resolve({ error: null });
           },
         };
       }
       throw new Error(`unexpected table ${table}`);
     },
+    functions: { invoke: jest.fn().mockResolvedValue({ data: null, error: null }) },
   } as unknown as SupabaseClient;
 
   return { client, notifikasiInserts };
@@ -62,8 +63,20 @@ test("valid input creates the pengajuan and notifies every admin/pemilik", async
   expect(result).toEqual({ success: true });
   expect(notifikasiInserts).toEqual([
     [
-      { user_id: "admin-1", cuti_id: "cuti-1", type: "cuti_diajukan", notes: "Sakit demam" },
-      { user_id: "pemilik-1", cuti_id: "cuti-1", type: "cuti_diajukan", notes: "Sakit demam" },
+      {
+        id: expect.any(String),
+        user_id: "admin-1",
+        cuti_id: "cuti-1",
+        type: "cuti_diajukan",
+        notes: "Sakit demam",
+      },
+      {
+        id: expect.any(String),
+        user_id: "pemilik-1",
+        cuti_id: "cuti-1",
+        type: "cuti_diajukan",
+        notes: "Sakit demam",
+      },
     ],
   ]);
 });
