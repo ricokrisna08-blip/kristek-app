@@ -14,7 +14,7 @@ import { deleteWilayah } from "../wilayah/deleteWilayah";
 import { listWilayah, type Wilayah } from "../wilayah/listWilayah";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
-import { BackButton } from "../components/BackButton";
+import { ScreenHeader } from "../components/ScreenHeader";
 
 type Props = {
   onBack: () => void;
@@ -76,12 +76,13 @@ export function WilayahManagementScreen({ onBack }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <BackButton onPress={onBack} />
-
-      <Text style={styles.title}>Manajemen Wilayah</Text>
-      <Text style={styles.count}>{wilayahList.length} Wilayah terdaftar</Text>
-
+    <View style={styles.screen}>
+      <ScreenHeader
+        title="Manajemen Wilayah"
+        subtitle={`${wilayahList.length} Wilayah terdaftar`}
+        onBack={onBack}
+      />
+      <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.sectionCard}>
         <Text style={styles.subtitle}>Tambah Wilayah Baru</Text>
 
@@ -148,27 +149,20 @@ export function WilayahManagementScreen({ onBack }: Props) {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
   container: {
     flexGrow: 1,
     padding: 24,
     backgroundColor: "#F8FAFC",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#111827",
-    marginTop: 16,
-  },
-  count: {
-    fontSize: 13,
-    color: "#6b7280",
-    marginTop: 2,
-    marginBottom: 16,
   },
   sectionCard: {
     backgroundColor: "#FFFFFF",

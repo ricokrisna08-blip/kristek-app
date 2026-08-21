@@ -16,7 +16,7 @@ import {
 import { findInstalasiTiketForPelanggan } from "../tiket/findInstalasiTiketForPelanggan";
 import { getTiketDetail, type TiketDetail } from "../tiket/getTiketDetail";
 import { TiketDetailView } from "../components/TiketDetailView";
-import { BackButton } from "../components/BackButton";
+import { ScreenHeader } from "../components/ScreenHeader";
 import type { UserProfile } from "../auth/profile";
 
 type Props = {
@@ -71,15 +71,13 @@ export function InstallationEvidenceScreen({ profile, onBack }: Props) {
   }
 
   return (
-    <View style={styles.container}>
-      <BackButton onPress={onBack} />
-
-      <Text style={styles.title}>Installation Evidence</Text>
-      <Text style={styles.subtitleText}>
-        Cari Pelanggan, lalu upload foto bukti Instalasi lewat Tiket yang
-        ditugaskan ke Anda.
-      </Text>
-
+    <View style={styles.screen}>
+      <ScreenHeader
+        title="Installation Evidence"
+        subtitle="Cari Pelanggan, lalu upload foto bukti Instalasi lewat Tiket yang ditugaskan ke Anda."
+        onBack={onBack}
+      />
+      <View style={styles.container}>
       <View style={styles.searchBox}>
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
@@ -116,6 +114,7 @@ export function InstallationEvidenceScreen({ profile, onBack }: Props) {
           </TouchableOpacity>
         )}
       />
+      </View>
     </View>
   );
 }
@@ -124,22 +123,13 @@ const KRISTEK_TEAL = "#1B7396";
 const KRISTEK_NAVY = "#0B2D5B";
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: "#F8FAFC",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: KRISTEK_NAVY,
-    marginTop: 16,
-    marginBottom: 4,
-  },
-  subtitleText: {
-    color: "#6b7280",
-    fontSize: 13,
-    marginBottom: 16,
   },
   searchBox: {
     flexDirection: "row",

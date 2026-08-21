@@ -17,7 +17,7 @@ import { canCreateOdp, canDeleteOdp } from "../auth/permissions";
 import type { UserProfile } from "../auth/profile";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
-import { BackButton } from "../components/BackButton";
+import { ScreenHeader } from "../components/ScreenHeader";
 
 type Props = {
   profile: UserProfile;
@@ -112,12 +112,13 @@ export function OdpManagementScreen({ profile, onBack }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <BackButton onPress={onBack} />
-
-      <Text style={styles.title}>Manajemen ODP</Text>
-      <Text style={styles.count}>{odpList.length} ODP terdaftar</Text>
-
+    <View style={styles.screen}>
+      <ScreenHeader
+        title="Manajemen ODP"
+        subtitle={`${odpList.length} ODP terdaftar`}
+        onBack={onBack}
+      />
+      <ScrollView contentContainerStyle={styles.container}>
       {canCreateOdp(profile.role) ? (
         <View style={styles.sectionCard}>
           <Text style={styles.subtitle}>Tambah ODP Baru</Text>
@@ -257,27 +258,20 @@ export function OdpManagementScreen({ profile, onBack }: Props) {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
   container: {
     flexGrow: 1,
     padding: 24,
     backgroundColor: "#F8FAFC",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#111827",
-    marginTop: 16,
-  },
-  count: {
-    fontSize: 13,
-    color: "#6b7280",
-    marginTop: 2,
-    marginBottom: 16,
   },
   sectionCard: {
     backgroundColor: "#FFFFFF",

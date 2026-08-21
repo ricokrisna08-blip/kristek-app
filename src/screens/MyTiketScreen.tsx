@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 import { listTiket, type TiketListItem } from "../tiket/listTiket";
 import { getTiketDetail, type TiketDetail } from "../tiket/getTiketDetail";
 import { TiketDetailView } from "../components/TiketDetailView";
-import { BackButton } from "../components/BackButton";
+import { ScreenHeader } from "../components/ScreenHeader";
 import type { UserProfile } from "../auth/profile";
 import type { TiketJenis } from "../tiket/createTiketWithAssignment";
 import { JENIS_LABEL, STATUS_LABEL } from "../tiket/labels";
@@ -96,12 +96,9 @@ export function MyTiketScreen({ profile, title, jenisFilter, onBack }: Props) {
   }
 
   return (
-    <View style={styles.container}>
-      <BackButton onPress={onBack} />
-
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.count}>{tiketList.length} Tiket</Text>
-
+    <View style={styles.screen}>
+      <ScreenHeader title={title} subtitle={`${tiketList.length} Tiket`} onBack={onBack} />
+      <View style={styles.container}>
       {isLoading ? (
         <ActivityIndicator style={styles.loading} />
       ) : (
@@ -138,29 +135,20 @@ export function MyTiketScreen({ profile, title, jenisFilter, onBack }: Props) {
           }}
         />
       )}
+      </View>
     </View>
   );
 }
 
-const KRISTEK_NAVY = "#0B2D5B";
-
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
   container: {
     flex: 1,
     padding: 24,
     backgroundColor: "#F8FAFC",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: KRISTEK_NAVY,
-    marginTop: 16,
-  },
-  count: {
-    fontSize: 13,
-    color: "#6b7280",
-    marginTop: 2,
-    marginBottom: 16,
   },
   loading: {
     marginVertical: 12,

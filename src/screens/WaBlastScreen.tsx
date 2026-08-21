@@ -13,7 +13,7 @@ import { createWaBlastJob } from "../wablast/createWaBlastJob";
 import { countBelumBayar } from "../wablast/countBelumBayar";
 import { listWaBlastJobs, type WaBlastJobItem, type WaBlastJobStatus } from "../wablast/listWaBlastJobs";
 import type { UserProfile } from "../auth/profile";
-import { BackButton } from "../components/BackButton";
+import { ScreenHeader } from "../components/ScreenHeader";
 
 type Props = {
   profile: UserProfile;
@@ -110,16 +110,13 @@ export function WaBlastScreen({ profile, onBack }: Props) {
   }
 
   return (
-    <View style={styles.container}>
-      <BackButton onPress={onBack} />
-
-      <Text style={styles.title}>Blast Tagihan WhatsApp</Text>
-      <Text style={styles.hint}>
-        Kirim reminder tagihan WA ke semua Pelanggan yang belum bayar bulan ini. Diproses oleh
-        daemon di laptop (butuh WhatsApp Web session yang aktif) -- juga jalan otomatis tiap
-        tanggal 1 jam 09:00.
-      </Text>
-
+    <View style={styles.screen}>
+      <ScreenHeader
+        title="Blast Tagihan WhatsApp"
+        subtitle="Kirim reminder tagihan WA ke Pelanggan yang belum bayar bulan ini. Diproses oleh daemon di laptop, juga jalan otomatis tiap tanggal 1 jam 09:00."
+        onBack={onBack}
+      />
+      <View style={styles.container}>
       <TouchableOpacity
         style={[styles.button, (isCountingConfirm || hasActiveJob) && styles.buttonDisabled]}
         onPress={handleOpenConfirm}
@@ -209,6 +206,7 @@ export function WaBlastScreen({ profile, onBack }: Props) {
           )}
         />
       )}
+      </View>
     </View>
   );
 }
@@ -217,22 +215,13 @@ const KRISTEK_TEAL = "#1B7396";
 const KRISTEK_NAVY = "#0B2D5B";
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: "#F8FAFC",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: KRISTEK_NAVY,
-    marginTop: 16,
-  },
-  hint: {
-    fontSize: 12,
-    color: "#6b7280",
-    marginTop: 4,
-    marginBottom: 16,
   },
   error: {
     color: "#DC2626",

@@ -20,7 +20,7 @@ import { listWilayah, type Wilayah } from "../wilayah/listWilayah";
 import type { Role } from "../domain/types";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
-import { BackButton } from "../components/BackButton";
+import { ScreenHeader } from "../components/ScreenHeader";
 
 type Props = {
   onBack: () => void;
@@ -202,23 +202,22 @@ export function AccountManagementScreen({ onBack }: Props) {
     form.wilayahId;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <BackButton onPress={onBack} />
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={openCreateForm}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Text style={styles.addButtonText}>+ Tambah Akun</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={styles.title}>Manajemen Akun</Text>
-      <Text style={styles.subtitleText}>
-        {accounts.length} akun Admin/Teknisi terdaftar
-      </Text>
-
+    <View style={styles.screen}>
+      <ScreenHeader
+        title="Manajemen Akun"
+        subtitle={`${accounts.length} akun Admin/Teknisi terdaftar`}
+        onBack={onBack}
+        right={
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={openCreateForm}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={styles.addButtonText}>+ Tambah Akun</Text>
+          </TouchableOpacity>
+        }
+      />
+      <View style={styles.container}>
       <View style={styles.searchBox}>
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
@@ -279,6 +278,7 @@ export function AccountManagementScreen({ onBack }: Props) {
           }}
         />
       )}
+      </View>
 
       {/* Menu aksi per akun */}
       <Modal
@@ -560,17 +560,14 @@ export function AccountManagementScreen({ onBack }: Props) {
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
   container: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
-    backgroundColor: "#fff",
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 12,
   },
   back: {
     color: "#1B7396",

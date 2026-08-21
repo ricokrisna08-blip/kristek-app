@@ -15,7 +15,7 @@ import { deletePaket } from "../paket/deletePaket";
 import { listPaket, type Paket } from "../paket/listPaket";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
-import { BackButton } from "../components/BackButton";
+import { ScreenHeader } from "../components/ScreenHeader";
 
 type Props = {
   onBack: () => void;
@@ -111,12 +111,13 @@ export function PaketManagementScreen({ onBack }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <BackButton onPress={onBack} />
-
-      <Text style={styles.title}>Manajemen Paket</Text>
-      <Text style={styles.count}>{paketList.length} Paket terdaftar</Text>
-
+    <View style={styles.screen}>
+      <ScreenHeader
+        title="Manajemen Paket"
+        subtitle={`${paketList.length} Paket terdaftar`}
+        onBack={onBack}
+      />
+      <ScrollView contentContainerStyle={styles.container}>
       {isLoading ? (
         <ActivityIndicator style={styles.loading} />
       ) : paketList.length === 0 ? (
@@ -222,11 +223,16 @@ export function PaketManagementScreen({ onBack }: Props) {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
   container: {
     flexGrow: 1,
     padding: 24,
@@ -250,18 +256,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#6b7280",
     marginBottom: 8,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#111827",
-    marginTop: 16,
-  },
-  count: {
-    fontSize: 13,
-    color: "#6b7280",
-    marginTop: 2,
-    marginBottom: 16,
   },
   subtitle: {
     fontSize: 15,

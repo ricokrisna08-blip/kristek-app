@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 import { getTeknisiPerformance } from "../tiket/getTeknisiPerformance";
 import type { TeknisiPerformance } from "../tiket/computeTeknisiPerformance";
 import { formatDurasiKerja } from "../tiket/durasiKerja";
-import { BackButton } from "../components/BackButton";
+import { ScreenHeader } from "../components/ScreenHeader";
 
 type Props = {
   onBack: () => void;
@@ -23,11 +23,12 @@ export function LaporanPerformaScreen({ onBack }: Props) {
 
   return (
     <View style={styles.container}>
-      <BackButton onPress={onBack} />
-
-      <Text style={styles.title}>Laporan Performa Teknisi</Text>
-      <Text style={styles.count}>{performaList.length} Teknisi</Text>
-
+      <ScreenHeader
+        title="Laporan Performa Teknisi"
+        subtitle={`${performaList.length} Teknisi`}
+        onBack={onBack}
+      />
+      <View style={styles.body}>
       {isLoading ? (
         <ActivityIndicator style={styles.loading} />
       ) : (
@@ -69,6 +70,7 @@ export function LaporanPerformaScreen({ onBack }: Props) {
           )}
         />
       )}
+      </View>
     </View>
   );
 }
@@ -79,20 +81,11 @@ const KRISTEK_NAVY = "#0B2D5B";
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
     backgroundColor: "#F8FAFC",
   },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: KRISTEK_NAVY,
-    marginTop: 16,
-  },
-  count: {
-    fontSize: 13,
-    color: "#6b7280",
-    marginTop: 2,
-    marginBottom: 16,
+  body: {
+    flex: 1,
+    padding: 24,
   },
   loading: {
     marginVertical: 12,

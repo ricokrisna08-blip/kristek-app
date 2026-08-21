@@ -40,7 +40,7 @@ import {
 import type { UserProfile } from "../auth/profile";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
-import { BackButton } from "../components/BackButton";
+import { ScreenHeader } from "../components/ScreenHeader";
 import { Dropdown } from "../components/Dropdown";
 import { AlphabetIndex } from "../components/AlphabetIndex";
 
@@ -566,9 +566,13 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
 
   if (selectedDetail) {
     return (
-      <ScrollView contentContainerStyle={styles.container}>
-        <BackButton onPress={() => setSelectedDetail(null)} label="Kembali ke daftar" />
-
+      <View style={styles.detailContainer}>
+        <ScreenHeader
+          title="Detail Pelanggan"
+          onBack={() => setSelectedDetail(null)}
+          backLabel="Kembali ke daftar"
+        />
+        <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.detailHeader}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
@@ -590,17 +594,29 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
           {canEditPelanggan(profile.role) ? (
             isEditingPelanggan ? (
               <View style={styles.editToggleRow}>
-                <TouchableOpacity onPress={handleCancelEditPelanggan} disabled={isSavingEditPelanggan}>
+                <TouchableOpacity
+                  onPress={handleCancelEditPelanggan}
+                  disabled={isSavingEditPelanggan}
+                  hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
+                >
                   <Text style={styles.editToggleCancel}>Batal</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleSaveEditPelanggan} disabled={isSavingEditPelanggan}>
+                <TouchableOpacity
+                  onPress={handleSaveEditPelanggan}
+                  disabled={isSavingEditPelanggan}
+                  hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
+                >
                   <Text style={styles.editToggleSave}>
                     {isSavingEditPelanggan ? "Menyimpan..." : "Simpan"}
                   </Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity style={styles.editToggleButton} onPress={handleStartEditPelanggan}>
+              <TouchableOpacity
+                style={styles.editToggleButton}
+                onPress={handleStartEditPelanggan}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
                 <Text style={styles.editToggleButtonText}>✎ Edit Data Pelanggan</Text>
               </TouchableOpacity>
             )
@@ -867,28 +883,31 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
           onCancel={() => setIsDeleteConfirmVisible(false)}
           onConfirm={handleDeletePelanggan}
         />
-      </ScrollView>
+        </ScrollView>
+      </View>
     );
   }
 
   return (
     <View style={styles.listContainer}>
-      <View style={styles.headerRow}>
-        <BackButton onPress={onBack} />
-        {canCreatePelanggan(profile.role) ? (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={openAddModal}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Text style={styles.addButtonText}>+ Tambah Pelanggan</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
+      <ScreenHeader
+        title="Manajemen Pelanggan"
+        subtitle={`${results.length} Pelanggan ditemukan`}
+        onBack={onBack}
+        right={
+          canCreatePelanggan(profile.role) ? (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={openAddModal}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.addButtonText}>+ Tambah Pelanggan</Text>
+            </TouchableOpacity>
+          ) : null
+        }
+      />
 
-      <Text style={styles.title}>Manajemen Pelanggan</Text>
-      <Text style={styles.count}>{results.length} Pelanggan ditemukan</Text>
-
+      <View style={styles.listBody}>
       {addMikrotikWarning ? (
         <TouchableOpacity onPress={() => setAddMikrotikWarning(null)}>
           <Text style={styles.warningBanner}>{addMikrotikWarning} (ketuk untuk tutup)</Text>
@@ -909,11 +928,19 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
       {isLoading ? (
         <ActivityIndicator style={styles.loading} />
       ) : results.length === 0 ? (
-        <Text style={styles.emptyText}>
-          {query.trim()
-            ? `Tidak ada Pelanggan yang cocok dengan "${query.trim()}".`
-            : "Belum ada Pelanggan."}
-        </Text>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateIcon}>{query.trim() ? "🔍" : "👥"}</Text>
+          <Text style={styles.emptyText}>
+            {query.trim()
+              ? `Tidak ada Pelanggan yang cocok dengan "${query.trim()}".`
+              : "Belum ada Pelanggan."}
+          </Text>
+          {!query.trim() && canCreatePelanggan(profile.role) ? (
+            <TouchableOpacity style={styles.emptyStateButton} onPress={openAddModal}>
+              <Text style={styles.emptyStateButtonText}>+ Tambah Pelanggan Pertama</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       ) : (
         <View style={styles.listRow}>
           <SectionList
@@ -955,6 +982,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
           ) : null}
         </View>
       )}
+      </View>
 
       {canCreatePelanggan(profile.role) ? (
         <>
@@ -1095,6 +1123,10 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
 }
 
 const styles = StyleSheet.create({
+  detailContainer: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
   container: {
     flexGrow: 1,
     padding: 24,
@@ -1102,14 +1134,11 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flex: 1,
-    padding: 24,
     backgroundColor: "#F8FAFC",
   },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 4,
+  listBody: {
+    flex: 1,
+    padding: 24,
   },
   addButton: {
     backgroundColor: "#1B7396",
@@ -1120,25 +1149,19 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: "#fff",
     fontWeight: "600",
-    fontSize: 13,
+    fontSize: 12,
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
     color: "#111827",
   },
-  count: {
-    fontSize: 13,
-    color: "#6b7280",
-    marginTop: 2,
-    marginBottom: 16,
-  },
   subtitle: {
     fontSize: 15,
     fontWeight: "700",
     color: "#111827",
     marginTop: 20,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   fieldLabel: {
     fontSize: 12,
@@ -1152,13 +1175,40 @@ const styles = StyleSheet.create({
   emptyText: {
     color: "#6b7280",
     paddingVertical: 8,
+    textAlign: "center",
+  },
+  emptyState: {
+    alignItems: "center",
+    paddingTop: 32,
+    paddingHorizontal: 24,
+  },
+  emptyStateIcon: {
+    fontSize: 40,
+    marginBottom: 8,
+  },
+  emptyStateButton: {
+    backgroundColor: "#1B7396",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginTop: 16,
+    shadowColor: "#1B7396",
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  emptyStateButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 15,
   },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#f3f4f6",
     borderRadius: 24,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     marginBottom: 16,
   },
   searchIcon: {
@@ -1167,8 +1217,8 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    paddingVertical: 11,
-    fontSize: 14,
+    paddingVertical: 12,
+    fontSize: 15,
     color: "#111827",
   },
   listRow: {
@@ -1198,7 +1248,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E4E7EB",
     padding: 12,
-    marginBottom: 10,
+    marginBottom: 8,
     shadowColor: "#0F172A",
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -1231,7 +1281,7 @@ const styles = StyleSheet.create({
   cardDetail: {
     color: "#6b7280",
     fontSize: 12,
-    marginTop: 2,
+    marginTop: 4,
   },
   chevron: {
     fontSize: 22,
@@ -1243,26 +1293,26 @@ const styles = StyleSheet.create({
     borderColor: "#e5e7eb",
     backgroundColor: "#f9fafb",
     borderRadius: 12,
-    paddingVertical: 13,
-    paddingHorizontal: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     fontSize: 15,
     color: "#111827",
     marginBottom: 12,
   },
   error: {
     color: "#DC2626",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   warningBanner: {
     backgroundColor: "#FEF3C7",
     color: "#92400E",
     fontSize: 12,
     borderRadius: 8,
-    padding: 10,
+    padding: 12,
     marginBottom: 12,
   },
   formErrorSpacing: {
-    marginTop: -2,
+    marginTop: -4,
   },
   sudahBayarErrorSpacing: {
     marginTop: 12,
@@ -1289,7 +1339,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#1B7396",
     borderRadius: 12,
-    paddingVertical: 15,
+    paddingVertical: 16,
     alignItems: "center",
     shadowColor: "#1B7396",
     shadowOpacity: 0.25,
@@ -1311,12 +1361,12 @@ const styles = StyleSheet.create({
   },
   success: {
     color: "#15803d",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   button: {
     backgroundColor: "#1B7396",
     borderRadius: 12,
-    paddingVertical: 15,
+    paddingVertical: 16,
     alignItems: "center",
     shadowColor: "#1B7396",
     shadowOpacity: 0.25,
@@ -1348,14 +1398,14 @@ const styles = StyleSheet.create({
   },
   editToggleButton: {
     marginTop: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: 999,
     backgroundColor: "#EFF6FF",
   },
   editToggleButtonText: {
     color: "#1B7396",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
   },
   editToggleRow: {
@@ -1365,16 +1415,16 @@ const styles = StyleSheet.create({
   },
   editToggleCancel: {
     color: "#6b7280",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
   },
   editToggleSave: {
     color: "#1B7396",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
   },
   editToggleErrorSpacing: {
-    marginTop: 10,
+    marginTop: 8,
     marginBottom: 0,
     textAlign: "center",
   },
@@ -1394,7 +1444,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1B7396",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   avatarText: {
     color: "#fff",
@@ -1428,8 +1478,8 @@ const styles = StyleSheet.create({
   sectionHint: {
     fontSize: 12,
     color: "#94A3B8",
-    marginTop: -6,
-    marginBottom: 14,
+    marginTop: -4,
+    marginBottom: 16,
   },
   sectionDivider: {
     height: 1,
@@ -1448,7 +1498,7 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 12,
     color: "#6b7280",
-    marginBottom: 2,
+    marginBottom: 4,
   },
   infoValue: {
     fontSize: 15,
@@ -1457,7 +1507,7 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     borderRadius: 12,
-    paddingVertical: 15,
+    paddingVertical: 16,
     alignItems: "center",
     marginTop: 24,
     backgroundColor: "#DC2626",
@@ -1475,7 +1525,7 @@ const styles = StyleSheet.create({
   warningButton: {
     backgroundColor: "#D97706",
     borderRadius: 12,
-    paddingVertical: 15,
+    paddingVertical: 16,
     alignItems: "center",
     marginTop: 4,
     shadowColor: "#D97706",
@@ -1491,7 +1541,7 @@ const styles = StyleSheet.create({
   neutralButton: {
     backgroundColor: "#475569",
     borderRadius: 12,
-    paddingVertical: 15,
+    paddingVertical: 16,
     alignItems: "center",
     marginTop: 16,
     shadowColor: "#475569",
@@ -1503,7 +1553,7 @@ const styles = StyleSheet.create({
   statusBayarRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
   },
   checkbox: {
     width: 22,
@@ -1525,7 +1575,7 @@ const styles = StyleSheet.create({
   },
   badge: {
     paddingVertical: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     borderRadius: 999,
     alignSelf: "flex-start",
   },

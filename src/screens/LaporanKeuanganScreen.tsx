@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { supabase } from "../lib/supabase";
 import { getLaporanKeuangan, type LaporanBulananItem } from "../laporan/getLaporanKeuangan";
-import { BackButton } from "../components/BackButton";
+import { ScreenHeader } from "../components/ScreenHeader";
 
 type Props = {
   onBack: () => void;
@@ -33,12 +33,13 @@ export function LaporanKeuanganScreen({ onBack }: Props) {
   }, []);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <BackButton onPress={onBack} />
-
-      <Text style={styles.title}>Laporan Keuangan</Text>
-      <Text style={styles.count}>{items.length} bulan tercatat</Text>
-
+    <View style={styles.screen}>
+      <ScreenHeader
+        title="Laporan Keuangan"
+        subtitle={`${items.length} bulan tercatat`}
+        onBack={onBack}
+      />
+      <ScrollView contentContainerStyle={styles.container}>
       {isLoading ? (
         <ActivityIndicator style={styles.loading} />
       ) : (
@@ -100,7 +101,8 @@ export function LaporanKeuanganScreen({ onBack }: Props) {
           </ScrollView>
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -108,22 +110,14 @@ const KRISTEK_TEAL = "#1B7396";
 const KRISTEK_NAVY = "#0B2D5B";
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
   container: {
     flexGrow: 1,
     padding: 24,
     backgroundColor: "#F8FAFC",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: KRISTEK_NAVY,
-    marginTop: 16,
-  },
-  count: {
-    fontSize: 13,
-    color: "#6b7280",
-    marginTop: 2,
-    marginBottom: 16,
   },
   loading: {
     marginVertical: 12,

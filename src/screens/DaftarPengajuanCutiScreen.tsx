@@ -5,7 +5,7 @@ import { listPengajuanCuti, type PengajuanCutiItem } from "../cuti/listPengajuan
 import { deletePengajuanCuti } from "../cuti/deletePengajuanCuti";
 import { canDeletePengajuanCuti } from "../auth/permissions";
 import type { UserProfile } from "../auth/profile";
-import { BackButton } from "../components/BackButton";
+import { ScreenHeader } from "../components/ScreenHeader";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
 
 type Props = {
@@ -72,12 +72,13 @@ export function DaftarPengajuanCutiScreen({ profile, onBack }: Props) {
   }
 
   return (
-    <View style={styles.container}>
-      <BackButton onPress={onBack} />
-
-      <Text style={styles.title}>Pengajuan Cuti/Izin</Text>
-      <Text style={styles.count}>{items.length} pengajuan tercatat</Text>
-
+    <View style={styles.screen}>
+      <ScreenHeader
+        title="Pengajuan Cuti/Izin"
+        subtitle={`${items.length} pengajuan tercatat`}
+        onBack={onBack}
+      />
+      <View style={styles.container}>
       {isLoading ? (
         <ActivityIndicator style={styles.loading} />
       ) : (
@@ -123,30 +124,21 @@ export function DaftarPengajuanCutiScreen({ profile, onBack }: Props) {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />
+      </View>
     </View>
   );
 }
 
 const KRISTEK_TEAL = "#1B7396";
-const KRISTEK_NAVY = "#0B2D5B";
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: "#F8FAFC",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: KRISTEK_NAVY,
-    marginTop: 16,
-  },
-  count: {
-    fontSize: 13,
-    color: "#6b7280",
-    marginTop: 2,
-    marginBottom: 16,
   },
   loading: {
     marginVertical: 12,
