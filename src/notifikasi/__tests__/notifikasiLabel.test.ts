@@ -39,7 +39,7 @@ test("Maintenance notification falls back to the ODP label when there's no Pelan
   expect(label).toBe("Maintenance — ODP-KRTK-001 masuk status Pending");
 });
 
-test("Gangguan-Komplain Selesai reads naturally", () => {
+test("Laporan Pelanggan Selesai reads naturally", () => {
   const label = notifikasiLabel(
     baseNotif({
       type: "selesai",
@@ -48,7 +48,7 @@ test("Gangguan-Komplain Selesai reads naturally", () => {
     })
   );
 
-  expect(label).toBe("Gangguan-Komplain — Siti sudah Selesai");
+  expect(label).toBe("Laporan Pelanggan — Siti sudah Selesai");
 });
 
 test("Pending notification includes the technician's notes when present", () => {

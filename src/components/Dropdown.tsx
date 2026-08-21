@@ -6,6 +6,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 
@@ -57,40 +58,47 @@ export function Dropdown({
 
       <Modal visible={isOpen} transparent animationType="fade" onRequestClose={close}>
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={close}>
-          <View style={styles.sheet}>
-            <Text style={styles.title}>{title}</Text>
-            {searchable ? (
-              <View style={styles.searchBox}>
-                <Text style={styles.searchIcon}>🔍</Text>
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Cari..."
-                  placeholderTextColor="#9ca3af"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  autoCapitalize="none"
-                />
-              </View>
-            ) : null}
-            <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
-              {filteredOptions.length === 0 ? (
-                <Text style={styles.emptyText}>Tidak ditemukan.</Text>
-              ) : (
-                filteredOptions.map((option) => (
-                  <TouchableOpacity
-                    key={option.id}
-                    style={styles.option}
-                    onPress={() => {
-                      onSelect(option.id);
-                      close();
-                    }}
-                  >
-                    <Text style={styles.optionText}>{option.label}</Text>
-                  </TouchableOpacity>
-                ))
-              )}
-            </ScrollView>
-          </View>
+          {/* Tanpa TouchableWithoutFeedback ini, tap di MANA PUN di dalam
+              sheet (termasuk search box) nge-bubble ke onPress backdrop di
+              atas dan langsung nutup modal -- TextInput, beda dari
+              TouchableOpacity, tidak otomatis "mengklaim" touch responder,
+              jadi tap di dalamnya tetap diteruskan ke parent. */}
+          <TouchableWithoutFeedback>
+            <View style={styles.sheet}>
+              <Text style={styles.title}>{title}</Text>
+              {searchable ? (
+                <View style={styles.searchBox}>
+                  <Text style={styles.searchIcon}>🔍</Text>
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Cari..."
+                    placeholderTextColor="#9ca3af"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    autoCapitalize="none"
+                  />
+                </View>
+              ) : null}
+              <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
+                {filteredOptions.length === 0 ? (
+                  <Text style={styles.emptyText}>Tidak ditemukan.</Text>
+                ) : (
+                  filteredOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option.id}
+                      style={styles.option}
+                      onPress={() => {
+                        onSelect(option.id);
+                        close();
+                      }}
+                    >
+                      <Text style={styles.optionText}>{option.label}</Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </ScrollView>
+            </View>
+          </TouchableWithoutFeedback>
         </TouchableOpacity>
       </Modal>
     </>

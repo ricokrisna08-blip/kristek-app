@@ -27,7 +27,7 @@ import type { UserProfile } from "../auth/profile";
 
 const JENIS_OPTIONS: { value: TiketJenis; label: string }[] = [
   { value: "instalasi", label: "Instalasi" },
-  { value: "gangguan_komplain", label: "Gangguan-Komplain" },
+  { value: "gangguan_komplain", label: "Laporan Pelanggan" },
   { value: "maintenance", label: "Maintenance" },
 ];
 
@@ -40,7 +40,7 @@ type Props = {
 export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
   const [jenis, setJenis] = useState<TiketJenis>("instalasi");
 
-  // Gangguan-Komplain: pilih Pelanggan lama.
+  // Laporan Pelanggan (gangguan_komplain): pilih Pelanggan lama.
   const [pelangganResults, setPelangganResults] = useState<PelangganListItem[]>([]);
   const [selectedPelanggan, setSelectedPelanggan] = useState<PelangganListItem | null>(
     null

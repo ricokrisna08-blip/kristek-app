@@ -1,6 +1,6 @@
 export const JENIS_LABEL: Record<string, string> = {
   instalasi: "Instalasi",
-  gangguan_komplain: "Gangguan-Komplain",
+  gangguan_komplain: "Laporan Pelanggan",
   maintenance: "Maintenance",
 };
 
