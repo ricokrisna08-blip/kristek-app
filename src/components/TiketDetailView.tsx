@@ -1013,7 +1013,6 @@ const styles = StyleSheet.create({
   },
   fotoItem: {
     width: "47%",
-    alignItems: "center",
   },
   fotoImage: {
     width: "100%",
@@ -1026,28 +1025,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: "#374151",
+    textAlign: "center",
   },
   fotoTimestamp: {
     marginTop: 2,
     fontSize: 10,
     color: "#9ca3af",
+    textAlign: "center",
   },
   fotoAlamat: {
     marginTop: 2,
     fontSize: 10,
     color: "#9ca3af",
+    textAlign: "center",
   },
   fotoAlamatLink: {
     marginTop: 2,
     fontSize: 10,
     fontWeight: "700",
     color: KRISTEK_TEAL,
+    textAlign: "center",
   },
   fotoDeleteText: {
     marginTop: 2,
     fontSize: 12,
     color: "#DC2626",
     fontWeight: "600",
+    textAlign: "center",
   },
   fotoViewerBackdrop: {
     flex: 1,
