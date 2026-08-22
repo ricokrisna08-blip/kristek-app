@@ -20,6 +20,7 @@ import {
   canSubmitCuti,
   canViewPengajuanCuti,
   canTriggerWaBlast,
+  canResetTiketData,
 } from "../permissions";
 
 test("Pemilik can manage accounts", () => {
@@ -255,4 +256,10 @@ test("Pemilik can trigger WA blast", () => {
 test("Admin and Teknisi cannot trigger WA blast", () => {
   expect(canTriggerWaBlast("admin")).toBe(false);
   expect(canTriggerWaBlast("teknisi")).toBe(false);
+});
+
+test("Only Pemilik can bulk-reset Tiket/Notifikasi data", () => {
+  expect(canResetTiketData("pemilik")).toBe(true);
+  expect(canResetTiketData("admin")).toBe(false);
+  expect(canResetTiketData("teknisi")).toBe(false);
 });

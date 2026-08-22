@@ -18,6 +18,7 @@ import {
   canSubmitCuti,
   canViewPengajuanCuti,
   canTriggerWaBlast,
+  canResetTiketData,
 } from "../auth/permissions";
 import { NotifikasiBell } from "../components/NotifikasiBell";
 
@@ -65,6 +66,7 @@ type Props = {
   onNavigateToMaintenance: () => void;
   onNavigateToGangguan: () => void;
   onNavigateToTiketDetail: (tiketId: string) => void;
+  onNavigateToDataReset: () => void;
   onLogout: () => void;
 };
 
@@ -94,6 +96,7 @@ export function HomeScreen({
   onNavigateToMaintenance,
   onNavigateToGangguan,
   onNavigateToTiketDetail,
+  onNavigateToDataReset,
   onLogout,
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -114,13 +117,13 @@ export function HomeScreen({
     menuItems.push({ key: "wilayah", icon: "🗺️", label: "Kelola Wilayah", onPress: onNavigateToWilayah });
   }
   if (canViewOdp(profile.role)) {
-    menuItems.push({ key: "odp", icon: "📡", label: "Kelola ODP", onPress: onNavigateToOdp });
+    menuItems.push({ key: "odp", icon: "🗄️", label: "Kelola ODP", onPress: onNavigateToOdp });
   }
   if (canViewPelanggan(profile.role)) {
     menuItems.push({ key: "pelanggan", icon: "👥", label: "Kelola Pelanggan", onPress: onNavigateToPelanggan });
   }
   if (canManagePaket(profile.role)) {
-    menuItems.push({ key: "paket", icon: "📦", label: "Kelola Paket", onPress: onNavigateToPaket });
+    menuItems.push({ key: "paket", icon: "📶", label: "Kelola Paket", onPress: onNavigateToPaket });
   }
   if (canCreateTiket(profile.role)) {
     menuItems.push({ key: "createTiket", icon: "📝", label: "Buat Tiket", onPress: onNavigateToCreateTiket });
@@ -179,6 +182,14 @@ export function HomeScreen({
       icon: "🌴",
       label: "Ajukan Cuti/Izin",
       onPress: onNavigateToPengajuanCuti,
+    });
+  }
+  if (canResetTiketData(profile.role)) {
+    menuItems.push({
+      key: "dataReset",
+      icon: "🗑️",
+      label: "Reset Data",
+      onPress: onNavigateToDataReset,
     });
   }
 

@@ -87,3 +87,7 @@ export function canDeletePengajuanCuti(role: Role): boolean {
 export function canTriggerWaBlast(role: Role): boolean {
   return role === "pemilik";
 }
+
+export function canResetTiketData(role: Role): boolean {
+  return role === "pemilik";
+}
