@@ -24,6 +24,7 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { Dropdown } from "../components/Dropdown";
 import type { UserProfile } from "../auth/profile";
+import { canManageMikrotikUsername } from "../auth/permissions";
 
 const JENIS_OPTIONS: { value: TiketJenis; label: string }[] = [
   { value: "instalasi", label: "Instalasi" },
@@ -53,6 +54,7 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
   const [noHpBaru, setNoHpBaru] = useState("");
   const [odpBaruId, setOdpBaruId] = useState<string | null>(null);
   const [paketBaruId, setPaketBaruId] = useState<string | null>(null);
+  const [mikrotikUsernameBaru, setMikrotikUsernameBaru] = useState("");
 
   // Maintenance: pilih ODP + deskripsi pekerjaan.
   const [maintenanceOdpId, setMaintenanceOdpId] = useState<string | null>(null);
@@ -64,6 +66,7 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
   const [selectedTeknisiIds, setSelectedTeknisiIds] = useState<string[]>([]);
 
   const [error, setError] = useState<string | null>(null);
+  const [mikrotikWarning, setMikrotikWarning] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
 
@@ -111,6 +114,7 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
           noHp: noHpBaru,
           odpId: odpBaruId,
           paketId: paketBaruId,
+          mikrotikUsername: mikrotikUsernameBaru.trim() || undefined,
         },
       };
     }
@@ -158,6 +162,12 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
     }
 
     setIsConfirmVisible(false);
+
+    if (result.mikrotikWarning) {
+      setMikrotikWarning(result.mikrotikWarning);
+      return;
+    }
+
     onCreated();
   }
 
@@ -180,6 +190,9 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
         { label: "No. HP", value: noHpBaru },
         { label: "ODP", value: odpBaruLabel || "-" },
         { label: "Paket", value: paketBaruNama || "-" },
+        ...(canManageMikrotikUsername(profile.role)
+          ? [{ label: "Username Mikrotik", value: mikrotikUsernameBaru.trim() || "(kosong)" }]
+          : []),
         { label: "Teknisi", value: teknisiNames },
       ];
     }
@@ -207,6 +220,17 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
         onBack={onBack}
       />
       <ScrollView contentContainerStyle={styles.container}>
+      {mikrotikWarning ? (
+        <TouchableOpacity
+          onPress={() => {
+            setMikrotikWarning(null);
+            onCreated();
+          }}
+        >
+          <Text style={styles.warningBanner}>{mikrotikWarning} (ketuk untuk tutup)</Text>
+        </TouchableOpacity>
+      ) : null}
+
       <View style={styles.sectionCard}>
         <Text style={styles.fieldLabel}>Jenis Tiket</Text>
         <Dropdown
@@ -281,6 +305,20 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
               onSelect={setPaketBaruId}
             />
           )}
+
+          {canManageMikrotikUsername(profile.role) ? (
+            <>
+              <Text style={styles.fieldLabel}>Username Mikrotik (opsional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Kosongkan kalau belum ada / diisi belakangan"
+                placeholderTextColor="#9ca3af"
+                autoCapitalize="none"
+                value={mikrotikUsernameBaru}
+                onChangeText={setMikrotikUsernameBaru}
+              />
+            </>
+          ) : null}
         </View>
       ) : null}
 
@@ -513,6 +551,14 @@ const styles = StyleSheet.create({
   error: {
     color: "#DC2626",
     fontSize: 13,
+  },
+  warningBanner: {
+    backgroundColor: "#FEF3C7",
+    color: "#92400E",
+    fontSize: 12,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 14,
   },
   errorSpacing: {
     marginBottom: 12,

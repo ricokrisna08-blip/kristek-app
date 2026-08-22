@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createPelanggan } from "../pelanggan/createPelanggan";
+import { createMikrotikSecret } from "../pelanggan/createMikrotikSecret";
 import { logTiketStatus } from "./logTiketStatus";
 import { triggerPushNotification } from "../notifikasi/triggerPushNotification";
 import { generateUuid } from "../lib/generateUuid";
@@ -21,6 +22,7 @@ export type NewTiketInput =
         noHp: string;
         odpId: string;
         paketId: string;
+        mikrotikUsername?: string;
       };
     })
   | (CommonFields & {
@@ -35,7 +37,7 @@ export type NewTiketInput =
     });
 
 export type CreateTiketResult =
-  | { success: true; tiketId: string }
+  | { success: true; tiketId: string; mikrotikWarning?: string | null }
   | { success: false; error: string };
 
 export async function createTiketWithAssignment(
@@ -48,6 +50,8 @@ export async function createTiketWithAssignment(
     created_by: input.createdBy,
     status: "ditugaskan",
   };
+
+  let mikrotikWarning: string | null = null;
 
   if (input.jenis === "instalasi") {
     const pelangganResult = await createPelanggan(client, {
@@ -64,6 +68,22 @@ export async function createTiketWithAssignment(
     }
 
     tiketPayload.pelanggan_id = pelangganResult.pelanggan.id;
+
+    // Username Mikrotik di sini opsional -- Pelanggan-nya sendiri sudah
+    // berhasil dibuat di titik ini, jadi kalau langkah Mikrotik ini gagal,
+    // tetap lanjut buat Tiket seperti biasa, cuma bawa pesan warning-nya
+    // sampai ke pemanggil (lihat pola yang sama di PelangganManagementScreen).
+    const mikrotikUsername = input.pelangganBaru.mikrotikUsername?.trim();
+    if (mikrotikUsername) {
+      const mikrotikResult = await createMikrotikSecret(
+        client,
+        pelangganResult.pelanggan.id,
+        mikrotikUsername
+      );
+      if (!mikrotikResult.success) {
+        mikrotikWarning = `Pelanggan & Tiket berhasil dibuat, tapi gagal set Username Mikrotik: ${mikrotikResult.error} Coba set manual di layar detail Pelanggan.`;
+      }
+    }
   } else if (input.jenis === "gangguan_komplain") {
     tiketPayload.pelanggan_id = input.pelangganId;
     tiketPayload.keluhan = input.keluhan;
@@ -138,5 +158,5 @@ export async function createTiketWithAssignment(
     };
   }
 
-  return { success: true, tiketId };
+  return { success: true, tiketId, mikrotikWarning };
 }

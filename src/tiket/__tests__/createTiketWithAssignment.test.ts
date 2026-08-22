@@ -93,7 +93,7 @@ test("Instalasi: creates the Pelanggan first, then the Tiket linked to it", asyn
   expect(tiketTeknisiInsert).toHaveBeenCalledWith([
     { tiket_id: "tiket-1", teknisi_id: "teknisi-1", teknisi_nama_snapshot: "Teknisi Satu" },
   ]);
-  expect(result).toEqual({ success: true, tiketId: "tiket-1" });
+  expect(result).toEqual({ success: true, tiketId: "tiket-1", mikrotikWarning: null });
 });
 
 test("Gangguan-Komplain: uses an existing Pelanggan and records the Keluhan", async () => {
@@ -144,7 +144,7 @@ test("Gangguan-Komplain: uses an existing Pelanggan and records the Keluhan", as
     changed_by: "admin-1",
     notes: null,
   });
-  expect(result).toEqual({ success: true, tiketId: "tiket-2" });
+  expect(result).toEqual({ success: true, tiketId: "tiket-2", mikrotikWarning: null });
 });
 
 test("Maintenance: uses an ODP instead of a Pelanggan and records Deskripsi Pekerjaan", async () => {
@@ -195,7 +195,136 @@ test("Maintenance: uses an ODP instead of a Pelanggan and records Deskripsi Peke
     changed_by: "admin-1",
     notes: null,
   });
-  expect(result).toEqual({ success: true, tiketId: "tiket-3" });
+  expect(result).toEqual({ success: true, tiketId: "tiket-3", mikrotikWarning: null });
+});
+
+test("Instalasi: Username Mikrotik yang diisi langsung dipakai untuk buat secret Mikrotik", async () => {
+  const pelangganInsert = fakeInsertSelectSingle({
+    data: {
+      id: "pelanggan-4",
+      nama: "Sari",
+      alamat: "Jl. Kenanga 2",
+      no_hp: "0813",
+      nomor_pelanggan: "PLG-000004",
+      wilayah_id: "wilayah-1",
+      odp_id: "odp-1",
+      paket_id: "paket-1",
+    },
+    error: null,
+  });
+  const tiketInsert = fakeInsertSelectSingle({
+    data: { id: "tiket-4" },
+    error: null,
+  });
+  const invoke = jest.fn().mockResolvedValue({ data: { linked: false, renamedFrom: null }, error: null });
+
+  const client = {
+    from: (table: string) =>
+      ({
+        pelanggan: { insert: pelangganInsert },
+        tiket: { insert: tiketInsert },
+        tiket_teknisi: { insert: jest.fn().mockResolvedValue({ error: null }) },
+        notifikasi: { insert: jest.fn().mockResolvedValue({ error: null }) },
+        tiket_status_log: { insert: jest.fn().mockResolvedValue({ error: null }) },
+        users: {
+          select: () => ({
+            in: () =>
+              Promise.resolve({
+                data: [{ id: "teknisi-1", nama: "Teknisi Satu" }],
+                error: null,
+              }),
+          }),
+        },
+      })[table],
+    functions: { invoke },
+  } as unknown as SupabaseClient;
+
+  const result = await createTiketWithAssignment(client, {
+    jenis: "instalasi",
+    wilayahId: "wilayah-1",
+    createdBy: "admin-1",
+    teknisiIds: ["teknisi-1"],
+    pelangganBaru: {
+      nama: "Sari",
+      alamat: "Jl. Kenanga 2",
+      noHp: "0813",
+      odpId: "odp-1",
+      paketId: "paket-1",
+      mikrotikUsername: "sari01",
+    },
+  });
+
+  expect(invoke).toHaveBeenCalledWith("mikrotik-create-secret", {
+    body: { pelangganId: "pelanggan-4", mikrotikUsername: "sari01" },
+  });
+  expect(result).toEqual({ success: true, tiketId: "tiket-4", mikrotikWarning: null });
+});
+
+test("Instalasi: kegagalan set Username Mikrotik tidak menggagalkan pembuatan Tiket, cuma bawa warning", async () => {
+  const pelangganInsert = fakeInsertSelectSingle({
+    data: {
+      id: "pelanggan-5",
+      nama: "Dedi",
+      alamat: "Jl. Anggrek 3",
+      no_hp: "0814",
+      nomor_pelanggan: "PLG-000005",
+      wilayah_id: "wilayah-1",
+      odp_id: "odp-1",
+      paket_id: "paket-1",
+    },
+    error: null,
+  });
+  const tiketInsert = fakeInsertSelectSingle({
+    data: { id: "tiket-5" },
+    error: null,
+  });
+  const invoke = jest.fn().mockResolvedValue({
+    data: null,
+    error: { message: "gagal konek ke Mikrotik" },
+  });
+
+  const client = {
+    from: (table: string) =>
+      ({
+        pelanggan: { insert: pelangganInsert },
+        tiket: { insert: tiketInsert },
+        tiket_teknisi: { insert: jest.fn().mockResolvedValue({ error: null }) },
+        notifikasi: { insert: jest.fn().mockResolvedValue({ error: null }) },
+        tiket_status_log: { insert: jest.fn().mockResolvedValue({ error: null }) },
+        users: {
+          select: () => ({
+            in: () =>
+              Promise.resolve({
+                data: [{ id: "teknisi-1", nama: "Teknisi Satu" }],
+                error: null,
+              }),
+          }),
+        },
+      })[table],
+    functions: { invoke },
+  } as unknown as SupabaseClient;
+
+  const result = await createTiketWithAssignment(client, {
+    jenis: "instalasi",
+    wilayahId: "wilayah-1",
+    createdBy: "admin-1",
+    teknisiIds: ["teknisi-1"],
+    pelangganBaru: {
+      nama: "Dedi",
+      alamat: "Jl. Anggrek 3",
+      noHp: "0814",
+      odpId: "odp-1",
+      paketId: "paket-1",
+      mikrotikUsername: "dedi01",
+    },
+  });
+
+  expect(result.success).toBe(true);
+  expect(result).toMatchObject({
+    success: true,
+    tiketId: "tiket-5",
+    mikrotikWarning: expect.stringContaining("gagal set Username Mikrotik"),
+  });
 });
 
 test("Instalasi: a Pelanggan creation failure stops before creating the Tiket", async () => {
