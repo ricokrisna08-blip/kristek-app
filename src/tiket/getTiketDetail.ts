@@ -19,6 +19,7 @@ export type TiketDetail = {
     paketNama: string | null;
   } | null;
   odp: { label: string; lokasi: string } | null;
+  evidenceLokasi: { latitude: number; longitude: number; capturedAt: string } | null;
 };
 
 export async function getTiketDetail(
@@ -30,6 +31,7 @@ export async function getTiketDetail(
     .select(
       `id, jenis, status, created_at, started_at, ended_at,
        accumulated_pending_seconds, keluhan, deskripsi_pekerjaan,
+       evidence_lokasi_latitude, evidence_lokasi_longitude, evidence_lokasi_captured_at,
        pelanggan:pelanggan_id ( nama, alamat, no_hp, nomor_pelanggan,
          odp:odp_id ( label ),
          paket:paket_id ( nama )
@@ -66,5 +68,13 @@ export async function getTiketDetail(
         }
       : null,
     odp: row.odp ? { label: row.odp.label, lokasi: row.odp.lokasi } : null,
+    evidenceLokasi:
+      row.evidence_lokasi_latitude != null && row.evidence_lokasi_longitude != null
+        ? {
+            latitude: row.evidence_lokasi_latitude,
+            longitude: row.evidence_lokasi_longitude,
+            capturedAt: row.evidence_lokasi_captured_at,
+          }
+        : null,
   };
 }

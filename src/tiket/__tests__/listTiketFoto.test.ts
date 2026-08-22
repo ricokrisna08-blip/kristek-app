@@ -46,6 +46,25 @@ test("returns photos within the 7-day retention window", async () => {
   ]);
 });
 
+test("keeps evidence checklist photos (redaman/ont/kabel_jalur) even past 7 days -- they're a permanent record, not a work-session reference", async () => {
+  const client = fakeClient([
+    {
+      id: "foto-redaman",
+      type: "redaman",
+      url: "https://example.test/redaman.jpg",
+      path: "tiket-1/redaman-1.jpg",
+      uploaded_at: "2026-07-01T00:00:00.000Z",
+      latitude: null,
+      longitude: null,
+    },
+  ]);
+
+  const result = await listTiketFoto(client, "tiket-1", new Date("2026-08-07T00:00:00.000Z"));
+
+  expect(result).toHaveLength(1);
+  expect(result[0].type).toBe("redaman");
+});
+
 test("excludes photos older than 7 days", async () => {
   const client = fakeClient([
     {

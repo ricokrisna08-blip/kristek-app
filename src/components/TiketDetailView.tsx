@@ -19,6 +19,17 @@ import { startTiket } from "../tiket/startTiket";
 import { setTiketPending } from "../tiket/setTiketPending";
 import { resumeTiketFromPending } from "../tiket/resumeTiketFromPending";
 import { endTiket } from "../tiket/endTiket";
+import { endTiketWithEvidence } from "../tiket/endTiketWithEvidence";
+import { uploadTiketEvidenceFoto } from "../tiket/uploadTiketEvidenceFoto";
+import { captureTiketEvidenceLokasi } from "../tiket/captureTiketEvidenceLokasi";
+import {
+  requiresEvidenceChecklist,
+  computeEvidenceStatus,
+  isEvidenceComplete,
+  isEvidenceFotoDone,
+  EVIDENCE_FOTO_TYPES,
+  type EvidenceFotoType,
+} from "../tiket/instalasiEvidence";
 import { batalkanTiket } from "../tiket/batalkanTiket";
 import { computeDurasiKerjaSeconds, formatDurasiKerja } from "../tiket/durasiKerja";
 import { listTiketFoto, type TiketFoto } from "../tiket/listTiketFoto";
@@ -46,6 +57,20 @@ function formatTanggal(iso: string): string {
     year: "numeric",
   });
 }
+
+const FOTO_TYPE_LABEL: Record<string, string> = {
+  before: "Before",
+  after: "After",
+  redaman: "Redaman",
+  ont: "ONT",
+  kabel_jalur: "Kabel & Jalur",
+};
+
+const EVIDENCE_FOTO_LABEL: Record<EvidenceFotoType, string> = {
+  redaman: "Foto Redaman",
+  ont: "Foto ONT",
+  kabel_jalur: "Foto Kabel & Jalur",
+};
 
 function formatTanggalJam(iso: string): string {
   return new Date(iso).toLocaleString("id-ID", {
@@ -103,6 +128,13 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
   const [isEnding, setIsEnding] = useState(false);
   const [endError, setEndError] = useState<string | null>(null);
 
+  const [uploadingEvidenceType, setUploadingEvidenceType] = useState<EvidenceFotoType | null>(
+    null
+  );
+  const [isCapturingLokasi, setIsCapturingLokasi] = useState(false);
+  const [isFinishingWithEvidence, setIsFinishingWithEvidence] = useState(false);
+  const [evidenceError, setEvidenceError] = useState<string | null>(null);
+
   const [isConfirmingCancel, setIsConfirmingCancel] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -124,6 +156,11 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
   const failuresForTiket = offlineQueueState.failures.filter(
     (failure) => failure.action.tiketId === detail.id
   );
+
+  const evidenceStatus = computeEvidenceStatus({
+    fotoTypes: fotoList.map((foto) => foto.type),
+    hasLokasi: detail.evidenceLokasi != null,
+  });
 
   useEffect(() => {
     setOptimisticStatus(null);
@@ -337,6 +374,109 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
     onChanged();
   }
 
+  // Foto checklist bukti diupload satu-satu, tanpa transisi status --
+  // beda dari before/after, jadi useEffect [detail.id, detail.status]
+  // di atas tidak otomatis refetch fotoList. Refresh manual di sini.
+  async function refreshFotoList() {
+    const result = await listTiketFoto(supabase, detail.id);
+    setFotoList(result);
+  }
+
+  async function handleUploadEvidence(type: EvidenceFotoType) {
+    setEvidenceError(null);
+
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      setEvidenceError("Izin kamera dibutuhkan untuk mengambil foto ini.");
+      return;
+    }
+
+    const captured = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+    if (captured.canceled || !captured.assets?.[0]) {
+      return;
+    }
+
+    setUploadingEvidenceType(type);
+
+    if (!(await isOnline())) {
+      setUploadingEvidenceType(null);
+      setEvidenceError("Perlu koneksi internet untuk upload bukti ini, coba lagi.");
+      return;
+    }
+
+    const { latitude, longitude } = await captureCurrentLocation();
+    const photoBlob = await fetchPhotoBlob(captured.assets[0].uri);
+
+    const result = await uploadTiketEvidenceFoto(supabase, {
+      tiketId: detail.id,
+      uploadedBy: profile.id,
+      type,
+      photoBlob,
+      latitude,
+      longitude,
+    });
+    setUploadingEvidenceType(null);
+
+    if (!result.success) {
+      setEvidenceError(result.error);
+      return;
+    }
+
+    await refreshFotoList();
+  }
+
+  async function handleCaptureLokasi() {
+    setEvidenceError(null);
+    setIsCapturingLokasi(true);
+
+    if (!(await isOnline())) {
+      setIsCapturingLokasi(false);
+      setEvidenceError("Perlu koneksi internet untuk menyimpan lokasi ini, coba lagi.");
+      return;
+    }
+
+    const { latitude, longitude } = await captureCurrentLocation();
+    if (latitude == null || longitude == null) {
+      setIsCapturingLokasi(false);
+      setEvidenceError(
+        "Gagal mengambil lokasi. Pastikan izin lokasi diaktifkan lalu coba lagi."
+      );
+      return;
+    }
+
+    const result = await captureTiketEvidenceLokasi(supabase, {
+      tiketId: detail.id,
+      latitude,
+      longitude,
+    });
+    setIsCapturingLokasi(false);
+
+    if (!result.success) {
+      setEvidenceError(result.error);
+      return;
+    }
+
+    onChanged();
+  }
+
+  async function handleFinishWithEvidence() {
+    setEvidenceError(null);
+    setIsFinishingWithEvidence(true);
+
+    const result = await endTiketWithEvidence(supabase, {
+      tiketId: detail.id,
+      changedBy: profile.id,
+    });
+    setIsFinishingWithEvidence(false);
+
+    if (!result.success) {
+      setEvidenceError(result.error);
+      return;
+    }
+
+    onChanged();
+  }
+
   async function handleCancelTiket() {
     setCancelError(null);
     setIsCancelling(true);
@@ -491,9 +631,7 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
                 <TouchableOpacity activeOpacity={0.85} onPress={() => setViewingFoto(foto)}>
                   <Image source={{ uri: foto.url }} style={styles.fotoImage} />
                 </TouchableOpacity>
-                <Text style={styles.fotoLabel}>
-                  {foto.type === "before" ? "Before" : "After"}
-                </Text>
+                <Text style={styles.fotoLabel}>{FOTO_TYPE_LABEL[foto.type] ?? foto.type}</Text>
                 <Text style={styles.fotoTimestamp}>{formatTanggalJam(foto.uploadedAt)}</Text>
                 {foto.latitude != null && foto.longitude != null ? (
                   <TouchableOpacity
@@ -593,7 +731,87 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
         </>
       ) : null}
 
-      {profile.role === "teknisi" && effectiveStatus === "dikerjakan" ? (
+      {profile.role === "teknisi" &&
+      effectiveStatus === "dikerjakan" &&
+      requiresEvidenceChecklist(detail.jenis) ? (
+        <>
+          <Text style={styles.subtitle}>Checklist Bukti</Text>
+          {evidenceError ? <Text style={styles.error}>{evidenceError}</Text> : null}
+
+          <View style={styles.evidenceList}>
+            {EVIDENCE_FOTO_TYPES.map((type) => {
+              const done = isEvidenceFotoDone(evidenceStatus, type);
+              return (
+                <View key={type} style={styles.evidenceRow}>
+                  <View style={[styles.evidenceCheck, done && styles.evidenceCheckDone]}>
+                    {done ? <Text style={styles.evidenceCheckMark}>✓</Text> : null}
+                  </View>
+                  <Text style={styles.evidenceLabel}>{EVIDENCE_FOTO_LABEL[type]}</Text>
+                  {!done ? (
+                    <TouchableOpacity
+                      style={styles.evidenceButton}
+                      onPress={() => handleUploadEvidence(type)}
+                      disabled={uploadingEvidenceType === type}
+                    >
+                      {uploadingEvidenceType === type ? (
+                        <ActivityIndicator size="small" color={KRISTEK_TEAL} />
+                      ) : (
+                        <Text style={styles.evidenceButtonText}>Ambil Foto</Text>
+                      )}
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              );
+            })}
+
+            <View style={[styles.evidenceRow, styles.evidenceRowLast]}>
+              <View style={[styles.evidenceCheck, evidenceStatus.lokasi && styles.evidenceCheckDone]}>
+                {evidenceStatus.lokasi ? <Text style={styles.evidenceCheckMark}>✓</Text> : null}
+              </View>
+              <Text style={styles.evidenceLabel}>Lokasi Rumah Pelanggan</Text>
+              {evidenceStatus.lokasi && detail.evidenceLokasi ? (
+                <TouchableOpacity
+                  onPress={() =>
+                    Linking.openURL(
+                      `https://www.google.com/maps/search/?api=1&query=${detail.evidenceLokasi!.latitude},${detail.evidenceLokasi!.longitude}`
+                    )
+                  }
+                >
+                  <Text style={styles.evidenceLokasiLink}>Lihat di Maps</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.evidenceButton}
+                  onPress={handleCaptureLokasi}
+                  disabled={isCapturingLokasi}
+                >
+                  {isCapturingLokasi ? (
+                    <ActivityIndicator size="small" color={KRISTEK_TEAL} />
+                  ) : (
+                    <Text style={styles.evidenceButtonText}>Ambil Lokasi</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.endButton, !isEvidenceComplete(evidenceStatus) && styles.buttonDisabled]}
+            onPress={handleFinishWithEvidence}
+            disabled={!isEvidenceComplete(evidenceStatus) || isFinishingWithEvidence}
+          >
+            {isFinishingWithEvidence ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.endButtonText}>Tandai Selesai</Text>
+            )}
+          </TouchableOpacity>
+        </>
+      ) : null}
+
+      {profile.role === "teknisi" &&
+      effectiveStatus === "dikerjakan" &&
+      !requiresEvidenceChecklist(detail.jenis) ? (
         <>
           {endError ? <Text style={styles.error}>{endError}</Text> : null}
           <TouchableOpacity
@@ -718,7 +936,7 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
         visible={deleteFotoTarget !== null}
         itemLabel={
           deleteFotoTarget
-            ? `Foto ${deleteFotoTarget.type === "before" ? "Before" : "After"}`
+            ? `Foto ${FOTO_TYPE_LABEL[deleteFotoTarget.type] ?? deleteFotoTarget.type}`
             : ""
         }
         error={deleteFotoError}
@@ -747,7 +965,7 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
               />
               <View style={styles.fotoViewerTimestampBadge}>
                 <Text style={styles.fotoViewerTimestampText}>
-                  {viewingFoto.type === "before" ? "Before" : "After"} ·{" "}
+                  {FOTO_TYPE_LABEL[viewingFoto.type] ?? viewingFoto.type} ·{" "}
                   {formatTanggalJam(viewingFoto.uploadedAt)}
                 </Text>
                 {viewingFoto.latitude != null && viewingFoto.longitude != null ? (
@@ -971,6 +1189,67 @@ const styles = StyleSheet.create({
     color: "#374151",
     fontWeight: "700",
     fontSize: 15,
+  },
+  evidenceList: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E4E7EB",
+    marginTop: 4,
+  },
+  evidenceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eef0f2",
+  },
+  evidenceRowLast: {
+    borderBottomWidth: 0,
+  },
+  evidenceCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: "#cbd5e1",
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+    flexShrink: 0,
+  },
+  evidenceCheckDone: {
+    backgroundColor: "#059669",
+    borderColor: "#059669",
+  },
+  evidenceCheckMark: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  evidenceLabel: {
+    flex: 1,
+    fontSize: 14,
+    color: "#111827",
+    fontWeight: "500",
+  },
+  evidenceButton: {
+    backgroundColor: "#E7F1F5",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  evidenceButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: KRISTEK_TEAL,
+  },
+  evidenceLokasiLink: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: KRISTEK_TEAL,
   },
   endButton: {
     backgroundColor: "#059669",

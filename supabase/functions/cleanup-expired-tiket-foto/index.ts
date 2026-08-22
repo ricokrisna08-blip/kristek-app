@@ -65,10 +65,14 @@ Deno.serve(async (req) => {
     Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000
   ).toISOString();
 
+  // Cuma before/after (referensi kerja sementara) yang kena retensi ini.
+  // Checklist bukti Instalasi/Laporan Pelanggan (redaman/ont/kabel_jalur)
+  // itu arsip permanen -- jangan ikut kehapus.
   const { data: expired, error: fetchError } = await adminClient
     .from("tiket_foto")
     .select("id, path")
-    .lt("uploaded_at", cutoff);
+    .lt("uploaded_at", cutoff)
+    .in("type", ["before", "after"]);
 
   if (fetchError) {
     return jsonResponse({ error: fetchError.message }, 500);

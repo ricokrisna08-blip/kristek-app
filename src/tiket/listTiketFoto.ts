@@ -3,7 +3,7 @@ import { isTiketFotoExpired } from "./tiketFotoExpiry";
 
 export type TiketFoto = {
   id: string;
-  type: "before" | "after";
+  type: "before" | "after" | "redaman" | "ont" | "kabel_jalur";
   url: string;
   path: string;
   uploadedAt: string;
@@ -26,8 +26,14 @@ export async function listTiketFoto(
     return [];
   }
 
+  // Retensi 7 hari cuma berlaku buat before/after (referensi kerja
+  // sementara) -- checklist bukti Instalasi/Laporan Pelanggan
+  // (redaman/ont/kabel_jalur) itu arsip permanen, jangan ikut disembunyikan.
   return data
-    .filter((row: any) => !isTiketFotoExpired(row.uploaded_at, now))
+    .filter((row: any) => {
+      if (row.type !== "before" && row.type !== "after") return true;
+      return !isTiketFotoExpired(row.uploaded_at, now);
+    })
     .map((row: any) => ({
       id: row.id,
       type: row.type,

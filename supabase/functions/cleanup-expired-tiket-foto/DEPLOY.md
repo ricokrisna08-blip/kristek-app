@@ -1,6 +1,15 @@
 # Deploy Edge Function "cleanup-expired-tiket-foto"
 
-## 1. Deploy function-nya
+## 0. Kalau function ini sudah pernah di-deploy sebelumnya
+
+Ini UPDATE, bukan create baru -- function-nya sekarang dikecualikan dari
+menghapus foto checklist bukti Instalasi/Laporan Pelanggan (redaman/ont/
+kabel_jalur), cuma before/after yang tetap kena retensi 7 hari. Buka
+**Supabase Dashboard → Edge Functions → cleanup-expired-tiket-foto**,
+paste ulang isi `index.ts` terbaru, Deploy. Lewati langkah 1 di bawah
+(cron job-nya tidak perlu dibuat ulang kalau sudah ada).
+
+## 1. Deploy function-nya (kalau belum pernah ada)
 
 1. Buka **Supabase Dashboard → Edge Functions**.
 2. Klik **Create a new function**.
