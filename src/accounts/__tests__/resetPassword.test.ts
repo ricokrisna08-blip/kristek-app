@@ -30,10 +30,17 @@ test("a password shorter than 6 characters is rejected before calling the functi
   });
 });
 
-test("a function-level error (e.g. caller isn't Pemilik) surfaces that message", async () => {
+test("a non-2xx Edge Function response (e.g. caller isn't Pemilik) surfaces the real message from the response body", async () => {
+  // Ini bagaimana Supabase JS BENERAN membungkus response non-2xx --
+  // `error` diisi (FunctionsHttpError), `data` null, dan body asli si
+  // Edge Function cuma bisa diambil lewat error.context.json().
   const invoke = jest.fn().mockResolvedValue({
-    data: { error: "Hanya Pemilik yang boleh reset password" },
-    error: null,
+    data: null,
+    error: {
+      context: {
+        json: async () => ({ error: "Hanya Pemilik yang boleh reset password" }),
+      },
+    },
   });
   const client = fakeClient(invoke);
 
@@ -45,7 +52,7 @@ test("a function-level error (e.g. caller isn't Pemilik) surfaces that message",
   });
 });
 
-test("a network/invoke-level error returns a clear generic message", async () => {
+test("a network/invoke-level error with no readable body returns a clear generic message", async () => {
   const invoke = jest.fn().mockResolvedValue({
     data: null,
     error: { message: "network error" },

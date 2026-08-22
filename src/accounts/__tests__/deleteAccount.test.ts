@@ -17,10 +17,19 @@ test("calls the delete-account function with the target id and reports success",
   expect(result).toEqual({ success: true });
 });
 
-test("a function-level error (e.g. account has Tiket history) surfaces that message", async () => {
+test("a non-2xx Edge Function response (e.g. account has Tiket history) surfaces the real message from the response body", async () => {
+  // Ini bagaimana Supabase JS BENERAN membungkus response non-2xx --
+  // `error` diisi (FunctionsHttpError), `data` null, dan body asli si
+  // Edge Function cuma bisa diambil lewat error.context.json().
   const invoke = jest.fn().mockResolvedValue({
-    data: { error: "Akun ini masih punya riwayat Tiket, tidak bisa dihapus." },
-    error: null,
+    data: null,
+    error: {
+      context: {
+        json: async () => ({
+          error: "Akun ini masih punya riwayat Tiket, tidak bisa dihapus.",
+        }),
+      },
+    },
   });
   const client = fakeClient(invoke);
 
@@ -32,7 +41,7 @@ test("a function-level error (e.g. account has Tiket history) surfaces that mess
   });
 });
 
-test("a network/invoke-level error returns a clear generic message", async () => {
+test("a network/invoke-level error with no readable body returns a clear generic message", async () => {
   const invoke = jest.fn().mockResolvedValue({
     data: null,
     error: { message: "network error" },

@@ -18,7 +18,8 @@ export async function resetPassword(
   });
 
   if (error) {
-    return { success: false, error: "Gagal reset password. Coba lagi." };
+    const detail = await readFunctionErrorMessage(error);
+    return { success: false, error: detail ?? "Gagal reset password. Coba lagi." };
   }
 
   if (data?.error) {
@@ -26,4 +27,19 @@ export async function resetPassword(
   }
 
   return { success: true };
+}
+
+// Supabase JS membungkus response non-2xx dari Edge Function jadi
+// FunctionsHttpError, dengan body asli (termasuk pesan error kita) cuma
+// bisa diakses lewat error.context (objek Response), bukan lewat `data`.
+async function readFunctionErrorMessage(error: unknown): Promise<string | null> {
+  const context = (error as { context?: Response } | null)?.context;
+  if (!context || typeof context.json !== "function") return null;
+
+  try {
+    const body = await context.json();
+    return typeof body?.error === "string" ? body.error : null;
+  } catch {
+    return null;
+  }
 }
