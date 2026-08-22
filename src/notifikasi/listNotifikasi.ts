@@ -26,7 +26,7 @@ export async function listNotifikasi(
     .select(
       `id, tiket_id, type, read_at, created_at, notes,
        tiket:tiket_id ( jenis, pelanggan:pelanggan_id ( nama ), odp:odp_id ( label ) ),
-       cuti:cuti_id ( tanggal_mulai, tanggal_selesai, teknisi:teknisi_id ( nama ) )`
+       cuti:cuti_id ( tanggal_mulai, tanggal_selesai, teknisi_nama_snapshot )`
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
@@ -45,7 +45,7 @@ export async function listNotifikasi(
     tiketJenis: row.tiket?.jenis ?? null,
     pelangganNama: row.tiket?.pelanggan?.nama ?? null,
     odpLabel: row.tiket?.odp?.label ?? null,
-    cutiTeknisiNama: row.cuti?.teknisi?.nama ?? null,
+    cutiTeknisiNama: row.cuti?.teknisi_nama_snapshot ?? null,
     cutiTanggalMulai: row.cuti?.tanggal_mulai ?? null,
     cutiTanggalSelesai: row.cuti?.tanggal_selesai ?? null,
   }));

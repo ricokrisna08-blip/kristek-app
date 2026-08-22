@@ -30,6 +30,8 @@ import {
   EVIDENCE_FOTO_TYPES,
   type EvidenceFotoType,
 } from "../tiket/instalasiEvidence";
+import { reassignTiketTeknisi } from "../tiket/reassignTiketTeknisi";
+import { listAccounts, type AccountListItem } from "../accounts/listAccounts";
 import { batalkanTiket } from "../tiket/batalkanTiket";
 import { computeDurasiKerjaSeconds, formatDurasiKerja } from "../tiket/durasiKerja";
 import { listTiketFoto, type TiketFoto } from "../tiket/listTiketFoto";
@@ -134,6 +136,12 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
   const [isCapturingLokasi, setIsCapturingLokasi] = useState(false);
   const [isFinishingWithEvidence, setIsFinishingWithEvidence] = useState(false);
   const [evidenceError, setEvidenceError] = useState<string | null>(null);
+
+  const [isEditingTeknisi, setIsEditingTeknisi] = useState(false);
+  const [teknisiOptions, setTeknisiOptions] = useState<AccountListItem[]>([]);
+  const [selectedTeknisiIds, setSelectedTeknisiIds] = useState<string[]>([]);
+  const [isSavingTeknisi, setIsSavingTeknisi] = useState(false);
+  const [reassignError, setReassignError] = useState<string | null>(null);
 
   const [isConfirmingCancel, setIsConfirmingCancel] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -477,6 +485,43 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
     onChanged();
   }
 
+  async function handleOpenEditTeknisi() {
+    setReassignError(null);
+    setSelectedTeknisiIds(detail.teknisiList.map((teknisi) => teknisi.id));
+    setIsEditingTeknisi(true);
+    const accounts = await listAccounts(supabase);
+    setTeknisiOptions(accounts.filter((account) => account.role === "teknisi"));
+  }
+
+  function toggleSelectedTeknisi(id: string) {
+    setSelectedTeknisiIds((prev) =>
+      prev.includes(id) ? prev.filter((teknisiId) => teknisiId !== id) : [...prev, id]
+    );
+  }
+
+  function handleCancelEditTeknisi() {
+    setIsEditingTeknisi(false);
+    setReassignError(null);
+  }
+
+  async function handleSaveTeknisi() {
+    setReassignError(null);
+    setIsSavingTeknisi(true);
+    const result = await reassignTiketTeknisi(supabase, {
+      tiketId: detail.id,
+      teknisiIds: selectedTeknisiIds,
+    });
+    setIsSavingTeknisi(false);
+
+    if (!result.success) {
+      setReassignError(result.error);
+      return;
+    }
+
+    setIsEditingTeknisi(false);
+    onChanged();
+  }
+
   async function handleCancelTiket() {
     setCancelError(null);
     setIsCancelling(true);
@@ -591,6 +636,90 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
           </View>
         </>
       ) : null}
+
+      <Text style={styles.subtitle}>Teknisi</Text>
+      <View style={styles.infoCard}>
+        {isEditingTeknisi ? (
+          <View style={styles.teknisiEditBox}>
+            {teknisiOptions.length === 0 ? (
+              <Text style={styles.error}>Belum ada akun Teknisi.</Text>
+            ) : (
+              <View style={styles.teknisiEditList}>
+                {teknisiOptions.map((teknisi) => {
+                  const checked = selectedTeknisiIds.includes(teknisi.id);
+                  return (
+                    <TouchableOpacity
+                      key={teknisi.id}
+                      style={[styles.teknisiEditRow, checked && styles.teknisiEditRowSelected]}
+                      onPress={() => toggleSelectedTeknisi(teknisi.id)}
+                    >
+                      <View style={[styles.checkbox, checked && styles.checkboxSelected]}>
+                        {checked ? <Text style={styles.checkmark}>✓</Text> : null}
+                      </View>
+                      <View style={styles.teknisiEditInfo}>
+                        <Text style={styles.teknisiEditName}>{teknisi.nama}</Text>
+                        <Text style={styles.teknisiEditWilayah}>
+                          {teknisi.wilayahNama ?? "Wilayah tidak diketahui"}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+            {reassignError ? <Text style={styles.error}>{reassignError}</Text> : null}
+            <View style={styles.pendingButtonRow}>
+              <TouchableOpacity
+                style={styles.pendingCancelButton}
+                onPress={handleCancelEditTeknisi}
+                disabled={isSavingTeknisi}
+              >
+                <Text style={styles.pendingCancelButtonText}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.pendingButton, styles.pendingSubmitButton]}
+                onPress={handleSaveTeknisi}
+                disabled={isSavingTeknisi}
+              >
+                {isSavingTeknisi ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.pendingButtonText}>Simpan</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <>
+            {(() => {
+              const canReassign = profile.role === "admin" && effectiveStatus === "ditugaskan";
+              const lastRowStyle = canReassign ? styles.infoRow : [styles.infoRow, styles.infoRowLast];
+              return detail.teknisiList.length === 0 ? (
+                <View style={lastRowStyle}>
+                  <Text style={styles.infoValue}>Belum ada Teknisi ditugaskan</Text>
+                </View>
+              ) : (
+                detail.teknisiList.map((teknisi, index) => (
+                  <View
+                    key={teknisi.id}
+                    style={index === detail.teknisiList.length - 1 ? lastRowStyle : styles.infoRow}
+                  >
+                    <Text style={styles.infoValue}>{teknisi.nama}</Text>
+                  </View>
+                ))
+              );
+            })()}
+            {profile.role === "admin" && effectiveStatus === "ditugaskan" ? (
+              <TouchableOpacity
+                style={styles.teknisiChangeButton}
+                onPress={handleOpenEditTeknisi}
+              >
+                <Text style={styles.teknisiChangeButtonText}>Ganti Teknisi</Text>
+              </TouchableOpacity>
+            ) : null}
+          </>
+        )}
+      </View>
 
       {detail.keluhan ? (
         <>
@@ -1250,6 +1379,73 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: KRISTEK_TEAL,
+  },
+  teknisiChangeButton: {
+    marginTop: 4,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#eef0f2",
+  },
+  teknisiChangeButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: KRISTEK_TEAL,
+  },
+  teknisiEditBox: {
+    padding: 14,
+  },
+  teknisiEditList: {
+    gap: 8,
+  },
+  teknisiEditRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    backgroundColor: "#f9fafb",
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  teknisiEditRowSelected: {
+    backgroundColor: "#EAF3F7",
+    borderColor: KRISTEK_TEAL,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: "#cbd5e1",
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+    flexShrink: 0,
+  },
+  checkboxSelected: {
+    backgroundColor: KRISTEK_TEAL,
+    borderColor: KRISTEK_TEAL,
+  },
+  checkmark: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  teknisiEditInfo: {
+    flex: 1,
+    flexShrink: 1,
+  },
+  teknisiEditName: {
+    color: "#111827",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  teknisiEditWilayah: {
+    color: "#6b7280",
+    fontSize: 12,
+    marginTop: 2,
   },
   endButton: {
     backgroundColor: "#059669",

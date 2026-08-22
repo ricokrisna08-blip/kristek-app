@@ -20,6 +20,7 @@ export type TiketDetail = {
   } | null;
   odp: { label: string; lokasi: string } | null;
   evidenceLokasi: { latitude: number; longitude: number; capturedAt: string } | null;
+  teknisiList: { id: string; nama: string }[];
 };
 
 export async function getTiketDetail(
@@ -36,7 +37,8 @@ export async function getTiketDetail(
          odp:odp_id ( label ),
          paket:paket_id ( nama )
        ),
-       odp:odp_id ( label, lokasi )`
+       odp:odp_id ( label, lokasi ),
+       tiket_teknisi ( teknisi_id, teknisi_nama_snapshot )`
     )
     .eq("id", tiketId)
     .single();
@@ -76,5 +78,9 @@ export async function getTiketDetail(
             capturedAt: row.evidence_lokasi_captured_at,
           }
         : null,
+    teknisiList: (row.tiket_teknisi ?? []).map((tt: any) => ({
+      id: tt.teknisi_id,
+      nama: tt.teknisi_nama_snapshot ?? "Teknisi tidak diketahui",
+    })),
   };
 }

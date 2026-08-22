@@ -18,9 +18,7 @@ export async function listPengajuanCuti(
 ): Promise<PengajuanCutiItem[]> {
   const { data, error } = await client
     .from("pengajuan_cuti")
-    .select(
-      "id, tanggal_mulai, tanggal_selesai, alasan, created_at, teknisi_nama_snapshot, teknisi:teknisi_id ( nama )"
-    )
+    .select("id, tanggal_mulai, tanggal_selesai, alasan, created_at, teknisi_nama_snapshot")
     .order("created_at", { ascending: false });
 
   if (error || !data) {
@@ -29,9 +27,7 @@ export async function listPengajuanCuti(
 
   return data.map((row: any) => ({
     id: row.id,
-    // Snapshot diutamakan -- tetap akurat walau akun teknisinya sudah
-    // dihapus atau ganti nama setelah pengajuan ini dibuat.
-    teknisiNama: row.teknisi_nama_snapshot ?? row.teknisi?.nama ?? "Teknisi tidak diketahui",
+    teknisiNama: row.teknisi_nama_snapshot ?? "Teknisi tidak diketahui",
     tanggalMulai: row.tanggal_mulai,
     tanggalSelesai: row.tanggal_selesai,
     alasan: row.alasan,

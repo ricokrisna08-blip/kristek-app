@@ -11,7 +11,7 @@ function fakeClient(data: unknown): SupabaseClient {
   } as unknown as SupabaseClient;
 }
 
-test("maps joined teknisi nama and snake_case columns to the app shape", async () => {
+test("maps the name snapshot and snake_case columns to the app shape", async () => {
   const client = fakeClient([
     {
       id: "cuti-1",
@@ -19,7 +19,7 @@ test("maps joined teknisi nama and snake_case columns to the app shape", async (
       tanggal_selesai: "2026-08-22",
       alasan: "Sakit demam",
       created_at: "2026-08-13T00:00:00.000Z",
-      teknisi: { nama: "Ahmad Wahyudi" },
+      teknisi_nama_snapshot: "Ahmad Wahyudi",
     },
   ]);
 
@@ -37,7 +37,7 @@ test("maps joined teknisi nama and snake_case columns to the app shape", async (
   ]);
 });
 
-test("prefers the name snapshot over the live join (e.g. after the teknisi renamed or the account was deleted)", async () => {
+test("falls back to a placeholder name when the snapshot is missing", async () => {
   const client = fakeClient([
     {
       id: "cuti-1",
@@ -45,25 +45,7 @@ test("prefers the name snapshot over the live join (e.g. after the teknisi renam
       tanggal_selesai: "2026-08-22",
       alasan: "Sakit demam",
       created_at: "2026-08-13T00:00:00.000Z",
-      teknisi_nama_snapshot: "Ahmad Wahyudi (snapshot)",
-      teknisi: null,
-    },
-  ]);
-
-  const result = await listPengajuanCuti(client);
-
-  expect(result[0].teknisiNama).toBe("Ahmad Wahyudi (snapshot)");
-});
-
-test("falls back to a placeholder name when both the snapshot and the teknisi join are missing", async () => {
-  const client = fakeClient([
-    {
-      id: "cuti-1",
-      tanggal_mulai: "2026-08-20",
-      tanggal_selesai: "2026-08-22",
-      alasan: "Sakit demam",
-      created_at: "2026-08-13T00:00:00.000Z",
-      teknisi: null,
+      teknisi_nama_snapshot: null,
     },
   ]);
 
