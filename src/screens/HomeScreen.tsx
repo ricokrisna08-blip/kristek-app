@@ -64,6 +64,7 @@ type Props = {
   onNavigateToInstallationEvidence: () => void;
   onNavigateToMaintenance: () => void;
   onNavigateToGangguan: () => void;
+  onNavigateToTiketDetail: (tiketId: string) => void;
   onLogout: () => void;
 };
 
@@ -92,6 +93,7 @@ export function HomeScreen({
   onNavigateToInstallationEvidence,
   onNavigateToMaintenance,
   onNavigateToGangguan,
+  onNavigateToTiketDetail,
   onLogout,
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -190,7 +192,11 @@ export function HomeScreen({
             resizeMode="cover"
           />
           <View style={styles.bellWrap}>
-            <NotifikasiBell userId={profile.id} />
+            <NotifikasiBell
+              userId={profile.id}
+              onNavigateToTiket={onNavigateToTiketDetail}
+              onNavigateToCuti={onNavigateToDaftarPengajuanCuti}
+            />
           </View>
         </View>
       </View>

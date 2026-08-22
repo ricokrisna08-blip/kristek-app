@@ -19,6 +19,7 @@ import { PelangganManagementScreen } from "./src/screens/PelangganManagementScre
 import { PaketManagementScreen } from "./src/screens/PaketManagementScreen";
 import { CreateTiketScreen } from "./src/screens/CreateTiketScreen";
 import { MyTiketScreen } from "./src/screens/MyTiketScreen";
+import { TiketDetailScreen } from "./src/screens/TiketDetailScreen";
 import { InstallationEvidenceScreen } from "./src/screens/InstallationEvidenceScreen";
 import { LaporanPerformaScreen } from "./src/screens/LaporanPerformaScreen";
 import { LaporanKeuanganScreen } from "./src/screens/LaporanKeuanganScreen";
@@ -43,7 +44,8 @@ type Screen =
   | "myTiketInstalasi"
   | "myTiketMaintenance"
   | "myTiketGangguan"
-  | "installationEvidence";
+  | "installationEvidence"
+  | "tiketDetail";
 
 // Web tidak support expo-notifications sama sekali, jadi handler ini cuma
 // perlu di-set di native supaya alert push tetap muncul walau app lagi
@@ -64,6 +66,7 @@ export default function App() {
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [screen, setScreen] = useState<Screen>("home");
+  const [selectedTiketId, setSelectedTiketId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -253,6 +256,15 @@ export default function App() {
         />
       );
     }
+    if (screen === "tiketDetail" && selectedTiketId) {
+      return (
+        <TiketDetailScreen
+          tiketId={selectedTiketId}
+          profile={currentProfile}
+          onBack={() => setScreen("home")}
+        />
+      );
+    }
     return (
       <HomeScreen
         profile={currentProfile}
@@ -272,6 +284,10 @@ export default function App() {
         onNavigateToInstallationEvidence={() => setScreen("installationEvidence")}
         onNavigateToMaintenance={() => setScreen("myTiketMaintenance")}
         onNavigateToGangguan={() => setScreen("myTiketGangguan")}
+        onNavigateToTiketDetail={(tiketId) => {
+          setSelectedTiketId(tiketId);
+          setScreen("tiketDetail");
+        }}
         onLogout={handleLogout}
       />
     );
