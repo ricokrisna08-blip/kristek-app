@@ -4,6 +4,7 @@ import { generateUuid } from "../lib/generateUuid";
 
 export type NewPengajuanCutiInput = {
   teknisiId: string;
+  teknisiNama: string;
   tanggalMulai: string;
   tanggalSelesai: string;
   alasan: string;
@@ -33,6 +34,7 @@ export async function submitPengajuanCuti(
     .from("pengajuan_cuti")
     .insert({
       teknisi_id: input.teknisiId,
+      teknisi_nama_snapshot: input.teknisiNama,
       tanggal_mulai: input.tanggalMulai,
       tanggal_selesai: input.tanggalSelesai,
       alasan: input.alasan.trim(),

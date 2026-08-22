@@ -44,6 +44,15 @@ test("Instalasi: creates the Pelanggan first, then the Tiket linked to it", asyn
     tiket_teknisi: { insert: tiketTeknisiInsert },
     notifikasi: { insert: notifikasiInsert },
     tiket_status_log: { insert: statusLogInsert },
+    users: {
+      select: () => ({
+        in: () =>
+          Promise.resolve({
+            data: [{ id: "teknisi-1", nama: "Teknisi Satu" }],
+            error: null,
+          }),
+      }),
+    },
   });
 
   const result = await createTiketWithAssignment(client, {
@@ -81,6 +90,9 @@ test("Instalasi: creates the Pelanggan first, then the Tiket linked to it", asyn
     changed_by: "admin-1",
     notes: null,
   });
+  expect(tiketTeknisiInsert).toHaveBeenCalledWith([
+    { tiket_id: "tiket-1", teknisi_id: "teknisi-1", teknisi_nama_snapshot: "Teknisi Satu" },
+  ]);
   expect(result).toEqual({ success: true, tiketId: "tiket-1" });
 });
 
@@ -98,6 +110,15 @@ test("Gangguan-Komplain: uses an existing Pelanggan and records the Keluhan", as
     tiket_teknisi: { insert: tiketTeknisiInsert },
     notifikasi: { insert: notifikasiInsert },
     tiket_status_log: { insert: statusLogInsert },
+    users: {
+      select: () => ({
+        in: () =>
+          Promise.resolve({
+            data: [{ id: "teknisi-1", nama: "Teknisi Satu" }],
+            error: null,
+          }),
+      }),
+    },
   });
 
   const result = await createTiketWithAssignment(client, {
@@ -140,6 +161,15 @@ test("Maintenance: uses an ODP instead of a Pelanggan and records Deskripsi Peke
     tiket_teknisi: { insert: tiketTeknisiInsert },
     notifikasi: { insert: notifikasiInsert },
     tiket_status_log: { insert: statusLogInsert },
+    users: {
+      select: () => ({
+        in: () =>
+          Promise.resolve({
+            data: [{ id: "teknisi-1", nama: "Teknisi Satu" }],
+            error: null,
+          }),
+      }),
+    },
   });
 
   const result = await createTiketWithAssignment(client, {

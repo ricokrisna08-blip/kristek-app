@@ -90,10 +90,20 @@ export async function createTiketWithAssignment(
     changedBy: input.createdBy,
   });
 
+  // Snapshot nama teknisi di saat assignment -- supaya Laporan Performa
+  // tetap bisa nampilin nama & histori kerja teknisi itu walau akunnya
+  // suatu saat dihapus (lihat delete-account Edge Function).
+  const { data: teknisiRows } = await client
+    .from("users")
+    .select("id, nama")
+    .in("id", input.teknisiIds);
+  const namaById = new Map((teknisiRows ?? []).map((row) => [row.id, row.nama]));
+
   const { error: assignError } = await client.from("tiket_teknisi").insert(
     input.teknisiIds.map((teknisiId) => ({
       tiket_id: tiketId,
       teknisi_id: teknisiId,
+      teknisi_nama_snapshot: namaById.get(teknisiId) ?? null,
     }))
   );
 

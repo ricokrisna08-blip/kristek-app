@@ -7,8 +7,13 @@
 // lagi.
 //
 // Sebelum menghapus, function ini cek dulu apakah akun itu masih punya
-// riwayat Tiket (pernah buat/dibatalkan/ditugaskan/dapat notifikasi) --
-// kalau ya, ditolak supaya riwayat Tiket tidak rusak.
+// Tiket yang BELUM final (bukan "selesai"/"dibatalkan") -- baik sebagai
+// pembuat maupun sebagai Teknisi yang ditugaskan. Kalau semua Tiket-nya
+// sudah final, akun boleh dihapus -- histori Tiket lama tetap aman
+// karena FK ke users sudah dilepas & nama Teknisi di-snapshot terpisah
+// (lihat migration 20260822000000_relax_user_fk_for_account_deletion.sql
+// dan kolom tiket_teknisi.teknisi_nama_snapshot /
+// pengajuan_cuti.teknisi_nama_snapshot).
 //
 // Cara deploy: Supabase Dashboard -> Edge Functions -> Create a new function
 // -> nama "delete-account" -> paste isi file ini -> Deploy.
@@ -93,20 +98,30 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Akun Pemilik tidak bisa dihapus lewat sini" }, 400);
   }
 
-  const [tiketDibuat, tiketDitugaskan, notifikasi] = await Promise.all([
-    adminClient.from("tiket").select("id").eq("created_by", targetUserId).limit(1),
-    adminClient.from("tiket_teknisi").select("tiket_id").eq("teknisi_id", targetUserId).limit(1),
-    adminClient.from("notifikasi").select("id").eq("user_id", targetUserId).limit(1),
+  const FINAL_STATUSES = ["selesai", "dibatalkan"];
+
+  const [tiketDibuat, tiketDitugaskan] = await Promise.all([
+    adminClient.from("tiket").select("id, status").eq("created_by", targetUserId),
+    adminClient
+      .from("tiket_teknisi")
+      .select("tiket:tiket_id ( status )")
+      .eq("teknisi_id", targetUserId),
   ]);
 
-  const hasHistory =
-    (tiketDibuat.data?.length ?? 0) > 0 ||
-    (tiketDitugaskan.data?.length ?? 0) > 0 ||
-    (notifikasi.data?.length ?? 0) > 0;
+  const hasActiveTiketDibuat = (tiketDibuat.data ?? []).some(
+    (row: { status: string }) => !FINAL_STATUSES.includes(row.status)
+  );
+  const hasActiveTiketDitugaskan = (tiketDitugaskan.data ?? []).some(
+    (row: { tiket: { status: string } | null }) =>
+      row.tiket && !FINAL_STATUSES.includes(row.tiket.status)
+  );
 
-  if (hasHistory) {
+  if (hasActiveTiketDibuat || hasActiveTiketDitugaskan) {
     return jsonResponse(
-      { error: "Akun ini masih punya riwayat Tiket, tidak bisa dihapus." },
+      {
+        error:
+          "Akun ini masih punya Tiket yang belum selesai (ditugaskan/dikerjakan/pending), tidak bisa dihapus.",
+      },
       400
     );
   }

@@ -89,6 +89,7 @@ export function PengajuanCutiScreen({ profile, onBack }: Props) {
     setIsSubmitting(true);
     const result = await submitPengajuanCuti(supabase, {
       teknisiId: profile.id,
+      teknisiNama: profile.nama,
       tanggalMulai,
       tanggalSelesai,
       alasan,

@@ -6,21 +6,25 @@ function fakeClient(options: {
   penerima?: Array<{ id: string }>;
 }) {
   const notifikasiInserts: unknown[] = [];
+  const pengajuanCutiInserts: unknown[] = [];
 
   const client = {
     from: (table: string) => {
       if (table === "pengajuan_cuti") {
         return {
-          insert: () => ({
-            select: () => ({
-              single: () =>
-                Promise.resolve(
-                  options.insertError
-                    ? { data: null, error: options.insertError }
-                    : { data: { id: "cuti-1" }, error: null }
-                ),
-            }),
-          }),
+          insert: (row: unknown) => {
+            pengajuanCutiInserts.push(row);
+            return {
+              select: () => ({
+                single: () =>
+                  Promise.resolve(
+                    options.insertError
+                      ? { data: null, error: options.insertError }
+                      : { data: { id: "cuti-1" }, error: null }
+                  ),
+              }),
+            };
+          },
         };
       }
       if (table === "users") {
@@ -43,24 +47,34 @@ function fakeClient(options: {
     functions: { invoke: jest.fn().mockResolvedValue({ data: null, error: null }) },
   } as unknown as SupabaseClient;
 
-  return { client, notifikasiInserts };
+  return { client, notifikasiInserts, pengajuanCutiInserts };
 }
 
 const VALID_INPUT = {
   teknisiId: "teknisi-1",
+  teknisiNama: "Ahmad Wahyudi",
   tanggalMulai: "2026-08-20",
   tanggalSelesai: "2026-08-22",
   alasan: "Sakit demam",
 };
 
-test("valid input creates the pengajuan and notifies every admin/pemilik", async () => {
-  const { client, notifikasiInserts } = fakeClient({
+test("valid input creates the pengajuan (with a name snapshot) and notifies every admin/pemilik", async () => {
+  const { client, notifikasiInserts, pengajuanCutiInserts } = fakeClient({
     penerima: [{ id: "admin-1" }, { id: "pemilik-1" }],
   });
 
   const result = await submitPengajuanCuti(client, VALID_INPUT);
 
   expect(result).toEqual({ success: true });
+  expect(pengajuanCutiInserts).toEqual([
+    {
+      teknisi_id: "teknisi-1",
+      teknisi_nama_snapshot: "Ahmad Wahyudi",
+      tanggal_mulai: "2026-08-20",
+      tanggal_selesai: "2026-08-22",
+      alasan: "Sakit demam",
+    },
+  ]);
   expect(notifikasiInserts).toEqual([
     [
       {
