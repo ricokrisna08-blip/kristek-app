@@ -1006,20 +1006,6 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
                     onChangeText={setNama}
                   />
 
-                  {canManageMikrotikUsername(profile.role) ? (
-                    <>
-                      <Text style={styles.fieldLabel}>Username Mikrotik (opsional)</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Kosongkan kalau belum ada / diisi belakangan"
-                        placeholderTextColor="#9ca3af"
-                        autoCapitalize="none"
-                        value={addMikrotikUsernameInput}
-                        onChangeText={setAddMikrotikUsernameInput}
-                      />
-                    </>
-                  ) : null}
-
                   <Text style={styles.fieldLabel}>Alamat</Text>
                   <TextInput
                     style={styles.input}
@@ -1073,6 +1059,20 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
                     />
                   )}
 
+                  {canManageMikrotikUsername(profile.role) ? (
+                    <>
+                      <Text style={styles.fieldLabel}>Username Mikrotik (opsional)</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Kosongkan kalau belum ada / diisi belakangan"
+                        placeholderTextColor="#9ca3af"
+                        autoCapitalize="none"
+                        value={addMikrotikUsernameInput}
+                        onChangeText={setAddMikrotikUsernameInput}
+                      />
+                    </>
+                  ) : null}
+
                   {error ? <Text style={[styles.error, styles.formErrorSpacing]}>{error}</Text> : null}
 
                   <View style={styles.formButtonRow}>
@@ -1104,13 +1104,13 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
             title="Konfirmasi Pelanggan Baru"
             fields={[
               { label: "Nama", value: nama },
-              ...(canManageMikrotikUsername(profile.role)
-                ? [{ label: "Username Mikrotik", value: addMikrotikUsernameInput || "(kosong)" }]
-                : []),
               { label: "Alamat", value: alamat },
               { label: "No. HP", value: noHp },
               { label: "ODP", value: selectedOdpLabel },
               { label: "Paket", value: selectedPaketNama },
+              ...(canManageMikrotikUsername(profile.role)
+                ? [{ label: "Username Mikrotik", value: addMikrotikUsernameInput || "(kosong)" }]
+                : []),
             ]}
             isSubmitting={isSubmitting}
             onCancel={() => setIsConfirmVisible(false)}
