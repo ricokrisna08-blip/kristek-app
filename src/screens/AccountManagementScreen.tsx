@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
   FlatList,
   Modal,
   ScrollView,
@@ -45,6 +46,12 @@ const EMPTY_FORM: FormState = {
   role: "teknisi",
   wilayahId: null,
 };
+
+// Percentage maxHeight nggak selalu resolve di web (butuh ancestor dengan
+// definite height) -- pakai angka pixel absolut supaya form card-nya
+// konsisten discroll di dalam batasnya, bukan meluber sampai tombol
+// "Lanjutkan" ketutup/di luar jangkauan layar.
+const FORM_CARD_MAX_HEIGHT = Dimensions.get("window").height * 0.88;
 
 const ROLE_BADGE_COLOR: Record<string, { bg: string; text: string }> = {
   admin: { bg: "#dbeafe", text: "#1e40af" },
@@ -331,7 +338,7 @@ export function AccountManagementScreen({ onBack }: Props) {
       >
         <View style={styles.backdrop}>
           <View style={styles.formCard}>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
               <Text style={styles.title}>Tambah Akun Baru</Text>
 
               <TextInput
@@ -736,7 +743,12 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    maxHeight: "88%",
+    maxHeight: FORM_CARD_MAX_HEIGHT,
+    overflow: "hidden",
+  },
+  formScroll: {
+    flex: 1,
+    minHeight: 0,
   },
   formLabel: {
     fontSize: 13,
