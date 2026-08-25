@@ -8,31 +8,18 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
 import { supabase } from "../lib/supabase";
 import { submitPengajuanCuti } from "../cuti/submitPengajuanCuti";
 import { listPengajuanCuti, type PengajuanCutiItem } from "../cuti/listPengajuanCuti";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { ScreenHeader } from "../components/ScreenHeader";
+import { DateField, formatTanggal, parseDateString, toDateString } from "../components/DateField";
 import type { UserProfile } from "../auth/profile";
 
 type Props = {
   profile: UserProfile;
   onBack: () => void;
 };
-
-// tanggal_mulai/tanggal_selesai adalah kolom `date` murni ("YYYY-MM-DD"),
-// jadi perlu ditambah "T00:00:00" supaya di-parse sebagai waktu lokal,
-// bukan tengah malam UTC yang bisa geser mundur satu hari.
-function formatTanggal(iso: string): string {
-  return new Date(`${iso}T00:00:00`).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 // created_at sudah timestamp lengkap (dengan jam & timezone) -- JANGAN
 // ditambah "T00:00:00" lagi, itu yang bikin hasilnya "Invalid Date".
@@ -42,17 +29,6 @@ function formatWaktuDiajukan(iso: string): string {
     month: "long",
     year: "numeric",
   });
-}
-
-function toDateString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function parseDateString(value: string): Date {
-  return value ? new Date(`${value}T00:00:00`) : new Date();
 }
 
 function startOfToday(): Date {
@@ -71,8 +47,6 @@ export function PengajuanCutiScreen({ profile, onBack }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
-  const [isMulaiPickerVisible, setIsMulaiPickerVisible] = useState(false);
-  const [isSelesaiPickerVisible, setIsSelesaiPickerVisible] = useState(false);
 
   async function reload() {
     setIsLoading(true);
@@ -111,21 +85,11 @@ export function PengajuanCutiScreen({ profile, onBack }: Props) {
 
   const canSubmit = Boolean(tanggalMulai.trim() && tanggalSelesai.trim() && alasan.trim());
 
-  function handleChangeMulai(event: DateTimePickerEvent, selectedDate?: Date) {
-    setIsMulaiPickerVisible(false);
-    if (event.type !== "set" || !selectedDate) return;
-
-    const value = toDateString(selectedDate);
+  function handleChangeMulai(value: string) {
     setTanggalMulai(value);
     if (tanggalSelesai && tanggalSelesai < value) {
       setTanggalSelesai(value);
     }
-  }
-
-  function handleChangeSelesai(event: DateTimePickerEvent, selectedDate?: Date) {
-    setIsSelesaiPickerVisible(false);
-    if (event.type !== "set" || !selectedDate) return;
-    setTanggalSelesai(toDateString(selectedDate));
   }
 
   return (
@@ -138,41 +102,20 @@ export function PengajuanCutiScreen({ profile, onBack }: Props) {
       <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.sectionCard}>
         <Text style={styles.fieldLabel}>Tanggal Mulai</Text>
-        <TouchableOpacity style={styles.dateField} onPress={() => setIsMulaiPickerVisible(true)}>
-          <Text style={tanggalMulai ? styles.dateFieldText : styles.dateFieldPlaceholder}>
-            {tanggalMulai ? formatTanggal(tanggalMulai) : "Pilih tanggal mulai"}
-          </Text>
-          <Text style={styles.dateFieldIcon}>📅</Text>
-        </TouchableOpacity>
-        {isMulaiPickerVisible ? (
-          <DateTimePicker
-            value={parseDateString(tanggalMulai)}
-            mode="date"
-            display="default"
-            minimumDate={startOfToday()}
-            onChange={handleChangeMulai}
-          />
-        ) : null}
+        <DateField
+          value={tanggalMulai}
+          onChange={handleChangeMulai}
+          minimumDate={startOfToday()}
+          placeholder="Pilih tanggal mulai"
+        />
 
         <Text style={styles.fieldLabel}>Tanggal Selesai</Text>
-        <TouchableOpacity
-          style={styles.dateField}
-          onPress={() => setIsSelesaiPickerVisible(true)}
-        >
-          <Text style={tanggalSelesai ? styles.dateFieldText : styles.dateFieldPlaceholder}>
-            {tanggalSelesai ? formatTanggal(tanggalSelesai) : "Pilih tanggal selesai"}
-          </Text>
-          <Text style={styles.dateFieldIcon}>📅</Text>
-        </TouchableOpacity>
-        {isSelesaiPickerVisible ? (
-          <DateTimePicker
-            value={parseDateString(tanggalSelesai || tanggalMulai)}
-            mode="date"
-            display="default"
-            minimumDate={parseDateString(tanggalMulai || toDateString(startOfToday()))}
-            onChange={handleChangeSelesai}
-          />
-        ) : null}
+        <DateField
+          value={tanggalSelesai}
+          onChange={setTanggalSelesai}
+          minimumDate={parseDateString(tanggalMulai || toDateString(startOfToday()))}
+          placeholder="Pilih tanggal selesai"
+        />
 
         <Text style={styles.fieldLabel}>Alasan</Text>
         <TextInput
@@ -283,29 +226,6 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 90,
     textAlignVertical: "top",
-  },
-  dateField: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#f9fafb",
-    borderRadius: 12,
-    paddingVertical: 13,
-    paddingHorizontal: 14,
-    marginBottom: 12,
-  },
-  dateFieldText: {
-    fontSize: 15,
-    color: "#111827",
-  },
-  dateFieldPlaceholder: {
-    fontSize: 15,
-    color: "#9ca3af",
-  },
-  dateFieldIcon: {
-    fontSize: 15,
   },
   error: {
     color: "#DC2626",
