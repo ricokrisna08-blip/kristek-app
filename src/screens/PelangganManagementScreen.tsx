@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   BackHandler,
-  Modal,
   ScrollView,
   SectionList,
   StyleSheet,
@@ -12,7 +11,6 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../lib/supabase";
-import { createPelanggan } from "../pelanggan/createPelanggan";
 import { searchPelanggan, type PelangganListItem } from "../pelanggan/searchPelanggan";
 import {
   getPelangganDetail,
@@ -29,7 +27,6 @@ import { deleteMikrotikSecret } from "../pelanggan/deleteMikrotikSecret";
 import { setPelangganIsolir } from "../pelanggan/setPelangganIsolir";
 import { endPelangganConnection } from "../pelanggan/endPelangganConnection";
 import {
-  canCreatePelanggan,
   canDeletePelanggan,
   canEditPelanggan,
   canEditPelangganHarga,
@@ -38,7 +35,6 @@ import {
   canManageMikrotikUsername,
 } from "../auth/permissions";
 import type { UserProfile } from "../auth/profile";
-import { ConfirmModal } from "../components/ConfirmModal";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { Dropdown } from "../components/Dropdown";
@@ -126,18 +122,6 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
   const [odpList, setOdpList] = useState<OdpListItem[]>([]);
   const [paketList, setPaketList] = useState<Paket[]>([]);
 
-  const [nama, setNama] = useState("");
-  const [alamat, setAlamat] = useState("");
-  const [noHp, setNoHp] = useState("");
-  const [odpId, setOdpId] = useState<string | null>(null);
-  const [paketId, setPaketId] = useState<string | null>(null);
-  const [addMikrotikUsernameInput, setAddMikrotikUsernameInput] = useState("");
-  const [addMikrotikWarning, setAddMikrotikWarning] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isConfirmVisible, setIsConfirmVisible] = useState(false);
-  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
-
   const [selectedDetail, setSelectedDetail] = useState<PelangganDetail | null>(
     null
   );
@@ -185,8 +169,6 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
     setResults(searchResult);
     setOdpList(odpResult);
     setPaketList(paketResult);
-    setOdpId((prev) => prev ?? odpResult[0]?.id ?? null);
-    setPaketId((prev) => prev ?? paketResult[0]?.id ?? null);
     setIsLoading(false);
   }
 
@@ -232,87 +214,6 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
 
     return () => subscription.remove();
   }, [selectedDetail]);
-
-  function openAddModal() {
-    setError(null);
-    setNama("");
-    setAlamat("");
-    setNoHp("");
-    setAddMikrotikUsernameInput("");
-    setAddMikrotikWarning(null);
-    setIsAddModalVisible(true);
-  }
-
-  async function handleConfirm() {
-    setError(null);
-
-    if (!odpId) {
-      setIsConfirmVisible(false);
-      setError("Belum ada ODP — buat ODP dulu.");
-      return;
-    }
-    if (!paketId) {
-      setIsConfirmVisible(false);
-      setError("Belum ada Paket — minta Pemilik menambah Paket dulu.");
-      return;
-    }
-
-    const odp = odpList.find((o) => o.id === odpId);
-    if (!odp) {
-      setIsConfirmVisible(false);
-      setError("ODP yang dipilih tidak valid.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    const result = await createPelanggan(supabase, {
-      nama,
-      alamat,
-      noHp,
-      wilayahId: odp.wilayahId,
-      odpId,
-      paketId,
-    });
-    setIsSubmitting(false);
-
-    if (!result.success) {
-      setIsConfirmVisible(false);
-      setError(result.error);
-      return;
-    }
-
-    // Username Mikrotik di form Tambah itu opsional -- kalau diisi, coba
-    // langsung buat/link secret-nya. Pelanggan-nya sendiri sudah berhasil
-    // dibuat di titik ini, jadi kalau langkah Mikrotik ini gagal, tetap
-    // tutup modal & lanjut seperti biasa, cuma tampilkan warning supaya
-    // Admin/Pemilik tau harus set manual dari layar detail Pelanggan.
-    let mikrotikWarning: string | null = null;
-    if (addMikrotikUsernameInput.trim()) {
-      const mikrotikResult = await createMikrotikSecret(
-        supabase,
-        result.pelanggan.id,
-        addMikrotikUsernameInput.trim()
-      );
-      if (!mikrotikResult.success) {
-        mikrotikWarning = `Pelanggan berhasil dibuat, tapi gagal set Username Mikrotik: ${mikrotikResult.error} Coba set manual di layar detail Pelanggan.`;
-      }
-    }
-
-    setIsConfirmVisible(false);
-    setIsAddModalVisible(false);
-    setNama("");
-    setAlamat("");
-    setNoHp("");
-    setAddMikrotikUsernameInput("");
-    setAddMikrotikWarning(mikrotikWarning);
-    await reload();
-  }
-
-  const selectedOdpLabel = odpList.find((o) => o.id === odpId)?.label ?? "-";
-  const selectedPaketNama = paketList.find((p) => p.id === paketId)?.nama ?? "-";
-  const canSubmitPelanggan = Boolean(
-    nama.trim() && alamat.trim() && noHp.trim() && odpId && paketId
-  );
 
   async function handleSelect(item: PelangganListItem) {
     const detail = await getPelangganDetail(supabase, item.id);
@@ -894,26 +795,9 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
         title="Manajemen Pelanggan"
         subtitle={`${results.length} Pelanggan ditemukan`}
         onBack={onBack}
-        right={
-          canCreatePelanggan(profile.role) ? (
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={openAddModal}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text style={styles.addButtonText}>+ Tambah Pelanggan</Text>
-            </TouchableOpacity>
-          ) : null
-        }
       />
 
       <View style={styles.listBody}>
-      {addMikrotikWarning ? (
-        <TouchableOpacity onPress={() => setAddMikrotikWarning(null)}>
-          <Text style={styles.warningBanner}>{addMikrotikWarning} (ketuk untuk tutup)</Text>
-        </TouchableOpacity>
-      ) : null}
-
       <View style={styles.searchBox}>
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
@@ -933,13 +817,8 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
           <Text style={styles.emptyText}>
             {query.trim()
               ? `Tidak ada Pelanggan yang cocok dengan "${query.trim()}".`
-              : "Belum ada Pelanggan."}
+              : "Belum ada Pelanggan. Pelanggan baru muncul otomatis setelah Tiket Instalasi dibuat lewat menu Buat Tiket."}
           </Text>
-          {!query.trim() && canCreatePelanggan(profile.role) ? (
-            <TouchableOpacity style={styles.emptyStateButton} onPress={openAddModal}>
-              <Text style={styles.emptyStateButtonText}>+ Tambah Pelanggan Pertama</Text>
-            </TouchableOpacity>
-          ) : null}
         </View>
       ) : (
         <View style={styles.listRow}>
@@ -983,141 +862,6 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
         </View>
       )}
       </View>
-
-      {canCreatePelanggan(profile.role) ? (
-        <>
-          <Modal
-            visible={isAddModalVisible}
-            transparent
-            animationType="slide"
-            onRequestClose={() => setIsAddModalVisible(false)}
-          >
-            <View style={styles.formBackdrop}>
-              <View style={styles.formCard}>
-                <ScrollView showsVerticalScrollIndicator={false}>
-                  <Text style={styles.title}>Tambah Pelanggan Baru</Text>
-
-                  <Text style={styles.fieldLabel}>Nama</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Nama Pelanggan"
-                    placeholderTextColor="#9ca3af"
-                    value={nama}
-                    onChangeText={setNama}
-                  />
-
-                  <Text style={styles.fieldLabel}>Alamat</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Alamat lengkap"
-                    placeholderTextColor="#9ca3af"
-                    value={alamat}
-                    onChangeText={setAlamat}
-                  />
-
-                  <Text style={styles.fieldLabel}>No. HP</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="08xxxxxxxxxx"
-                    placeholderTextColor="#9ca3af"
-                    keyboardType="phone-pad"
-                    value={noHp}
-                    onChangeText={setNoHp}
-                  />
-
-                  <Text style={styles.fieldLabel}>ODP</Text>
-                  {odpList.length === 0 ? (
-                    <Text style={styles.error}>
-                      Belum ada ODP di Wilayah Anda — buat ODP dulu di Kelola ODP.
-                    </Text>
-                  ) : (
-                    <Dropdown
-                      variant="field"
-                      title="Pilih ODP"
-                      searchable
-                      valueLabel={selectedOdpLabel}
-                      options={odpList.map((odp) => ({
-                        id: odp.id,
-                        label: odp.wilayahNama ? `${odp.label} (${odp.wilayahNama})` : odp.label,
-                      }))}
-                      onSelect={setOdpId}
-                    />
-                  )}
-
-                  <Text style={styles.fieldLabel}>Paket</Text>
-                  {paketList.length === 0 ? (
-                    <Text style={styles.error}>
-                      Belum ada Paket — minta Pemilik menambah Paket dulu.
-                    </Text>
-                  ) : (
-                    <Dropdown
-                      variant="field"
-                      title="Pilih Paket"
-                      valueLabel={selectedPaketNama}
-                      options={paketList.map((paket) => ({ id: paket.id, label: paket.nama }))}
-                      onSelect={setPaketId}
-                    />
-                  )}
-
-                  {canManageMikrotikUsername(profile.role) ? (
-                    <>
-                      <Text style={styles.fieldLabel}>Username Mikrotik (opsional)</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Kosongkan kalau belum ada / diisi belakangan"
-                        placeholderTextColor="#9ca3af"
-                        autoCapitalize="none"
-                        value={addMikrotikUsernameInput}
-                        onChangeText={setAddMikrotikUsernameInput}
-                      />
-                    </>
-                  ) : null}
-
-                  {error ? <Text style={[styles.error, styles.formErrorSpacing]}>{error}</Text> : null}
-
-                  <View style={styles.formButtonRow}>
-                    <TouchableOpacity
-                      style={[styles.formButton, styles.cancelButton]}
-                      onPress={() => setIsAddModalVisible(false)}
-                    >
-                      <Text style={styles.cancelButtonText}>Batal</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.formButton,
-                        styles.formSubmitButton,
-                        !canSubmitPelanggan && styles.buttonDisabled,
-                      ]}
-                      onPress={() => setIsConfirmVisible(true)}
-                      disabled={!canSubmitPelanggan}
-                    >
-                      <Text style={styles.buttonText}>Lanjutkan</Text>
-                    </TouchableOpacity>
-                  </View>
-                </ScrollView>
-              </View>
-            </View>
-          </Modal>
-
-          <ConfirmModal
-            visible={isConfirmVisible}
-            title="Konfirmasi Pelanggan Baru"
-            fields={[
-              { label: "Nama", value: nama },
-              { label: "Alamat", value: alamat },
-              { label: "No. HP", value: noHp },
-              { label: "ODP", value: selectedOdpLabel },
-              { label: "Paket", value: selectedPaketNama },
-              ...(canManageMikrotikUsername(profile.role)
-                ? [{ label: "Username Mikrotik", value: addMikrotikUsernameInput || "(kosong)" }]
-                : []),
-            ]}
-            isSubmitting={isSubmitting}
-            onCancel={() => setIsConfirmVisible(false)}
-            onConfirm={handleConfirm}
-          />
-        </>
-      ) : null}
     </View>
   );
 }
@@ -1139,17 +883,6 @@ const styles = StyleSheet.create({
   listBody: {
     flex: 1,
     padding: 24,
-  },
-  addButton: {
-    backgroundColor: "#1B7396",
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  addButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 12,
   },
   title: {
     fontSize: 22,
@@ -1185,23 +918,6 @@ const styles = StyleSheet.create({
   emptyStateIcon: {
     fontSize: 40,
     marginBottom: 8,
-  },
-  emptyStateButton: {
-    backgroundColor: "#1B7396",
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    marginTop: 16,
-    shadowColor: "#1B7396",
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  emptyStateButtonText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 15,
   },
   searchBox: {
     flexDirection: "row",
@@ -1303,61 +1019,8 @@ const styles = StyleSheet.create({
     color: "#DC2626",
     marginBottom: 8,
   },
-  warningBanner: {
-    backgroundColor: "#FEF3C7",
-    color: "#92400E",
-    fontSize: 12,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
-  formErrorSpacing: {
-    marginTop: -4,
-  },
   sudahBayarErrorSpacing: {
     marginTop: 12,
-  },
-  formBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  formCard: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: "88%",
-  },
-  formButtonRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  formButton: {
-    flex: 1,
-    backgroundColor: "#1B7396",
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
-    shadowColor: "#1B7396",
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  formSubmitButton: {
-    flex: 1,
-  },
-  cancelButton: {
-    backgroundColor: "#f1f1f1",
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  cancelButtonText: {
-    color: "#333",
-    fontWeight: "600",
   },
   success: {
     color: "#15803d",
