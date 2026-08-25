@@ -26,6 +26,7 @@ import { createMikrotikSecret } from "../pelanggan/createMikrotikSecret";
 import { deleteMikrotikSecret } from "../pelanggan/deleteMikrotikSecret";
 import { setPelangganIsolir } from "../pelanggan/setPelangganIsolir";
 import { endPelangganConnection } from "../pelanggan/endPelangganConnection";
+import { updatePelangganStatus } from "../pelanggan/updatePelangganStatus";
 import {
   canDeletePelanggan,
   canEditPelanggan,
@@ -33,6 +34,7 @@ import {
   canMarkSudahBayarBulanIni,
   canManageIsolir,
   canManageMikrotikUsername,
+  canManagePelangganStatus,
 } from "../auth/permissions";
 import type { UserProfile } from "../auth/profile";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
@@ -159,6 +161,14 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
   const [endConnectionMessage, setEndConnectionMessage] = useState<string | null>(null);
   const [isEndingConnection, setIsEndingConnection] = useState(false);
 
+  const [statusIsActive, setStatusIsActive] = useState(true);
+  const [statusIsBenefit, setStatusIsBenefit] = useState(false);
+  const [statusSubsidiInput, setStatusSubsidiInput] = useState("");
+  const [statusProrate, setStatusProrate] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [isSavingStatus, setIsSavingStatus] = useState(false);
+  const [isStatusSaved, setIsStatusSaved] = useState(false);
+
   async function reload() {
     setIsLoading(true);
     const [searchResult, odpResult, paketResult] = await Promise.all([
@@ -235,6 +245,14 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
     setIsolirError(null);
     setEndConnectionError(null);
     setEndConnectionMessage(null);
+    setStatusIsActive(detail?.isActive ?? true);
+    setStatusIsBenefit(detail?.isBenefit ?? false);
+    setStatusSubsidiInput(
+      detail?.subsidiAktif != null ? String(detail.subsidiAktif) : "100000"
+    );
+    setStatusProrate(detail?.prorate ?? false);
+    setStatusError(null);
+    setIsStatusSaved(false);
   }
 
   function handleStartEditPelanggan() {
@@ -400,6 +418,41 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
         ? `Koneksi diputus (${result.endedCount} sesi aktif).`
         : "Pelanggan ini sedang tidak online — tidak ada yang perlu diputus."
     );
+  }
+
+  async function handleSaveStatus() {
+    if (!selectedDetail) return;
+
+    const trimmedSubsidi = statusSubsidiInput.trim();
+    const parsedSubsidi = trimmedSubsidi ? Number(trimmedSubsidi) : null;
+    if (trimmedSubsidi && (!Number.isFinite(parsedSubsidi) || (parsedSubsidi ?? 0) < 0)) {
+      setStatusError("Subsidi harus berupa angka, 0 atau lebih (atau kosongkan).");
+      return;
+    }
+
+    setStatusError(null);
+    setIsSavingStatus(true);
+    const result = await updatePelangganStatus(supabase, selectedDetail.id, {
+      isActive: statusIsActive,
+      isBenefit: statusIsBenefit,
+      subsidiAktif: parsedSubsidi,
+      prorate: statusProrate,
+    });
+    setIsSavingStatus(false);
+
+    if (!result.success) {
+      setStatusError(result.error);
+      return;
+    }
+
+    setSelectedDetail({
+      ...selectedDetail,
+      isActive: statusIsActive,
+      isBenefit: statusIsBenefit,
+      subsidiAktif: parsedSubsidi,
+      prorate: statusProrate,
+    });
+    setIsStatusSaved(true);
   }
 
   async function handleSaveHarga() {
@@ -761,6 +814,80 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
           </View>
         ) : null}
 
+        {canManagePelangganStatus(profile.role) ? (
+          <View style={styles.sectionCard}>
+            <Text style={styles.subtitle}>Status & Subsidi</Text>
+            <Text style={styles.sectionHint}>Khusus Pemilik</Text>
+
+            <TouchableOpacity
+              style={styles.statusToggleRow}
+              onPress={() => {
+                setStatusIsActive((prev) => !prev);
+                setIsStatusSaved(false);
+              }}
+            >
+              <Text style={styles.infoLabel}>Aktif</Text>
+              <View style={[styles.checkbox, statusIsActive && styles.checkboxChecked]}>
+                {statusIsActive ? <Text style={styles.checkboxMark}>✓</Text> : null}
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.statusToggleRow}
+              onPress={() => {
+                setStatusIsBenefit((prev) => !prev);
+                setIsStatusSaved(false);
+              }}
+            >
+              <Text style={styles.infoLabel}>Benefit (gratis, tidak masuk Blast WA)</Text>
+              <View style={[styles.checkbox, statusIsBenefit && styles.checkboxChecked]}>
+                {statusIsBenefit ? <Text style={styles.checkboxMark}>✓</Text> : null}
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.statusToggleRow}
+              onPress={() => {
+                setStatusProrate((prev) => !prev);
+                setIsStatusSaved(false);
+              }}
+            >
+              <Text style={styles.infoLabel}>Prorate</Text>
+              <View style={[styles.checkbox, statusProrate && styles.checkboxChecked]}>
+                {statusProrate ? <Text style={styles.checkboxMark}>✓</Text> : null}
+              </View>
+            </TouchableOpacity>
+
+            <Text style={[styles.fieldLabel, styles.fieldLabelSpacing]}>
+              Subsidi Aktif (Rp)
+            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Contoh: 100000"
+              placeholderTextColor="#9ca3af"
+              keyboardType="numeric"
+              value={statusSubsidiInput}
+              onChangeText={(value) => {
+                setStatusSubsidiInput(value);
+                setIsStatusSaved(false);
+              }}
+            />
+
+            {statusError ? <Text style={styles.error}>{statusError}</Text> : null}
+            {isStatusSaved ? <Text style={styles.success}>Tersimpan.</Text> : null}
+
+            <TouchableOpacity
+              style={[styles.button, isSavingStatus && styles.buttonDisabled]}
+              onPress={handleSaveStatus}
+              disabled={isSavingStatus}
+            >
+              <Text style={styles.buttonText}>
+                {isSavingStatus ? "Menyimpan..." : "Simpan Status & Subsidi"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         <Text style={styles.subtitle}>Riwayat Tiket</Text>
         <Text style={styles.emptyText}>Belum ada Tiket.</Text>
 
@@ -901,6 +1028,17 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#6b7280",
     marginBottom: 8,
+  },
+  fieldLabelSpacing: {
+    marginTop: 4,
+  },
+  statusToggleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F3F5",
   },
   loading: {
     marginVertical: 12,

@@ -56,6 +56,10 @@ export function canManagePaket(role: Role): boolean {
   return role === "pemilik";
 }
 
+export function canManagePelangganStatus(role: Role): boolean {
+  return role === "pemilik";
+}
+
 export function canCreateTiket(role: Role): boolean {
   return role === "admin";
 }

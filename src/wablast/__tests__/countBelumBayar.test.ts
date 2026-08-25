@@ -5,7 +5,9 @@ function fakeClient(count: number | null): SupabaseClient {
   return {
     from: () => ({
       select: () => ({
-        eq: () => Promise.resolve({ count, error: null }),
+        eq: () => ({
+          eq: () => Promise.resolve({ count, error: null }),
+        }),
       }),
     }),
   } as unknown as SupabaseClient;
