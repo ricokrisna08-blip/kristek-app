@@ -41,6 +41,7 @@ import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { Dropdown } from "../components/Dropdown";
 import { AlphabetIndex } from "../components/AlphabetIndex";
+import { DateField } from "../components/DateField";
 
 type Props = {
   profile: UserProfile;
@@ -148,6 +149,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
   const [editNoHp, setEditNoHp] = useState("");
   const [editOdpId, setEditOdpId] = useState<string | null>(null);
   const [editPaketId, setEditPaketId] = useState<string | null>(null);
+  const [editTanggalInstalasi, setEditTanggalInstalasi] = useState("");
   const [editPelangganError, setEditPelangganError] = useState<string | null>(null);
   const [isSavingEditPelanggan, setIsSavingEditPelanggan] = useState(false);
   const [isEditingPelanggan, setIsEditingPelanggan] = useState(false);
@@ -273,6 +275,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
     setEditNoHp(selectedDetail.noHp);
     setEditOdpId(selectedDetail.odpId);
     setEditPaketId(selectedDetail.paketId);
+    setEditTanggalInstalasi(selectedDetail.tanggalInstalasi ?? "");
     setEditPelangganError(null);
     setIsEditingPelanggan(true);
   }
@@ -313,6 +316,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
       odpId: editOdpId,
       wilayahId: odp.wilayahId,
       paketId: editPaketId,
+      tanggalInstalasi: editTanggalInstalasi.trim() || null,
     });
     setIsSavingEditPelanggan(false);
 
@@ -332,6 +336,8 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
       wilayahNama: odp.wilayahNama,
       paketId: editPaketId,
       paketNama: paketList.find((p) => p.id === editPaketId)?.nama ?? selectedDetail.paketNama,
+      tanggalInstalasi: result.tanggalInstalasi,
+      tagihanProrata: result.tagihanProrata,
     });
     setIsEditingPelanggan(false);
   }
@@ -679,7 +685,16 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
             <Text style={styles.infoValue}>{formatHarga(selectedDetail.harga)}</Text>
           </View>
 
-          {selectedDetail.tanggalInstalasi ? (
+          {isEditingPelanggan ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Tanggal Instalasi</Text>
+              <DateField
+                value={editTanggalInstalasi}
+                onChange={setEditTanggalInstalasi}
+                placeholder="Belum diisi"
+              />
+            </View>
+          ) : selectedDetail.tanggalInstalasi ? (
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Tanggal Instalasi</Text>
               <Text style={styles.infoValue}>
