@@ -40,6 +40,7 @@ export function TiketDetailScreen({ tiketId, profile, onBack }: Props) {
       profile={profile}
       onBack={onBack}
       onChanged={reload}
+      onDeleted={onBack}
     />
   );
 }

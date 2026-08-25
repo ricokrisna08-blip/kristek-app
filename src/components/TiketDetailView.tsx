@@ -33,6 +33,7 @@ import {
 import { reassignTiketTeknisi } from "../tiket/reassignTiketTeknisi";
 import { listAccounts, type AccountListItem } from "../accounts/listAccounts";
 import { batalkanTiket } from "../tiket/batalkanTiket";
+import { deleteTiket } from "../tiket/deleteTiket";
 import { computeDurasiKerjaSeconds, formatDurasiKerja } from "../tiket/durasiKerja";
 import { listTiketFoto, type TiketFoto } from "../tiket/listTiketFoto";
 import { deleteTiketFoto } from "../tiket/deleteTiketFoto";
@@ -46,6 +47,7 @@ import { TiketStatusBar } from "./TiketStatusBar";
 import { ScreenHeader } from "./ScreenHeader";
 import { DeleteConfirmModal } from "./DeleteConfirmModal";
 import type { UserProfile } from "../auth/profile";
+import { canResetTiketData } from "../auth/permissions";
 import { isOnline } from "../offline/isOnline";
 import { persistCapturedPhoto } from "../offline/persistCapturedPhoto";
 import { offlineQueueStore } from "../offline/offlineQueueStore.instance";
@@ -128,9 +130,10 @@ type Props = {
   profile: UserProfile;
   onBack: () => void;
   onChanged: () => void;
+  onDeleted: () => void;
 };
 
-export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
+export function TiketDetailView({ detail, profile, onBack, onChanged, onDeleted }: Props) {
   const [isStarting, setIsStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [statusLog, setStatusLog] = useState<TiketStatusLogEntry[]>([]);
@@ -162,6 +165,9 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
   const [isConfirmingCancel, setIsConfirmingCancel] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [isDeleteTiketConfirmVisible, setIsDeleteTiketConfirmVisible] = useState(false);
+  const [isDeletingTiket, setIsDeletingTiket] = useState(false);
+  const [deleteTiketError, setDeleteTiketError] = useState<string | null>(null);
 
   const [fotoList, setFotoList] = useState<TiketFoto[]>([]);
   const [viewingFoto, setViewingFoto] = useState<TiketFoto | null>(null);
@@ -554,6 +560,21 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
 
     setIsConfirmingCancel(false);
     onChanged();
+  }
+
+  async function handleDeleteTiket() {
+    setDeleteTiketError(null);
+    setIsDeletingTiket(true);
+    const result = await deleteTiket(supabase, detail.id);
+    setIsDeletingTiket(false);
+
+    if (!result.success) {
+      setDeleteTiketError(result.error);
+      return;
+    }
+
+    setIsDeleteTiketConfirmVisible(false);
+    onDeleted();
   }
 
   async function handleDeleteFoto() {
@@ -1076,6 +1097,15 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
         </>
       ) : null}
 
+      {canResetTiketData(profile.role) ? (
+        <TouchableOpacity
+          style={styles.deleteTiketButton}
+          onPress={() => setIsDeleteTiketConfirmVisible(true)}
+        >
+          <Text style={styles.deleteTiketButtonText}>Hapus Paksa Tiket Ini</Text>
+        </TouchableOpacity>
+      ) : null}
+
       {statusLog.length > 0 ? (
         <>
           <Text style={styles.subtitle}>Riwayat Status</Text>
@@ -1104,6 +1134,15 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
           </View>
         </>
       ) : null}
+
+      <DeleteConfirmModal
+        visible={isDeleteTiketConfirmVisible}
+        itemLabel={`Tiket ${detail.pelanggan?.nama ?? JENIS_LABEL[detail.jenis] ?? detail.jenis}`}
+        error={deleteTiketError}
+        isDeleting={isDeletingTiket}
+        onCancel={() => setIsDeleteTiketConfirmVisible(false)}
+        onConfirm={handleDeleteTiket}
+      />
 
       <DeleteConfirmModal
         visible={deleteFotoTarget !== null}
@@ -1521,6 +1560,23 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cancelTiketButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  deleteTiketButton: {
+    backgroundColor: "#7F1D1D",
+    borderRadius: 12,
+    paddingVertical: 15,
+    alignItems: "center",
+    marginTop: 16,
+    shadowColor: "#7F1D1D",
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  deleteTiketButtonText: {
     color: "#fff",
     fontWeight: "700",
     fontSize: 15,

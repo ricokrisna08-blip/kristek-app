@@ -91,6 +91,10 @@ export function MyTiketScreen({ profile, title, jenisFilter, onBack }: Props) {
         profile={profile}
         onBack={() => setSelectedDetail(null)}
         onChanged={handleChanged}
+        onDeleted={async () => {
+          setSelectedDetail(null);
+          await reloadList();
+        }}
       />
     );
   }

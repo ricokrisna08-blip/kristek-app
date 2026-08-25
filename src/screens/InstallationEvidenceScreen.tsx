@@ -77,6 +77,10 @@ export function InstallationEvidenceScreen({ profile, onBack }: Props) {
         profile={profile}
         onBack={() => setDetail(null)}
         onChanged={handleChanged}
+        onDeleted={async () => {
+          setDetail(null);
+          await reload();
+        }}
       />
     );
   }
