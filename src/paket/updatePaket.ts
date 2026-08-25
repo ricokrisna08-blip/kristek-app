@@ -7,7 +7,8 @@ export type UpdatePaketResult =
 export async function updatePaket(
   client: SupabaseClient,
   id: string,
-  nama: string
+  nama: string,
+  harga: number | null
 ): Promise<UpdatePaketResult> {
   const trimmedNama = nama.trim();
 
@@ -15,7 +16,10 @@ export async function updatePaket(
     return { success: false, error: "Nama Paket tidak boleh kosong" };
   }
 
-  const { error } = await client.from("paket").update({ nama: trimmedNama }).eq("id", id);
+  const { error } = await client
+    .from("paket")
+    .update({ nama: trimmedNama, harga })
+    .eq("id", id);
 
   if (error) {
     const isDuplicateName = (error as { code?: string } | null)?.code === "23505";

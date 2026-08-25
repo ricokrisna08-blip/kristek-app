@@ -18,6 +18,7 @@ export type PelangganRecord = {
   wilayahId: string;
   odpId: string;
   paketId: string;
+  harga: number | null;
 };
 
 export type CreatePelangganResult =
@@ -28,6 +29,16 @@ export async function createPelanggan(
   client: SupabaseClient,
   input: NewPelangganInput
 ): Promise<CreatePelangganResult> {
+  // Harga default Pelanggan baru ikut Paket yang dipilih -- tetap bisa
+  // di-override manual belakangan lewat "Edit Harga Langganan" di layar
+  // detail Pelanggan (misal ada subsidi/nego walau Paket-nya sama, lihat
+  // migration 20260101200000_pelanggan_harga.sql).
+  const { data: paket } = await client
+    .from("paket")
+    .select("harga")
+    .eq("id", input.paketId)
+    .single();
+
   const { data, error } = await client
     .from("pelanggan")
     .insert({
@@ -37,6 +48,7 @@ export async function createPelanggan(
       wilayah_id: input.wilayahId,
       odp_id: input.odpId,
       paket_id: input.paketId,
+      harga: paket?.harga ?? null,
     })
     .select()
     .single();
@@ -56,6 +68,7 @@ export async function createPelanggan(
       wilayahId: data.wilayah_id,
       odpId: data.odp_id,
       paketId: data.paket_id,
+      harga: data.harga ?? null,
     },
   };
 }

@@ -105,6 +105,7 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
     if (jenis === "instalasi") {
       if (!namaBaru.trim() || !alamatBaru.trim() || !noHpBaru.trim()) return null;
       if (!odpBaruId || !paketBaruId) return null;
+      if (!mikrotikUsernameBaru.trim()) return null;
       return {
         ...common,
         jenis: "instalasi",
@@ -114,7 +115,7 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
           noHp: noHpBaru,
           odpId: odpBaruId,
           paketId: paketBaruId,
-          mikrotikUsername: mikrotikUsernameBaru.trim() || undefined,
+          mikrotikUsername: mikrotikUsernameBaru.trim(),
         },
       };
     }
@@ -191,7 +192,7 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
         { label: "ODP", value: odpBaruLabel || "-" },
         { label: "Paket", value: paketBaruNama || "-" },
         ...(canManageMikrotikUsername(profile.role)
-          ? [{ label: "Username Mikrotik", value: mikrotikUsernameBaru.trim() || "(kosong)" }]
+          ? [{ label: "Username Mikrotik", value: mikrotikUsernameBaru.trim() }]
           : []),
         { label: "Teknisi", value: teknisiNames },
       ];
@@ -308,10 +309,10 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
 
           {canManageMikrotikUsername(profile.role) ? (
             <>
-              <Text style={styles.fieldLabel}>Username Mikrotik (opsional)</Text>
+              <Text style={styles.fieldLabel}>Username Mikrotik</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Kosongkan kalau belum ada / diisi belakangan"
+                placeholder="Contoh: budi01"
                 placeholderTextColor="#9ca3af"
                 autoCapitalize="none"
                 value={mikrotikUsernameBaru}

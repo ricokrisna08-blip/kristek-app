@@ -22,7 +22,7 @@ export type NewTiketInput =
         noHp: string;
         odpId: string;
         paketId: string;
-        mikrotikUsername?: string;
+        mikrotikUsername: string;
       };
     })
   | (CommonFields & {
@@ -69,20 +69,17 @@ export async function createTiketWithAssignment(
 
     tiketPayload.pelanggan_id = pelangganResult.pelanggan.id;
 
-    // Username Mikrotik di sini opsional -- Pelanggan-nya sendiri sudah
-    // berhasil dibuat di titik ini, jadi kalau langkah Mikrotik ini gagal,
-    // tetap lanjut buat Tiket seperti biasa, cuma bawa pesan warning-nya
-    // sampai ke pemanggil (lihat pola yang sama di PelangganManagementScreen).
-    const mikrotikUsername = input.pelangganBaru.mikrotikUsername?.trim();
-    if (mikrotikUsername) {
-      const mikrotikResult = await createMikrotikSecret(
-        client,
-        pelangganResult.pelanggan.id,
-        mikrotikUsername
-      );
-      if (!mikrotikResult.success) {
-        mikrotikWarning = `Pelanggan & Tiket berhasil dibuat, tapi gagal set Username Mikrotik: ${mikrotikResult.error} Coba set manual di layar detail Pelanggan.`;
-      }
+    // Username Mikrotik wajib diisi di form -- Pelanggan-nya sendiri sudah
+    // berhasil dibuat di titik ini, jadi kalau langkah Mikrotik ini gagal
+    // (mis. Mikrotik lagi mati), tetap lanjut buat Tiket seperti biasa,
+    // cuma bawa pesan warning-nya sampai ke pemanggil.
+    const mikrotikResult = await createMikrotikSecret(
+      client,
+      pelangganResult.pelanggan.id,
+      input.pelangganBaru.mikrotikUsername.trim()
+    );
+    if (!mikrotikResult.success) {
+      mikrotikWarning = `Pelanggan & Tiket berhasil dibuat, tapi gagal set Username Mikrotik: ${mikrotikResult.error} Coba set manual di layar detail Pelanggan.`;
     }
   } else if (input.jenis === "gangguan_komplain") {
     tiketPayload.pelanggan_id = input.pelangganId;

@@ -21,10 +21,16 @@ type Props = {
   onBack: () => void;
 };
 
+function formatHarga(harga: number | null): string {
+  if (harga == null) return "Belum diisi";
+  return `Rp${harga.toLocaleString("id-ID")}`;
+}
+
 export function PaketManagementScreen({ onBack }: Props) {
   const [paketList, setPaketList] = useState<Paket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [nama, setNama] = useState("");
+  const [harga, setHarga] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirmVisible, setIsConfirmVisible] = useState(false);
@@ -35,6 +41,7 @@ export function PaketManagementScreen({ onBack }: Props) {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingNama, setEditingNama] = useState("");
+  const [editingHarga, setEditingHarga] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
@@ -51,7 +58,7 @@ export function PaketManagementScreen({ onBack }: Props) {
   async function handleConfirm() {
     setError(null);
     setIsSubmitting(true);
-    const result = await createPaket(supabase, nama);
+    const result = await createPaket(supabase, nama, harga.trim() ? Number(harga) : null);
     setIsSubmitting(false);
 
     if (!result.success) {
@@ -62,6 +69,7 @@ export function PaketManagementScreen({ onBack }: Props) {
 
     setIsConfirmVisible(false);
     setNama("");
+    setHarga("");
     await reload();
   }
 
@@ -84,12 +92,14 @@ export function PaketManagementScreen({ onBack }: Props) {
   function handleStartEdit(item: Paket) {
     setEditingId(item.id);
     setEditingNama(item.nama);
+    setEditingHarga(item.harga != null ? String(item.harga) : "");
     setEditError(null);
   }
 
   function handleCancelEdit() {
     setEditingId(null);
     setEditingNama("");
+    setEditingHarga("");
     setEditError(null);
   }
 
@@ -97,7 +107,12 @@ export function PaketManagementScreen({ onBack }: Props) {
     if (!editingId) return;
     setEditError(null);
     setIsSavingEdit(true);
-    const result = await updatePaket(supabase, editingId, editingNama);
+    const result = await updatePaket(
+      supabase,
+      editingId,
+      editingNama,
+      editingHarga.trim() ? Number(editingHarga) : null
+    );
     setIsSavingEdit(false);
 
     if (!result.success) {
@@ -107,6 +122,7 @@ export function PaketManagementScreen({ onBack }: Props) {
 
     setEditingId(null);
     setEditingNama("");
+    setEditingHarga("");
     await reload();
   }
 
@@ -135,6 +151,15 @@ export function PaketManagementScreen({ onBack }: Props) {
                   value={editingNama}
                   onChangeText={setEditingNama}
                 />
+                <Text style={styles.fieldLabel}>Harga</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Contoh: 165000"
+                  placeholderTextColor="#9ca3af"
+                  keyboardType="numeric"
+                  value={editingHarga}
+                  onChangeText={setEditingHarga}
+                />
                 {editError ? <Text style={styles.error}>{editError}</Text> : null}
                 <View style={styles.editButtonRow}>
                   <TouchableOpacity
@@ -157,7 +182,10 @@ export function PaketManagementScreen({ onBack }: Props) {
               </View>
             ) : (
               <View key={item.id} style={styles.card}>
-                <Text style={styles.cardName}>{item.nama}</Text>
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardName}>{item.nama}</Text>
+                  <Text style={styles.cardHarga}>{formatHarga(item.harga)}</Text>
+                </View>
                 <View style={styles.cardActions}>
                   <TouchableOpacity
                     style={styles.actionButton}
@@ -195,6 +223,16 @@ export function PaketManagementScreen({ onBack }: Props) {
           onChangeText={setNama}
         />
 
+        <Text style={styles.fieldLabel}>Harga</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Contoh: 165000"
+          placeholderTextColor="#9ca3af"
+          keyboardType="numeric"
+          value={harga}
+          onChangeText={setHarga}
+        />
+
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <TouchableOpacity
@@ -209,7 +247,10 @@ export function PaketManagementScreen({ onBack }: Props) {
       <ConfirmModal
         visible={isConfirmVisible}
         title="Konfirmasi Paket Baru"
-        fields={[{ label: "Nama Paket", value: nama }]}
+        fields={[
+          { label: "Nama Paket", value: nama },
+          { label: "Harga", value: harga.trim() ? formatHarga(Number(harga)) : "(kosong)" },
+        ]}
         isSubmitting={isSubmitting}
         onCancel={() => setIsConfirmVisible(false)}
         onConfirm={handleConfirm}
@@ -291,13 +332,20 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
-  cardName: {
+  cardInfo: {
     flex: 1,
     flexShrink: 1,
     marginRight: 8,
+  },
+  cardName: {
     fontSize: 15,
     fontWeight: "600",
     color: "#111827",
+  },
+  cardHarga: {
+    fontSize: 12,
+    color: "#6b7280",
+    marginTop: 2,
   },
   cardActions: {
     flexDirection: "row",

@@ -3,12 +3,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type Paket = {
   id: string;
   nama: string;
+  harga: number | null;
 };
 
 export async function listPaket(client: SupabaseClient): Promise<Paket[]> {
   const { data, error } = await client
     .from("paket")
-    .select("id, nama")
+    .select("id, nama, harga")
     .order("nama");
 
   if (error || !data) {

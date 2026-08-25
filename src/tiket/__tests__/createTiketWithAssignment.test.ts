@@ -39,6 +39,13 @@ test("Instalasi: creates the Pelanggan first, then the Tiket linked to it", asyn
   const statusLogInsert = jest.fn().mockResolvedValue({ error: null });
 
   const client = fakeClient({
+    paket: {
+      select: () => ({
+        eq: () => ({
+          single: () => Promise.resolve({ data: { harga: 200000 }, error: null }),
+        }),
+      }),
+    },
     pelanggan: { insert: pelangganInsert },
     tiket: { insert: tiketInsert },
     tiket_teknisi: { insert: tiketTeknisiInsert },
@@ -66,6 +73,7 @@ test("Instalasi: creates the Pelanggan first, then the Tiket linked to it", asyn
       noHp: "0812",
       odpId: "odp-1",
       paketId: "paket-1",
+      mikrotikUsername: "budi01",
     },
   });
 
@@ -76,6 +84,7 @@ test("Instalasi: creates the Pelanggan first, then the Tiket linked to it", asyn
     wilayah_id: "wilayah-1",
     odp_id: "odp-1",
     paket_id: "paket-1",
+    harga: 200000,
   });
   expect(tiketInsert).toHaveBeenCalledWith({
     jenis: "instalasi",
@@ -221,6 +230,13 @@ test("Instalasi: Username Mikrotik yang diisi langsung dipakai untuk buat secret
   const client = {
     from: (table: string) =>
       ({
+        paket: {
+          select: () => ({
+            eq: () => ({
+              single: () => Promise.resolve({ data: { harga: 200000 }, error: null }),
+            }),
+          }),
+        },
         pelanggan: { insert: pelangganInsert },
         tiket: { insert: tiketInsert },
         tiket_teknisi: { insert: jest.fn().mockResolvedValue({ error: null }) },
@@ -286,6 +302,13 @@ test("Instalasi: kegagalan set Username Mikrotik tidak menggagalkan pembuatan Ti
   const client = {
     from: (table: string) =>
       ({
+        paket: {
+          select: () => ({
+            eq: () => ({
+              single: () => Promise.resolve({ data: { harga: 200000 }, error: null }),
+            }),
+          }),
+        },
         pelanggan: { insert: pelangganInsert },
         tiket: { insert: tiketInsert },
         tiket_teknisi: { insert: jest.fn().mockResolvedValue({ error: null }) },
@@ -335,6 +358,13 @@ test("Instalasi: a Pelanggan creation failure stops before creating the Tiket", 
   const tiketInsert = jest.fn();
 
   const client = fakeClient({
+    paket: {
+      select: () => ({
+        eq: () => ({
+          single: () => Promise.resolve({ data: { harga: 200000 }, error: null }),
+        }),
+      }),
+    },
     pelanggan: { insert: pelangganInsert },
     tiket: { insert: tiketInsert },
   });
@@ -350,6 +380,7 @@ test("Instalasi: a Pelanggan creation failure stops before creating the Tiket", 
       noHp: "0812",
       odpId: "odp-1",
       paketId: "paket-1",
+      mikrotikUsername: "budi01",
     },
   });
 

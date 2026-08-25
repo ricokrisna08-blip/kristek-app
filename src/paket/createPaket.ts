@@ -7,7 +7,8 @@ export type CreatePaketResult =
 
 export async function createPaket(
   client: SupabaseClient,
-  nama: string
+  nama: string,
+  harga: number | null
 ): Promise<CreatePaketResult> {
   const trimmedNama = nama.trim();
 
@@ -17,7 +18,7 @@ export async function createPaket(
 
   const { data, error } = await client
     .from("paket")
-    .insert({ nama: trimmedNama })
+    .insert({ nama: trimmedNama, harga })
     .select()
     .single();
 
@@ -31,5 +32,5 @@ export async function createPaket(
     };
   }
 
-  return { success: true, paket: { id: data.id, nama: data.nama } };
+  return { success: true, paket: { id: data.id, nama: data.nama, harga: data.harga ?? null } };
 }

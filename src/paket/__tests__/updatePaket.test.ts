@@ -11,10 +11,10 @@ function fakeClient(updateResult: { error: unknown }): SupabaseClient {
   } as unknown as SupabaseClient;
 }
 
-test("a valid name updates the Paket", async () => {
+test("a valid name and harga updates the Paket", async () => {
   const client = fakeClient({ error: null });
 
-  const result = await updatePaket(client, "paket-1", "50 Mbps");
+  const result = await updatePaket(client, "paket-1", "50 Mbps", 200000);
 
   expect(result).toEqual({ success: true });
 });
@@ -23,7 +23,7 @@ test("an empty (or whitespace-only) name is rejected before hitting the server",
   const update = jest.fn();
   const client = { from: () => ({ update }) } as unknown as SupabaseClient;
 
-  const result = await updatePaket(client, "paket-1", "   ");
+  const result = await updatePaket(client, "paket-1", "   ", null);
 
   expect(update).not.toHaveBeenCalled();
   expect(result).toEqual({
@@ -37,7 +37,7 @@ test("a duplicate name surfaces a clear error instead of a raw DB error", async 
     error: { code: "23505", message: "duplicate key value violates unique constraint" },
   });
 
-  const result = await updatePaket(client, "paket-1", "30 Mbps");
+  const result = await updatePaket(client, "paket-1", "30 Mbps", 165000);
 
   expect(result).toEqual({ success: false, error: "Paket dengan nama ini sudah ada" });
 });
