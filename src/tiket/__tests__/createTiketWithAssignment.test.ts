@@ -74,6 +74,7 @@ test("Instalasi: creates the Pelanggan first, then the Tiket linked to it", asyn
       odpId: "odp-1",
       paketId: "paket-1",
       mikrotikUsername: "budi01",
+      tanggalInstalasi: "2026-08-20",
     },
   });
 
@@ -85,6 +86,8 @@ test("Instalasi: creates the Pelanggan first, then the Tiket linked to it", asyn
     odp_id: "odp-1",
     paket_id: "paket-1",
     harga: 200000,
+    tanggal_instalasi: "2026-08-20",
+    tagihan_prorata: 90323,
   });
   expect(tiketInsert).toHaveBeenCalledWith({
     jenis: "instalasi",
@@ -267,6 +270,7 @@ test("Instalasi: Username Mikrotik yang diisi langsung dipakai untuk buat secret
       odpId: "odp-1",
       paketId: "paket-1",
       mikrotikUsername: "sari01",
+      tanggalInstalasi: "2026-08-20",
     },
   });
 
@@ -339,6 +343,7 @@ test("Instalasi: kegagalan set Username Mikrotik tidak menggagalkan pembuatan Ti
       odpId: "odp-1",
       paketId: "paket-1",
       mikrotikUsername: "dedi01",
+      tanggalInstalasi: "2026-08-20",
     },
   });
 
@@ -381,6 +386,7 @@ test("Instalasi: a Pelanggan creation failure stops before creating the Tiket", 
       odpId: "odp-1",
       paketId: "paket-1",
       mikrotikUsername: "budi01",
+      tanggalInstalasi: "2026-08-20",
     },
   });
 

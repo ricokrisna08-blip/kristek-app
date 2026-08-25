@@ -17,6 +17,8 @@ export type TiketDetail = {
     nomorPelanggan: string;
     odpLabel: string | null;
     paketNama: string | null;
+    tanggalInstalasi: string | null;
+    tagihanProrata: number | null;
   } | null;
   odp: { label: string; lokasi: string } | null;
   evidenceLokasi: { latitude: number; longitude: number; capturedAt: string } | null;
@@ -34,6 +36,7 @@ export async function getTiketDetail(
        accumulated_pending_seconds, keluhan, deskripsi_pekerjaan,
        evidence_lokasi_latitude, evidence_lokasi_longitude, evidence_lokasi_captured_at,
        pelanggan:pelanggan_id ( nama, alamat, no_hp, nomor_pelanggan,
+         tanggal_instalasi, tagihan_prorata,
          odp:odp_id ( label ),
          paket:paket_id ( nama )
        ),
@@ -67,6 +70,8 @@ export async function getTiketDetail(
           nomorPelanggan: row.pelanggan.nomor_pelanggan,
           odpLabel: row.pelanggan.odp?.label ?? null,
           paketNama: row.pelanggan.paket?.nama ?? null,
+          tanggalInstalasi: row.pelanggan.tanggal_instalasi ?? null,
+          tagihanProrata: row.pelanggan.tagihan_prorata ?? null,
         }
       : null,
     odp: row.odp ? { label: row.odp.label, lokasi: row.odp.lokasi } : null,

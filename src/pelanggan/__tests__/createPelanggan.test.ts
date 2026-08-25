@@ -28,9 +28,9 @@ function fakeClient(options: {
   } as unknown as SupabaseClient;
 }
 
-test("valid input creates a new Pelanggan, inheriting its Paket's harga", async () => {
+test("valid input creates a new Pelanggan, inheriting its Paket's harga and computing tagihan prorata", async () => {
   const client = fakeClient({
-    paketHarga: 200000,
+    paketHarga: 165000,
     insertResult: {
       data: {
         id: "pelanggan-1",
@@ -41,7 +41,9 @@ test("valid input creates a new Pelanggan, inheriting its Paket's harga", async 
         wilayah_id: "wilayah-1",
         odp_id: "odp-1",
         paket_id: "paket-1",
-        harga: 200000,
+        harga: 165000,
+        tanggal_instalasi: "2026-08-20",
+        tagihan_prorata: 74516,
       },
       error: null,
     },
@@ -54,6 +56,7 @@ test("valid input creates a new Pelanggan, inheriting its Paket's harga", async 
     wilayahId: "wilayah-1",
     odpId: "odp-1",
     paketId: "paket-1",
+    tanggalInstalasi: "2026-08-20",
   });
 
   expect(result).toEqual({
@@ -67,7 +70,9 @@ test("valid input creates a new Pelanggan, inheriting its Paket's harga", async 
       wilayahId: "wilayah-1",
       odpId: "odp-1",
       paketId: "paket-1",
-      harga: 200000,
+      harga: 165000,
+      tanggalInstalasi: "2026-08-20",
+      tagihanProrata: 74516,
     },
   });
 });
@@ -88,6 +93,7 @@ test("an insert failure returns a clear error instead of crashing", async () => 
     wilayahId: "wilayah-1",
     odpId: "odp-1",
     paketId: "paket-1",
+    tanggalInstalasi: "2026-08-20",
   });
 
   expect(result).toEqual({

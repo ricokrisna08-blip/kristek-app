@@ -60,6 +60,22 @@ function formatTanggal(iso: string): string {
   });
 }
 
+// tanggal_instalasi adalah kolom `date` murni ("YYYY-MM-DD"), beda dari
+// formatTanggal di atas yang buat timestamp lengkap -- perlu "T00:00:00"
+// supaya di-parse sebagai waktu lokal, bukan tengah malam UTC yang bisa
+// geser mundur satu hari.
+function formatTanggalOnly(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function formatHarga(harga: number): string {
+  return `Rp${harga.toLocaleString("id-ID")}`;
+}
+
 const FOTO_TYPE_LABEL: Record<string, string> = {
   before: "Before",
   after: "After",
@@ -629,10 +645,38 @@ export function TiketDetailView({ detail, profile, onBack, onChanged }: Props) {
               <Text style={styles.infoLabel}>ODP asal</Text>
               <Text style={styles.infoValue}>{detail.pelanggan.odpLabel ?? "-"}</Text>
             </View>
-            <View style={[styles.infoRow, styles.infoRowLast]}>
+            <View
+              style={
+                detail.jenis === "instalasi" && detail.pelanggan.tanggalInstalasi
+                  ? styles.infoRow
+                  : [styles.infoRow, styles.infoRowLast]
+              }
+            >
               <Text style={styles.infoLabel}>Paket</Text>
               <Text style={styles.infoValue}>{detail.pelanggan.paketNama ?? "-"}</Text>
             </View>
+            {detail.jenis === "instalasi" && detail.pelanggan.tanggalInstalasi ? (
+              <View
+                style={
+                  detail.pelanggan.tagihanProrata != null
+                    ? styles.infoRow
+                    : [styles.infoRow, styles.infoRowLast]
+                }
+              >
+                <Text style={styles.infoLabel}>Tanggal Instalasi</Text>
+                <Text style={styles.infoValue}>
+                  {formatTanggalOnly(detail.pelanggan.tanggalInstalasi)}
+                </Text>
+              </View>
+            ) : null}
+            {detail.jenis === "instalasi" && detail.pelanggan.tagihanProrata != null ? (
+              <View style={[styles.infoRow, styles.infoRowLast]}>
+                <Text style={styles.infoLabel}>Tagihan Bulan Pertama (Prorata)</Text>
+                <Text style={styles.infoValue}>
+                  {formatHarga(detail.pelanggan.tagihanProrata)}
+                </Text>
+              </View>
+            ) : null}
           </View>
         </>
       ) : null}

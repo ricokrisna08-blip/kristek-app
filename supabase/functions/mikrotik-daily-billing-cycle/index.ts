@@ -21,7 +21,11 @@
 // siklus baru, tapi mengosongkan status "Sudah Bayar" bulan ini supaya
 // siap dipakai lagi buat siklus jatuh-tempo-tanggal-3 berikutnya
 // (Pelanggan yang sempat dicentang lunas bulan ini tetap kelihatan lunas
-// sampai tanggal 15, baru habis itu di-reset).
+// sampai tanggal 15, baru habis itu di-reset). Di titik yang sama,
+// `tagihan_prorata` (tagihan bulan pertama Pelanggan baru, lihat
+// computeProrata.ts) juga dikosongkan untuk semua Pelanggan yang masih
+// punya nilainya -- prorata cuma berlaku 1 siklus, jadi begitu siklus itu
+// lewat, Pelanggan itu balik ditagih harga normal.
 //
 // HARUS jadi Edge Function (bukan kode di app) karena butuh service_role
 // key (baca/tulis lintas semua Pelanggan tanpa user login) dan kredensial
@@ -240,6 +244,20 @@ Deno.serve(async (req) => {
 
     if (resetError) {
       return jsonResponse({ error: resetError.message }, 500);
+    }
+
+    // Tagihan bulan pertama (prorata) cuma berlaku buat SATU siklus --
+    // begitu siklus itu lewat (tanggal 15 ini nandain akhir siklus
+    // berjalan), Pelanggan baru masuk siklus normal jadi tagihan_prorata
+    // dikosongkan supaya blast WA bulan depan pakai harga normal, bukan
+    // prorata lagi (lihat computeProrata.ts).
+    const { error: prorataResetError } = await adminClient
+      .from("pelanggan")
+      .update({ tagihan_prorata: null })
+      .not("tagihan_prorata", "is", null);
+
+    if (prorataResetError) {
+      return jsonResponse({ error: prorataResetError.message }, 500);
     }
 
     return jsonResponse(

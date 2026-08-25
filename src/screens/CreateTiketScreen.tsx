@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import { supabase } from "../lib/supabase";
 import {
   createTiketWithAssignment,
@@ -32,6 +35,28 @@ const JENIS_OPTIONS: { value: TiketJenis; label: string }[] = [
   { value: "maintenance", label: "Maintenance" },
 ];
 
+// tanggal_instalasi adalah kolom `date` murni ("YYYY-MM-DD"), sama pola
+// dengan tanggal_mulai/tanggal_selesai Pengajuan Cuti -- ditambah
+// "T00:00:00" supaya di-parse sebagai waktu lokal, bukan UTC.
+function formatTanggal(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function toDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateString(value: string): Date {
+  return value ? new Date(`${value}T00:00:00`) : new Date();
+}
+
 type Props = {
   profile: UserProfile;
   onBack: () => void;
@@ -55,6 +80,8 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
   const [odpBaruId, setOdpBaruId] = useState<string | null>(null);
   const [paketBaruId, setPaketBaruId] = useState<string | null>(null);
   const [mikrotikUsernameBaru, setMikrotikUsernameBaru] = useState("");
+  const [tanggalInstalasi, setTanggalInstalasi] = useState(() => toDateString(new Date()));
+  const [isTanggalInstalasiPickerVisible, setIsTanggalInstalasiPickerVisible] = useState(false);
 
   // Maintenance: pilih ODP + deskripsi pekerjaan.
   const [maintenanceOdpId, setMaintenanceOdpId] = useState<string | null>(null);
@@ -92,6 +119,12 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
     );
   }
 
+  function handleChangeTanggalInstalasi(event: DateTimePickerEvent, selectedDate?: Date) {
+    setIsTanggalInstalasiPickerVisible(false);
+    if (event.type !== "set" || !selectedDate) return;
+    setTanggalInstalasi(toDateString(selectedDate));
+  }
+
   function buildInput(): NewTiketInput | null {
     if (!profile.wilayahId) return null;
     if (selectedTeknisiIds.length === 0) return null;
@@ -106,6 +139,7 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
       if (!namaBaru.trim() || !alamatBaru.trim() || !noHpBaru.trim()) return null;
       if (!odpBaruId || !paketBaruId) return null;
       if (!mikrotikUsernameBaru.trim()) return null;
+      if (!tanggalInstalasi.trim()) return null;
       return {
         ...common,
         jenis: "instalasi",
@@ -116,6 +150,7 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
           odpId: odpBaruId,
           paketId: paketBaruId,
           mikrotikUsername: mikrotikUsernameBaru.trim(),
+          tanggalInstalasi,
         },
       };
     }
@@ -194,6 +229,7 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
         ...(canManageMikrotikUsername(profile.role)
           ? [{ label: "Username Mikrotik", value: mikrotikUsernameBaru.trim() }]
           : []),
+        { label: "Tanggal Instalasi", value: formatTanggal(tanggalInstalasi) },
         { label: "Teknisi", value: teknisiNames },
       ];
     }
@@ -319,6 +355,23 @@ export function CreateTiketScreen({ profile, onBack, onCreated }: Props) {
                 onChangeText={setMikrotikUsernameBaru}
               />
             </>
+          ) : null}
+
+          <Text style={styles.fieldLabel}>Tanggal Instalasi</Text>
+          <TouchableOpacity
+            style={styles.dateField}
+            onPress={() => setIsTanggalInstalasiPickerVisible(true)}
+          >
+            <Text style={styles.dateFieldText}>{formatTanggal(tanggalInstalasi)}</Text>
+            <Text style={styles.dateFieldIcon}>📅</Text>
+          </TouchableOpacity>
+          {isTanggalInstalasiPickerVisible ? (
+            <DateTimePicker
+              value={parseDateString(tanggalInstalasi)}
+              mode="date"
+              display="default"
+              onChange={handleChangeTanggalInstalasi}
+            />
           ) : null}
         </View>
       ) : null}
@@ -496,6 +549,25 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 90,
     textAlignVertical: "top",
+  },
+  dateField: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    backgroundColor: "#f9fafb",
+    borderRadius: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    marginBottom: 12,
+  },
+  dateFieldText: {
+    fontSize: 15,
+    color: "#111827",
+  },
+  dateFieldIcon: {
+    fontSize: 15,
   },
   teknisiList: {
     gap: 8,

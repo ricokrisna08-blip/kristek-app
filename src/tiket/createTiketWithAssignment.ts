@@ -23,6 +23,7 @@ export type NewTiketInput =
         odpId: string;
         paketId: string;
         mikrotikUsername: string;
+        tanggalInstalasi: string;
       };
     })
   | (CommonFields & {
@@ -61,6 +62,7 @@ export async function createTiketWithAssignment(
       wilayahId: input.wilayahId,
       odpId: input.pelangganBaru.odpId,
       paketId: input.pelangganBaru.paketId,
+      tanggalInstalasi: input.pelangganBaru.tanggalInstalasi,
     });
 
     if (!pelangganResult.success) {

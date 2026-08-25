@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { computeProrata } from "./computeProrata";
 
 export type NewPelangganInput = {
   nama: string;
@@ -7,6 +8,7 @@ export type NewPelangganInput = {
   wilayahId: string;
   odpId: string;
   paketId: string;
+  tanggalInstalasi: string;
 };
 
 export type PelangganRecord = {
@@ -19,6 +21,8 @@ export type PelangganRecord = {
   odpId: string;
   paketId: string;
   harga: number | null;
+  tanggalInstalasi: string | null;
+  tagihanProrata: number | null;
 };
 
 export type CreatePelangganResult =
@@ -39,6 +43,11 @@ export async function createPelanggan(
     .eq("id", input.paketId)
     .single();
 
+  const harga = paket?.harga ?? null;
+  // Tagihan bulan pertama (prorata) -- cuma referensi info, TIDAK
+  // ditagihkan otomatis lewat field harga (lihat computeProrata.ts).
+  const tagihanProrata = harga != null ? computeProrata(input.tanggalInstalasi, harga) : null;
+
   const { data, error } = await client
     .from("pelanggan")
     .insert({
@@ -48,7 +57,9 @@ export async function createPelanggan(
       wilayah_id: input.wilayahId,
       odp_id: input.odpId,
       paket_id: input.paketId,
-      harga: paket?.harga ?? null,
+      harga,
+      tanggal_instalasi: input.tanggalInstalasi,
+      tagihan_prorata: tagihanProrata,
     })
     .select()
     .single();
@@ -69,6 +80,8 @@ export async function createPelanggan(
       odpId: data.odp_id,
       paketId: data.paket_id,
       harga: data.harga ?? null,
+      tanggalInstalasi: data.tanggal_instalasi ?? null,
+      tagihanProrata: data.tagihan_prorata ?? null,
     },
   };
 }

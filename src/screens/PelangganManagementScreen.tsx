@@ -52,6 +52,17 @@ function formatHarga(harga: number | null): string {
   return `Rp${harga.toLocaleString("id-ID")}`;
 }
 
+// Kolom `date` murni ("YYYY-MM-DD") -- ditambah "T00:00:00" supaya
+// di-parse sebagai waktu lokal, bukan UTC (sama pola dengan tanggal
+// Pengajuan Cuti/Buat Tiket).
+function formatTanggal(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 type PelangganSection = { title: string; data: PelangganListItem[] };
 
 function groupPelangganByLetter(items: PelangganListItem[]): PelangganSection[] {
@@ -667,6 +678,22 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
             <Text style={styles.infoLabel}>Harga Langganan</Text>
             <Text style={styles.infoValue}>{formatHarga(selectedDetail.harga)}</Text>
           </View>
+
+          {selectedDetail.tanggalInstalasi ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Tanggal Instalasi</Text>
+              <Text style={styles.infoValue}>
+                {formatTanggal(selectedDetail.tanggalInstalasi)}
+              </Text>
+            </View>
+          ) : null}
+
+          {selectedDetail.tagihanProrata != null ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Tagihan Bulan Pertama (Prorata)</Text>
+              <Text style={styles.infoValue}>{formatHarga(selectedDetail.tagihanProrata)}</Text>
+            </View>
+          ) : null}
 
           <TouchableOpacity
             style={styles.infoRow}

@@ -20,6 +20,8 @@ export type PelangganDetail = {
   isBenefit: boolean;
   subsidiAktif: number | null;
   prorate: boolean;
+  tanggalInstalasi: string | null;
+  tagihanProrata: number | null;
 };
 
 export async function getPelangganDetail(
@@ -29,7 +31,7 @@ export async function getPelangganDetail(
   const { data, error } = await client
     .from("pelanggan")
     .select(
-      "id, nama, alamat, no_hp, nomor_pelanggan, wilayah_id, wilayah:wilayah_id (nama), odp_id, odp:odp_id (label), paket_id, paket:paket_id (nama), harga, mikrotik_username, sudah_bayar_bulan_ini, is_isolir, is_active, is_benefit, subsidi_aktif, prorate"
+      "id, nama, alamat, no_hp, nomor_pelanggan, wilayah_id, wilayah:wilayah_id (nama), odp_id, odp:odp_id (label), paket_id, paket:paket_id (nama), harga, mikrotik_username, sudah_bayar_bulan_ini, is_isolir, is_active, is_benefit, subsidi_aktif, prorate, tanggal_instalasi, tagihan_prorata"
     )
     .eq("id", id)
     .single();
@@ -60,5 +62,7 @@ export async function getPelangganDetail(
     isBenefit: row.is_benefit ?? false,
     subsidiAktif: row.subsidi_aktif ?? null,
     prorate: row.prorate ?? false,
+    tanggalInstalasi: row.tanggal_instalasi ?? null,
+    tagihanProrata: row.tagihan_prorata ?? null,
   };
 }
