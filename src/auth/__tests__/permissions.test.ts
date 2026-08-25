@@ -187,8 +187,8 @@ test("Admin can edit Pelanggan harga", () => {
   expect(canEditPelangganHarga("admin")).toBe(true);
 });
 
-test("Pemilik cannot edit Pelanggan harga", () => {
-  expect(canEditPelangganHarga("pemilik")).toBe(false);
+test("Pemilik can edit Pelanggan harga", () => {
+  expect(canEditPelangganHarga("pemilik")).toBe(true);
 });
 
 test("Teknisi cannot edit Pelanggan harga", () => {

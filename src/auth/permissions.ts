@@ -37,7 +37,7 @@ export function canEditPelanggan(role: Role): boolean {
 }
 
 export function canEditPelangganHarga(role: Role): boolean {
-  return role === "admin";
+  return role === "admin" || role === "pemilik";
 }
 
 export function canMarkSudahBayarBulanIni(role: Role): boolean {

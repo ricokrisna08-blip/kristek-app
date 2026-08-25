@@ -430,8 +430,6 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
       return;
     }
 
-    const paketHarga = paketList.find((p) => p.id === selectedDetail.paketId)?.harga ?? null;
-
     setStatusError(null);
     setIsSavingStatus(true);
     const result = await updatePelangganStatus(supabase, selectedDetail.id, {
@@ -439,7 +437,6 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
       isBenefit: statusIsBenefit,
       subsidiAktif: parsedSubsidi,
       prorate: statusProrate,
-      paketHarga,
     });
     setIsSavingStatus(false);
 
@@ -448,16 +445,13 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
       return;
     }
 
-    const nextHarga = result.harga ?? selectedDetail.harga;
     setSelectedDetail({
       ...selectedDetail,
       isActive: statusIsActive,
       isBenefit: statusIsBenefit,
       subsidiAktif: parsedSubsidi,
       prorate: statusProrate,
-      harga: nextHarga,
     });
-    setHargaInput(nextHarga != null ? String(nextHarga) : "");
     setIsStatusSaved(true);
   }
 
@@ -868,8 +862,8 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
               Subsidi Aktif (Rp)
             </Text>
             <Text style={styles.sectionHint}>
-              Simpan akan menghitung ulang Harga Langganan = Harga Paket - Subsidi ini.
-              Kosongkan untuk kembali ke harga penuh Paket.
+              Catatan kebijakan subsidi -- tidak mengubah Harga Langganan secara
+              otomatis. Ubah Harga Langganan lewat "Edit Harga Langganan" di atas.
             </Text>
             <TextInput
               style={styles.input}
