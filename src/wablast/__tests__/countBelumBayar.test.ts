@@ -1,9 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { countBelumBayar } from "../countBelumBayar";
 
-function fakeClient(
-  rows: Array<{ harga: number | null; tagihan_prorata: number | null }>
-): SupabaseClient {
+type Row = {
+  harga: number | null;
+  tagihan_prorata: number | null;
+  kompensasi_nominal?: number | null;
+};
+
+function fakeClient(rows: Row[]): SupabaseClient {
   return {
     from: () => ({
       select: () => ({
@@ -50,6 +54,22 @@ test("prefers tagihan_prorata over harga when both are set", async () => {
   const result = await countBelumBayar(client);
 
   expect(result).toBe(0);
+});
+
+test("excludes a Pelanggan whose kompensasi fully offsets the bill", async () => {
+  const client = fakeClient([{ harga: 165000, tagihan_prorata: null, kompensasi_nominal: 165000 }]);
+
+  const result = await countBelumBayar(client);
+
+  expect(result).toBe(0);
+});
+
+test("still counts a Pelanggan whose kompensasi only partially offsets the bill", async () => {
+  const client = fakeClient([{ harga: 165000, tagihan_prorata: null, kompensasi_nominal: 50000 }]);
+
+  const result = await countBelumBayar(client);
+
+  expect(result).toBe(1);
 });
 
 test("returns 0 instead of throwing when the query returns no rows", async () => {

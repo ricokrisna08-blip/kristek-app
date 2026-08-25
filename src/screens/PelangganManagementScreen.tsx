@@ -178,6 +178,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
   const [statusIsBenefit, setStatusIsBenefit] = useState(false);
   const [statusSubsidiInput, setStatusSubsidiInput] = useState("");
   const [statusProrate, setStatusProrate] = useState(false);
+  const [statusKompensasiHariInput, setStatusKompensasiHariInput] = useState("");
   const [statusError, setStatusError] = useState<string | null>(null);
   const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [isStatusSaved, setIsStatusSaved] = useState(false);
@@ -264,6 +265,9 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
       detail?.subsidiAktif != null ? String(detail.subsidiAktif) : "100000"
     );
     setStatusProrate(detail?.prorate ?? false);
+    setStatusKompensasiHariInput(
+      detail?.kompensasiHari != null ? String(detail.kompensasiHari) : ""
+    );
     setStatusError(null);
     setIsStatusSaved(false);
   }
@@ -447,6 +451,16 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
       return;
     }
 
+    const trimmedKompensasiHari = statusKompensasiHariInput.trim();
+    const parsedKompensasiHari = trimmedKompensasiHari ? Number(trimmedKompensasiHari) : null;
+    if (
+      trimmedKompensasiHari &&
+      (!Number.isFinite(parsedKompensasiHari) || (parsedKompensasiHari ?? 0) < 0)
+    ) {
+      setStatusError("Lama Gangguan harus berupa angka hari, 0 atau lebih (atau kosongkan).");
+      return;
+    }
+
     setStatusError(null);
     setIsSavingStatus(true);
     const result = await updatePelangganStatus(supabase, selectedDetail.id, {
@@ -454,6 +468,8 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
       isBenefit: statusIsBenefit,
       subsidiAktif: parsedSubsidi,
       prorate: statusProrate,
+      kompensasiHari: parsedKompensasiHari,
+      hargaSaatIni: selectedDetail.harga,
     });
     setIsSavingStatus(false);
 
@@ -468,6 +484,8 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
       isBenefit: statusIsBenefit,
       subsidiAktif: parsedSubsidi,
       prorate: statusProrate,
+      kompensasiHari: parsedKompensasiHari,
+      kompensasiNominal: result.kompensasiNominal,
     });
     setIsStatusSaved(true);
   }
@@ -858,7 +876,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
 
         {canManagePelangganStatus(profile.role) ? (
           <View style={styles.sectionCard}>
-            <Text style={styles.subtitle}>Status & Subsidi</Text>
+            <Text style={styles.subtitle}>Status, Subsidi & Kompensasi</Text>
             <Text style={styles.sectionHint}>Khusus Pemilik</Text>
 
             <TouchableOpacity
@@ -919,6 +937,33 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
               }}
             />
 
+            <Text style={[styles.fieldLabel, styles.fieldLabelSpacing]}>
+              Lama Gangguan -- Kompensasi (hari)
+            </Text>
+            <Text style={styles.sectionHint}>
+              Isi kalau ada gangguan layanan beberapa hari. Nominal kompensasi dihitung
+              otomatis dari Harga Langganan saat ini, dikurangkan dari tagihan Blast WA
+              bulan ini saja ("[Kompensasi Gangguan]"), lalu otomatis reset di siklus
+              berikutnya -- bayar normal lagi.
+            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Contoh: 3"
+              placeholderTextColor="#9ca3af"
+              keyboardType="numeric"
+              value={statusKompensasiHariInput}
+              onChangeText={(value) => {
+                setStatusKompensasiHariInput(value);
+                setIsStatusSaved(false);
+              }}
+            />
+            {selectedDetail.kompensasiNominal != null ? (
+              <Text style={styles.sectionHint}>
+                Kompensasi tersimpan: {formatHarga(selectedDetail.kompensasiNominal)} (untuk{" "}
+                {selectedDetail.kompensasiHari} hari)
+              </Text>
+            ) : null}
+
             {statusError ? <Text style={styles.error}>{statusError}</Text> : null}
             {isStatusSaved ? <Text style={styles.success}>Tersimpan.</Text> : null}
 
@@ -928,7 +973,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
               disabled={isSavingStatus}
             >
               <Text style={styles.buttonText}>
-                {isSavingStatus ? "Menyimpan..." : "Simpan Status & Subsidi"}
+                {isSavingStatus ? "Menyimpan..." : "Simpan Status, Subsidi & Kompensasi"}
               </Text>
             </TouchableOpacity>
           </View>

@@ -23,9 +23,11 @@
 // (Pelanggan yang sempat dicentang lunas bulan ini tetap kelihatan lunas
 // sampai tanggal 15, baru habis itu di-reset). Di titik yang sama,
 // `tagihan_prorata` (tagihan bulan pertama Pelanggan baru, lihat
-// computeProrata.ts) juga dikosongkan untuk semua Pelanggan yang masih
-// punya nilainya -- prorata cuma berlaku 1 siklus, jadi begitu siklus itu
-// lewat, Pelanggan itu balik ditagih harga normal.
+// computeProrata.ts) dan `kompensasi_hari`/`kompensasi_nominal`
+// (kompensasi gangguan, lihat computeKompensasi.ts) juga dikosongkan
+// untuk semua Pelanggan yang masih punya nilainya -- dua-duanya cuma
+// berlaku 1 siklus, jadi begitu siklus itu lewat, Pelanggan itu balik
+// ditagih harga normal.
 //
 // HARUS jadi Edge Function (bukan kode di app) karena butuh service_role
 // key (baca/tulis lintas semua Pelanggan tanpa user login) dan kredensial
@@ -258,6 +260,18 @@ Deno.serve(async (req) => {
 
     if (prorataResetError) {
       return jsonResponse({ error: prorataResetError.message }, 500);
+    }
+
+    // Kompensasi gangguan juga cuma berlaku 1 siklus (lihat
+    // computeKompensasi.ts) -- sama seperti tagihan_prorata di atas,
+    // dikosongkan begitu siklus berjalan lewat.
+    const { error: kompensasiResetError } = await adminClient
+      .from("pelanggan")
+      .update({ kompensasi_hari: null, kompensasi_nominal: null })
+      .not("kompensasi_nominal", "is", null);
+
+    if (kompensasiResetError) {
+      return jsonResponse({ error: kompensasiResetError.message }, 500);
     }
 
     return jsonResponse(

@@ -22,6 +22,8 @@ export type PelangganDetail = {
   prorate: boolean;
   tanggalInstalasi: string | null;
   tagihanProrata: number | null;
+  kompensasiHari: number | null;
+  kompensasiNominal: number | null;
 };
 
 export async function getPelangganDetail(
@@ -31,7 +33,7 @@ export async function getPelangganDetail(
   const { data, error } = await client
     .from("pelanggan")
     .select(
-      "id, nama, alamat, no_hp, nomor_pelanggan, wilayah_id, wilayah:wilayah_id (nama), odp_id, odp:odp_id (label), paket_id, paket:paket_id (nama), harga, mikrotik_username, sudah_bayar_bulan_ini, is_isolir, is_active, is_benefit, subsidi_aktif, prorate, tanggal_instalasi, tagihan_prorata"
+      "id, nama, alamat, no_hp, nomor_pelanggan, wilayah_id, wilayah:wilayah_id (nama), odp_id, odp:odp_id (label), paket_id, paket:paket_id (nama), harga, mikrotik_username, sudah_bayar_bulan_ini, is_isolir, is_active, is_benefit, subsidi_aktif, prorate, tanggal_instalasi, tagihan_prorata, kompensasi_hari, kompensasi_nominal"
     )
     .eq("id", id)
     .single();
@@ -64,5 +66,7 @@ export async function getPelangganDetail(
     prorate: row.prorate ?? false,
     tanggalInstalasi: row.tanggal_instalasi ?? null,
     tagihanProrata: row.tagihan_prorata ?? null,
+    kompensasiHari: row.kompensasi_hari ?? null,
+    kompensasiNominal: row.kompensasi_nominal ?? null,
   };
 }
