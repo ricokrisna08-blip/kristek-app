@@ -9,7 +9,12 @@ function fakeClient(options: {
     sudah_bayar: number;
     belum_bayar: number;
   }>;
-  pelanggan: Array<{ harga: number | null; sudah_bayar_bulan_ini: boolean }>;
+  pelanggan: Array<{
+    harga: number | null;
+    tagihan_prorata?: number | null;
+    kompensasi_nominal?: number | null;
+    sudah_bayar_bulan_ini: boolean;
+  }>;
 }): SupabaseClient {
   return {
     from: (table: string) => {
@@ -80,6 +85,29 @@ test("persen is 0 when omset is 0, not NaN or Infinity", async () => {
 
   expect(result[0].persen).toBe(0);
   expect(result[0].totalUser).toBe(0);
+});
+
+test("live current month uses effective tagihan (prorata basis, minus kompensasi), not raw harga", async () => {
+  const client = fakeClient({
+    history: [],
+    pelanggan: [
+      // Prorata: dasar dari tagihan_prorata, bukan harga penuh.
+      { harga: 165000, tagihan_prorata: 80000, sudah_bayar_bulan_ini: false },
+      // Kompensasi: dikurangi dari harga dasar, floor di 0.
+      { harga: 165000, kompensasi_nominal: 200000, sudah_bayar_bulan_ini: true },
+      // Normal: harga penuh.
+      { harga: 100000, sudah_bayar_bulan_ini: true },
+    ],
+  });
+
+  const result = await getLaporanKeuangan(client);
+
+  expect(result[0]).toMatchObject({
+    totalUser: 3,
+    omset: 80000 + 0 + 100000,
+    sudahBayar: 0 + 100000,
+    belumBayar: 80000,
+  });
 });
 
 test("only returns the last 3 months (2 historical + the live current month)", async () => {

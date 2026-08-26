@@ -53,7 +53,9 @@ export async function getLaporanKeuangan(
       .from("laporan_bulanan")
       .select("periode, total_user, omset, sudah_bayar, belum_bayar")
       .order("periode", { ascending: true }),
-    client.from("pelanggan").select("harga, sudah_bayar_bulan_ini"),
+    client
+      .from("pelanggan")
+      .select("harga, tagihan_prorata, kompensasi_nominal, sudah_bayar_bulan_ini"),
   ]);
 
   const history = historyResult.data ?? [];
@@ -74,12 +76,13 @@ export async function getLaporanKeuangan(
   let sudahBayar = 0;
   let belumBayar = 0;
   for (const row of pelangganRows as any[]) {
-    const harga = row.harga ?? 0;
-    omset += harga;
+    const dasar = row.tagihan_prorata ?? row.harga ?? 0;
+    const tagihan = Math.max(dasar - (row.kompensasi_nominal ?? 0), 0);
+    omset += tagihan;
     if (row.sudah_bayar_bulan_ini) {
-      sudahBayar += harga;
+      sudahBayar += tagihan;
     } else {
-      belumBayar += harga;
+      belumBayar += tagihan;
     }
   }
 

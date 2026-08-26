@@ -101,6 +101,12 @@ export function LaporanKeuanganScreen({ onBack }: Props) {
           </ScrollView>
         </View>
       )}
+      <Text style={styles.note}>
+        Angka bulan ini sudah menghitung kebijakan Pemilik yang aktif per pelanggan:
+        Prorata (pelanggan baru join di tengah siklus) dan Kompensasi Gangguan
+        (subsidi gangguan layanan) -- keduanya otomatis mengurangi tagihan efektif,
+        lalu balik normal lagi di siklus berikutnya.
+      </Text>
       </ScrollView>
     </View>
   );
@@ -193,5 +199,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 9,
     fontWeight: "700",
+  },
+  note: {
+    marginTop: 12,
+    fontSize: 12,
+    lineHeight: 17,
+    color: "#64748B",
   },
 });
