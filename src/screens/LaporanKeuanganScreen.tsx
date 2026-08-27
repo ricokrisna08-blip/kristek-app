@@ -17,6 +17,7 @@ import {
 } from "../pengeluaran/listPengeluaranBulanIni";
 import { createPengeluaran } from "../pengeluaran/createPengeluaran";
 import { deletePengeluaran } from "../pengeluaran/deletePengeluaran";
+import { setPengeluaranSudahDibayar } from "../pengeluaran/setPengeluaranSudahDibayar";
 import type { UserProfile } from "../auth/profile";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
@@ -134,6 +135,11 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
     await reload();
   }
 
+  async function handleToggleSudahDibayar(item: PengeluaranItem) {
+    await setPengeluaranSudahDibayar(supabase, item.id, !item.sudahDibayar);
+    await reload();
+  }
+
   return (
     <View style={styles.screen}>
       <ScreenHeader
@@ -245,10 +251,12 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
         lalu balik normal lagi di siklus berikutnya. Kolom "Di Tangan DC" adalah
         bagian dari Belum Bayar yang sudah dicentang DC ("sudah bayar ke saya")
         tapi masih menunggu approval Pemilik -- uangnya sudah bukan lagi di
-        Pelanggan, tapi belum resmi lunas sampai di-Setujui. "Sisa Uang" = Sudah
-        Bayar dikurangi Pengeluaran bulan itu -- baris pengeluaran yang diisi
-        Persen (%) dihitung otomatis dari Sudah Bayar bulan itu, ikut naik/turun
-        kalau ada pelanggan baru bayar.
+        Pelanggan, tapi belum resmi lunas sampai di-Setujui. Pengeluaran dicatat
+        sebagai rencana dulu -- centang di list bawah begitu beneran dibayar,
+        baru ikut kehitung ke kolom Pengeluaran/"Sisa Uang" (= Sudah Bayar
+        dikurangi Pengeluaran yang sudah dicentang). Baris pengeluaran yang
+        diisi Persen (%) dihitung otomatis dari Sudah Bayar bulan itu, ikut
+        naik/turun kalau ada pelanggan baru bayar.
       </Text>
 
       {!isLoading ? (
@@ -258,7 +266,17 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
             <Text style={styles.emptyText}>Belum ada pengeluaran dicatat bulan ini.</Text>
           ) : (
             pengeluaranItems.map((p) => (
-              <View key={p.id} style={styles.pengeluaranRow}>
+              <View
+                key={p.id}
+                style={[styles.pengeluaranRow, !p.sudahDibayar && styles.pengeluaranRowPending]}
+              >
+                <TouchableOpacity
+                  style={[styles.checkbox, p.sudahDibayar && styles.checkboxChecked]}
+                  onPress={() => handleToggleSudahDibayar(p)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  {p.sudahDibayar ? <Text style={styles.checkboxMark}>✓</Text> : null}
+                </TouchableOpacity>
                 <View style={styles.pengeluaranBody}>
                   <View style={styles.pengeluaranTitleRow}>
                     <View style={styles.kategoriBadge}>
@@ -269,6 +287,7 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
                   <Text style={styles.pengeluaranMeta}>
                     {p.persen != null ? `${p.persen}% · ` : ""}
                     {formatHarga(p.efektif)}
+                    {!p.sudahDibayar ? " · Belum dibayar" : ""}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -550,6 +569,29 @@ const styles = StyleSheet.create({
     borderColor: "#f0f0f0",
     padding: 12,
     marginBottom: 8,
+  },
+  pengeluaranRowPending: {
+    backgroundColor: "#FFFBEB",
+    borderColor: "#FDE68A",
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#d1d5db",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  checkboxChecked: {
+    backgroundColor: "#059669",
+    borderColor: "#059669",
+  },
+  checkboxMark: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 13,
   },
   pengeluaranBody: {
     flex: 1,

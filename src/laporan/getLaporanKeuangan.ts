@@ -134,7 +134,8 @@ export async function getLaporanKeuangan(
   if (earliestPeriode) {
     const { data: pengeluaranRows } = await client
       .from("pengeluaran")
-      .select("nominal, persen, tanggal")
+      .select("nominal, persen, tanggal, sudah_dibayar")
+      .eq("sudah_dibayar", true)
       .gte("tanggal", earliestPeriode);
 
     const sudahBayarByPeriode = new Map(shown.map((item) => [item.periode, item.sudahBayar]));

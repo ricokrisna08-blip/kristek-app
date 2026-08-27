@@ -20,6 +20,7 @@ function fakeClient(options: {
     nominal: number | null;
     persen: number | null;
     tanggal: string;
+    sudah_dibayar?: boolean;
   }>;
 }): SupabaseClient {
   return {
@@ -34,7 +35,9 @@ function fakeClient(options: {
       if (table === "pengeluaran") {
         return {
           select: () => ({
-            gte: () => Promise.resolve({ data: options.pengeluaran ?? [], error: null }),
+            eq: () => ({
+              gte: () => Promise.resolve({ data: options.pengeluaran ?? [], error: null }),
+            }),
           }),
         };
       }
@@ -174,8 +177,8 @@ test("totalPengeluaran sums flat-nominal rows for the matching periode, sisaUang
     ],
     pelanggan: [{ harga: 165000, sudah_bayar_bulan_ini: true }],
     pengeluaran: [
-      { nominal: 1500000, persen: null, tanggal: "2025-07-05" },
-      { nominal: 500000, persen: null, tanggal: "2025-07-20" },
+      { nominal: 1500000, persen: null, tanggal: "2025-07-05", sudah_dibayar: true },
+      { nominal: 500000, persen: null, tanggal: "2025-07-20", sudah_dibayar: true },
     ],
   });
 
@@ -195,7 +198,7 @@ test("persen-based pengeluaran rows are computed from that periode's own sudahBa
       { periode: "2025-07-01", total_user: 10, omset: 1000000, sudah_bayar: 1000000, belum_bayar: 0 },
     ],
     pelanggan: [{ harga: 165000, sudah_bayar_bulan_ini: true }],
-    pengeluaran: [{ nominal: null, persen: 3, tanggal: "2025-07-05" }],
+    pengeluaran: [{ nominal: null, persen: 3, tanggal: "2025-07-05", sudah_dibayar: true }],
   });
 
   const result = await getLaporanKeuangan(client);
@@ -214,8 +217,8 @@ test("pengeluaran rows are grouped per periode, not mixed across months", async 
     ],
     pelanggan: [{ harga: 165000, sudah_bayar_bulan_ini: true }],
     pengeluaran: [
-      { nominal: 100000, persen: null, tanggal: "2025-06-10" },
-      { nominal: 250000, persen: null, tanggal: "2025-07-10" },
+      { nominal: 100000, persen: null, tanggal: "2025-06-10", sudah_dibayar: true },
+      { nominal: 250000, persen: null, tanggal: "2025-07-10", sudah_dibayar: true },
     ],
   });
 

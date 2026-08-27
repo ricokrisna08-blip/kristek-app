@@ -7,6 +7,10 @@ export type PengeluaranItem = {
   nominal: number | null;
   persen: number | null;
   tanggal: string;
+  // Baru dianggap "keluar" beneran (ikut kehitung ke kolom Pengeluaran/
+  // Sisa Uang di getLaporanKeuangan.ts) begitu dicentang -- sebelum itu
+  // baris ini cuma rencana/list, belum ngurangin apa-apa.
+  sudahDibayar: boolean;
   // Nominal yang beneran kepakai di total: nominal apa adanya kalau
   // flat, atau round(sudahBayarBulanIni * persen / 100) kalau
   // persentase -- dihitung ulang tiap kali dipanggil, jadi baris kayak
@@ -29,7 +33,7 @@ export async function listPengeluaranBulanIni(
   const { awal, akhir } = bulanIniRange();
   const { data, error } = await client
     .from("pengeluaran")
-    .select("id, kategori, keterangan, nominal, persen, tanggal")
+    .select("id, kategori, keterangan, nominal, persen, tanggal, sudah_dibayar")
     .gte("tanggal", awal)
     .lt("tanggal", akhir)
     .order("tanggal", { ascending: false });
@@ -45,6 +49,7 @@ export async function listPengeluaranBulanIni(
     nominal: row.nominal,
     persen: row.persen,
     tanggal: row.tanggal,
+    sudahDibayar: row.sudah_dibayar,
     efektif:
       row.nominal != null
         ? row.nominal

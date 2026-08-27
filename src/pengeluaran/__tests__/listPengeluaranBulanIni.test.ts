@@ -8,6 +8,7 @@ type Row = {
   nominal: number | null;
   persen: number | null;
   tanggal: string;
+  sudah_dibayar: boolean;
 };
 
 function fakeClient(rows: Row[]): SupabaseClient {
@@ -26,23 +27,23 @@ function fakeClient(rows: Row[]): SupabaseClient {
 
 test("flat-nominal rows use nominal as-is", async () => {
   const client = fakeClient([
-    { id: "p1", kategori: "Gaji", keterangan: "Gaji Awe", nominal: 1500000, persen: null, tanggal: "2026-08-27" },
+    { id: "p1", kategori: "Gaji", keterangan: "Gaji Awe", nominal: 1500000, persen: null, tanggal: "2026-08-27", sudah_dibayar: true },
   ]);
 
   const result = await listPengeluaranBulanIni(client, 17230757);
 
-  expect(result[0]).toMatchObject({ nominal: 1500000, persen: null, efektif: 1500000 });
+  expect(result[0]).toMatchObject({ nominal: 1500000, persen: null, sudahDibayar: true, efektif: 1500000 });
 });
 
 test("persen-based rows compute efektif from sudahBayarBulanIni, rounded", async () => {
   const client = fakeClient([
-    { id: "p1", kategori: "Fee ISP", keterangan: "Fee ISP 3%", nominal: null, persen: 3, tanggal: "2026-08-27" },
+    { id: "p1", kategori: "Fee ISP", keterangan: "Fee ISP 3%", nominal: null, persen: 3, tanggal: "2026-08-27", sudah_dibayar: false },
   ]);
 
   const result = await listPengeluaranBulanIni(client, 17230757);
 
   // 17230757 * 0.03 = 516922.71 -> dibulatkan 516923
-  expect(result[0]).toMatchObject({ nominal: null, persen: 3, efektif: 516923 });
+  expect(result[0]).toMatchObject({ nominal: null, persen: 3, sudahDibayar: false, efektif: 516923 });
 });
 
 test("returns an empty array instead of throwing on query error", async () => {
