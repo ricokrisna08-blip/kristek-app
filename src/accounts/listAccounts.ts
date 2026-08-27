@@ -4,7 +4,7 @@ export type AccountListItem = {
   id: string;
   nama: string;
   username: string;
-  role: "admin" | "teknisi";
+  role: "admin" | "teknisi" | "dc";
   wilayahNama: string | null;
 };
 
@@ -14,7 +14,7 @@ export async function listAccounts(
   const { data, error } = await client
     .from("users")
     .select("id, nama, username, role, wilayah:wilayah_id (nama)")
-    .in("role", ["admin", "teknisi"])
+    .in("role", ["admin", "teknisi", "dc"])
     .order("nama");
 
   if (error || !data) {

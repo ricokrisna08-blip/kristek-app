@@ -8,7 +8,7 @@ export type NewAccountInput = {
   noTelp: string;
   username: string;
   password: string;
-  role: Extract<Role, "admin" | "teknisi">;
+  role: Extract<Role, "admin" | "teknisi" | "dc">;
   wilayahId: string;
 };
 

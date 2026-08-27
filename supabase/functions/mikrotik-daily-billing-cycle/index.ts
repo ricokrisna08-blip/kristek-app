@@ -274,6 +274,30 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: kompensasiResetError.message }, 500);
     }
 
+    // Pengaman: kalau ada centang DC ("sudah bayar ke saya") yang belum
+    // sempat di-approve/tolak Pemilik sampai akhir siklus, jangan sampai
+    // nyangkut ke siklus berikutnya -- reset ke belum-dicentang lagi.
+    const { error: dcFlagResetError } = await adminClient
+      .from("pelanggan")
+      .update({ dc_flagged_lunas: false, dc_flagged_by: null, dc_flagged_at: null })
+      .eq("dc_flagged_lunas", true);
+
+    if (dcFlagResetError) {
+      return jsonResponse({ error: dcFlagResetError.message }, 500);
+    }
+
+    // sudah_diblast_bulan_ini juga cuma berlaku 1 siklus (lihat
+    // fetchBillingFromSupabase.ts di kristek-wa-blast) -- direset supaya
+    // WA Blast bulan depan bisa nargetin ulang semua yang belum bayar.
+    const { error: diblastResetError } = await adminClient
+      .from("pelanggan")
+      .update({ sudah_diblast_bulan_ini: false, diblast_at: null })
+      .eq("sudah_diblast_bulan_ini", true);
+
+    if (diblastResetError) {
+      return jsonResponse({ error: diblastResetError.message }, 500);
+    }
+
     return jsonResponse(
       { action: "reset", resetCount: count ?? 0, snapshot: { totalUser, omset, sudahBayar, belumBayar } },
       200

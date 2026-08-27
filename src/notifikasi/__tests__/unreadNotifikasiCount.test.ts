@@ -15,6 +15,9 @@ function notif(readAt: string | null): Notifikasi {
     cutiTeknisiNama: null,
     cutiTanggalMulai: null,
     cutiTanggalSelesai: null,
+    setoranPelangganId: null,
+    setoranPelangganNama: null,
+    setoranPelangganAlamat: null,
   };
 }
 

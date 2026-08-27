@@ -19,6 +19,7 @@ type Props = {
   userId: string;
   onNavigateToTiket: (tiketId: string) => void;
   onNavigateToCuti: () => void;
+  onNavigateToApprovalSetoranDc: () => void;
 };
 
 const TYPE_ICON: Record<NotifikasiType, string> = {
@@ -26,6 +27,7 @@ const TYPE_ICON: Record<NotifikasiType, string> = {
   pending: "⏸️",
   selesai: "✅",
   cuti_diajukan: "🌴",
+  setoran_dc: "💵",
 };
 
 function formatWaktu(iso: string): string {
@@ -37,7 +39,12 @@ function formatWaktu(iso: string): string {
   });
 }
 
-export function NotifikasiBell({ userId, onNavigateToTiket, onNavigateToCuti }: Props) {
+export function NotifikasiBell({
+  userId,
+  onNavigateToTiket,
+  onNavigateToCuti,
+  onNavigateToApprovalSetoranDc,
+}: Props) {
   const [items, setItems] = useState<Notifikasi[]>([]);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -66,6 +73,8 @@ export function NotifikasiBell({ userId, onNavigateToTiket, onNavigateToCuti }: 
     setIsVisible(false);
     if (item.type === "cuti_diajukan") {
       onNavigateToCuti();
+    } else if (item.type === "setoran_dc") {
+      onNavigateToApprovalSetoranDc();
     } else if (item.tiketId) {
       onNavigateToTiket(item.tiketId);
     }
@@ -118,7 +127,10 @@ export function NotifikasiBell({ userId, onNavigateToTiket, onNavigateToCuti }: 
                 </View>
               }
               renderItem={({ item }) => {
-                const isTappable = item.type === "cuti_diajukan" || item.tiketId !== null;
+                const isTappable =
+                  item.type === "cuti_diajukan" ||
+                  item.type === "setoran_dc" ||
+                  item.tiketId !== null;
                 return (
                   <TouchableOpacity
                     style={styles.item}

@@ -15,6 +15,9 @@ function baseNotif(overrides: Partial<Notifikasi>): Notifikasi {
     cutiTeknisiNama: null,
     cutiTanggalMulai: null,
     cutiTanggalSelesai: null,
+    setoranPelangganId: null,
+    setoranPelangganNama: null,
+    setoranPelangganAlamat: null,
     ...overrides,
   };
 }
@@ -94,4 +97,23 @@ test("Cuti submission falls back gracefully when the teknisi name is missing", (
   );
 
   expect(label).toBe("Teknisi mengajukan cuti/izin (20 Agu - 22 Agu)");
+});
+
+test("Setoran DC includes the Pelanggan name and alamat", () => {
+  const label = notifikasiLabel(
+    baseNotif({
+      type: "setoran_dc",
+      tiketId: null,
+      setoranPelangganNama: "Budi",
+      setoranPelangganAlamat: "Jl. Mawar 1",
+    })
+  );
+
+  expect(label).toBe("Setoran dari DC untuk Budi (Jl. Mawar 1) menunggu approval");
+});
+
+test("Setoran DC falls back gracefully when the Pelanggan name/alamat is missing", () => {
+  const label = notifikasiLabel(baseNotif({ type: "setoran_dc", tiketId: null }));
+
+  expect(label).toBe("Setoran dari DC untuk Pelanggan menunggu approval");
 });

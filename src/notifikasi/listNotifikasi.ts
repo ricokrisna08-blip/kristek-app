@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type NotifikasiType = "ditugaskan" | "pending" | "selesai" | "cuti_diajukan";
+export type NotifikasiType = "ditugaskan" | "pending" | "selesai" | "cuti_diajukan" | "setoran_dc";
 
 export type Notifikasi = {
   id: string;
@@ -15,6 +15,9 @@ export type Notifikasi = {
   cutiTeknisiNama: string | null;
   cutiTanggalMulai: string | null;
   cutiTanggalSelesai: string | null;
+  setoranPelangganId: string | null;
+  setoranPelangganNama: string | null;
+  setoranPelangganAlamat: string | null;
 };
 
 export async function listNotifikasi(
@@ -26,7 +29,8 @@ export async function listNotifikasi(
     .select(
       `id, tiket_id, type, read_at, created_at, notes,
        tiket:tiket_id ( jenis, pelanggan:pelanggan_id ( nama ), odp:odp_id ( label ) ),
-       cuti:cuti_id ( tanggal_mulai, tanggal_selesai, teknisi_nama_snapshot )`
+       cuti:cuti_id ( tanggal_mulai, tanggal_selesai, teknisi_nama_snapshot ),
+       setoranPelanggan:pelanggan_id ( id, nama, alamat )`
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
@@ -48,5 +52,8 @@ export async function listNotifikasi(
     cutiTeknisiNama: row.cuti?.teknisi_nama_snapshot ?? null,
     cutiTanggalMulai: row.cuti?.tanggal_mulai ?? null,
     cutiTanggalSelesai: row.cuti?.tanggal_selesai ?? null,
+    setoranPelangganId: row.setoranPelanggan?.id ?? null,
+    setoranPelangganNama: row.setoranPelanggan?.nama ?? null,
+    setoranPelangganAlamat: row.setoranPelanggan?.alamat ?? null,
   }));
 }

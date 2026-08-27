@@ -33,8 +33,14 @@ type FormState = {
   noTelp: string;
   username: string;
   password: string;
-  role: Extract<Role, "admin" | "teknisi">;
+  role: Extract<Role, "admin" | "teknisi" | "dc">;
   wilayahId: string | null;
+};
+
+const ROLE_LABEL: Record<Extract<Role, "admin" | "teknisi" | "dc">, string> = {
+  admin: "Admin",
+  teknisi: "Teknisi",
+  dc: "DC",
 };
 
 const EMPTY_FORM: FormState = {
@@ -56,6 +62,7 @@ const FORM_CARD_MAX_HEIGHT = Dimensions.get("window").height * 0.88;
 const ROLE_BADGE_COLOR: Record<string, { bg: string; text: string }> = {
   admin: { bg: "#dbeafe", text: "#1e40af" },
   teknisi: { bg: "#dcfce7", text: "#166534" },
+  dc: { bg: "#fef3c7", text: "#92400e" },
 };
 
 export function AccountManagementScreen({ onBack }: Props) {
@@ -212,7 +219,7 @@ export function AccountManagementScreen({ onBack }: Props) {
     <View style={styles.screen}>
       <ScreenHeader
         title="Manajemen Akun"
-        subtitle={`${accounts.length} akun Admin/Teknisi terdaftar`}
+        subtitle={`${accounts.length} akun Admin/Teknisi/DC terdaftar`}
         onBack={onBack}
         right={
           <TouchableOpacity
@@ -246,7 +253,7 @@ export function AccountManagementScreen({ onBack }: Props) {
           keyExtractor={(item) => item.id}
           ListEmptyComponent={
             <Text style={styles.emptyText}>
-              {searchQuery ? "Tidak ada akun yang cocok." : "Belum ada akun Admin/Teknisi."}
+              {searchQuery ? "Tidak ada akun yang cocok." : "Belum ada akun Admin/Teknisi/DC."}
             </Text>
           }
           renderItem={({ item }) => {
@@ -265,7 +272,7 @@ export function AccountManagementScreen({ onBack }: Props) {
                     </Text>
                     <View style={[styles.badge, { backgroundColor: badge.bg }]}>
                       <Text style={[styles.badgeText, { color: badge.text }]}>
-                        {item.role === "admin" ? "Admin" : "Teknisi"}
+                        {ROLE_LABEL[item.role]}
                       </Text>
                     </View>
                   </View>
@@ -378,7 +385,7 @@ export function AccountManagementScreen({ onBack }: Props) {
 
               <Text style={styles.formLabel}>Role</Text>
               <View style={styles.pillRow}>
-                {(["admin", "teknisi"] as const).map((role) => (
+                {(["admin", "teknisi", "dc"] as const).map((role) => (
                   <TouchableOpacity
                     key={role}
                     style={[styles.pill, form.role === role && styles.pillSelected]}
@@ -387,7 +394,7 @@ export function AccountManagementScreen({ onBack }: Props) {
                     <Text
                       style={form.role === role ? styles.pillTextSelected : styles.pillText}
                     >
-                      {role === "admin" ? "Admin" : "Teknisi"}
+                      {ROLE_LABEL[role]}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -483,7 +490,7 @@ export function AccountManagementScreen({ onBack }: Props) {
           { label: "No. Telp", value: form.noTelp },
           { label: "Username", value: form.username },
           { label: "Password", value: form.password ? "••••••••" : "" },
-          { label: "Role", value: form.role === "admin" ? "Admin" : "Teknisi" },
+          { label: "Role", value: ROLE_LABEL[form.role] },
           { label: "Wilayah", value: selectedWilayahNama },
         ]}
         isSubmitting={isSubmitting}

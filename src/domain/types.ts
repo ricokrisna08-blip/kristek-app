@@ -1,1 +1,1 @@
-export type Role = "pemilik" | "admin" | "teknisi";
+export type Role = "pemilik" | "admin" | "teknisi" | "dc";

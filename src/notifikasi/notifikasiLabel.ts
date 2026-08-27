@@ -12,6 +12,14 @@ function formatTanggalPendek(iso: string): string {
 }
 
 export function notifikasiLabel(notifikasi: Notifikasi): string {
+  if (notifikasi.type === "setoran_dc") {
+    const nama = notifikasi.setoranPelangganNama ?? "Pelanggan";
+    const alamatSuffix = notifikasi.setoranPelangganAlamat
+      ? ` (${notifikasi.setoranPelangganAlamat})`
+      : "";
+    return `Setoran dari DC untuk ${nama}${alamatSuffix} menunggu approval`;
+  }
+
   if (notifikasi.type === "cuti_diajukan") {
     const nama = notifikasi.cutiTeknisiNama ?? "Teknisi";
     const rentang =

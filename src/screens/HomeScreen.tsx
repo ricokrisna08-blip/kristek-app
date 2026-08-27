@@ -19,6 +19,8 @@ import {
   canViewPengajuanCuti,
   canTriggerWaBlast,
   canResetTiketData,
+  canViewPenagihanDc,
+  canApproveSetoranDc,
 } from "../auth/permissions";
 import { NotifikasiBell } from "../components/NotifikasiBell";
 
@@ -26,18 +28,21 @@ const GREETING_BY_ROLE: Record<UserProfile["role"], string> = {
   pemilik: "Beranda Pemilik",
   admin: "Beranda Admin",
   teknisi: "Beranda Teknisi",
+  dc: "Beranda DC",
 };
 
 const ROLE_LABEL: Record<UserProfile["role"], string> = {
   pemilik: "Pemilik Usaha",
   admin: "Administrator",
   teknisi: "Teknisi Lapangan",
+  dc: "Debt Collector",
 };
 
 const FOOTNOTE_BY_ROLE: Record<UserProfile["role"], string> = {
   pemilik: "KRISTEK — Aplikasi Manajemen ISP",
   admin: "KRISTEK — Aplikasi Manajemen ISP",
   teknisi: "KRISTEK — Aplikasi Teknisi Lapangan",
+  dc: "KRISTEK — Aplikasi Penagihan",
 };
 
 function getInitials(nama: string): string {
@@ -67,6 +72,8 @@ type Props = {
   onNavigateToGangguan: () => void;
   onNavigateToTiketDetail: (tiketId: string) => void;
   onNavigateToDataReset: () => void;
+  onNavigateToPenagihanDc: () => void;
+  onNavigateToApprovalSetoranDc: () => void;
   onLogout: () => void;
 };
 
@@ -97,6 +104,8 @@ export function HomeScreen({
   onNavigateToGangguan,
   onNavigateToTiketDetail,
   onNavigateToDataReset,
+  onNavigateToPenagihanDc,
+  onNavigateToApprovalSetoranDc,
   onLogout,
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -192,6 +201,22 @@ export function HomeScreen({
       onPress: onNavigateToDataReset,
     });
   }
+  if (canViewPenagihanDc(profile.role)) {
+    menuItems.push({
+      key: "penagihanDc",
+      icon: "🧾",
+      label: "Penagihan",
+      onPress: onNavigateToPenagihanDc,
+    });
+  }
+  if (canApproveSetoranDc(profile.role)) {
+    menuItems.push({
+      key: "approvalSetoranDc",
+      icon: "✅",
+      label: "Approval Setoran DC",
+      onPress: onNavigateToApprovalSetoranDc,
+    });
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -207,6 +232,7 @@ export function HomeScreen({
               userId={profile.id}
               onNavigateToTiket={onNavigateToTiketDetail}
               onNavigateToCuti={onNavigateToDaftarPengajuanCuti}
+              onNavigateToApprovalSetoranDc={onNavigateToApprovalSetoranDc}
             />
           </View>
         </View>

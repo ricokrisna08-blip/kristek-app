@@ -27,6 +27,8 @@ import { PengajuanCutiScreen } from "./src/screens/PengajuanCutiScreen";
 import { DaftarPengajuanCutiScreen } from "./src/screens/DaftarPengajuanCutiScreen";
 import { WaBlastScreen } from "./src/screens/WaBlastScreen";
 import { DataResetScreen } from "./src/screens/DataResetScreen";
+import { PenagihanDcScreen } from "./src/screens/PenagihanDcScreen";
+import { ApprovalSetoranDcScreen } from "./src/screens/ApprovalSetoranDcScreen";
 
 type Screen =
   | "home"
@@ -47,7 +49,9 @@ type Screen =
   | "myTiketGangguan"
   | "installationEvidence"
   | "tiketDetail"
-  | "dataReset";
+  | "dataReset"
+  | "penagihanDc"
+  | "approvalSetoranDc";
 
 // Web tidak support expo-notifications sama sekali, jadi handler ini cuma
 // perlu di-set di native supaya alert push tetap muncul walau app lagi
@@ -261,6 +265,14 @@ export default function App() {
     if (screen === "dataReset") {
       return <DataResetScreen onBack={() => setScreen("home")} />;
     }
+    if (screen === "penagihanDc") {
+      return (
+        <PenagihanDcScreen profile={currentProfile} onBack={() => setScreen("home")} />
+      );
+    }
+    if (screen === "approvalSetoranDc") {
+      return <ApprovalSetoranDcScreen onBack={() => setScreen("home")} />;
+    }
     if (screen === "tiketDetail" && selectedTiketId) {
       return (
         <TiketDetailScreen
@@ -294,6 +306,8 @@ export default function App() {
           setScreen("tiketDetail");
         }}
         onNavigateToDataReset={() => setScreen("dataReset")}
+        onNavigateToPenagihanDc={() => setScreen("penagihanDc")}
+        onNavigateToApprovalSetoranDc={() => setScreen("approvalSetoranDc")}
         onLogout={handleLogout}
       />
     );

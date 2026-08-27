@@ -95,3 +95,11 @@ export function canTriggerWaBlast(role: Role): boolean {
 export function canResetTiketData(role: Role): boolean {
   return role === "pemilik";
 }
+
+export function canViewPenagihanDc(role: Role): boolean {
+  return role === "dc";
+}
+
+export function canApproveSetoranDc(role: Role): boolean {
+  return role === "pemilik";
+}
