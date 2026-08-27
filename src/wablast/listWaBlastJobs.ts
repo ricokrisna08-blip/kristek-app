@@ -13,6 +13,7 @@ export type WaBlastJobItem = {
   createdAt: string;
   startedAt: string | null;
   finishedAt: string | null;
+  pelangganIdsCount: number | null;
 };
 
 const RECENT_JOBS_LIMIT = 10;
@@ -20,7 +21,9 @@ const RECENT_JOBS_LIMIT = 10;
 export async function listWaBlastJobs(client: SupabaseClient): Promise<WaBlastJobItem[]> {
   const { data, error } = await client
     .from("wa_blast_job")
-    .select("id, mode, status, total, sent_count, failed_count, error, created_at, started_at, finished_at")
+    .select(
+      "id, mode, status, total, sent_count, failed_count, error, created_at, started_at, finished_at, pelanggan_ids"
+    )
     .order("created_at", { ascending: false })
     .limit(RECENT_JOBS_LIMIT);
 
@@ -39,5 +42,6 @@ export async function listWaBlastJobs(client: SupabaseClient): Promise<WaBlastJo
     createdAt: row.created_at,
     startedAt: row.started_at,
     finishedAt: row.finished_at,
+    pelangganIdsCount: row.pelanggan_ids ? row.pelanggan_ids.length : null,
   }));
 }

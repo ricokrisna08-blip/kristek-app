@@ -27,6 +27,7 @@ test("maps rows to camelCase items", async () => {
         created_at: "2026-08-14T02:00:00Z",
         started_at: "2026-08-14T02:00:05Z",
         finished_at: null,
+        pelanggan_ids: null,
       },
     ],
     error: null,
@@ -46,8 +47,34 @@ test("maps rows to camelCase items", async () => {
       createdAt: "2026-08-14T02:00:00Z",
       startedAt: "2026-08-14T02:00:05Z",
       finishedAt: null,
+      pelangganIdsCount: null,
     },
   ]);
+});
+
+test("exposes pelangganIdsCount when the job targeted specific Pelanggan", async () => {
+  const client = fakeClient({
+    data: [
+      {
+        id: "job-2",
+        mode: "billing",
+        status: "done",
+        total: 2,
+        sent_count: 2,
+        failed_count: 0,
+        error: null,
+        created_at: "2026-08-14T02:00:00Z",
+        started_at: "2026-08-14T02:00:05Z",
+        finished_at: "2026-08-14T02:01:00Z",
+        pelanggan_ids: ["p1", "p2"],
+      },
+    ],
+    error: null,
+  });
+
+  const result = await listWaBlastJobs(client);
+
+  expect(result[0]).toMatchObject({ pelangganIdsCount: 2 });
 });
 
 test("returns an empty list instead of throwing on error", async () => {
