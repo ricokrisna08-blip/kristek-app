@@ -12,25 +12,35 @@ export type PengeluaranItem = {
   // baris ini cuma rencana/list, belum ngurangin apa-apa.
   sudahDibayar: boolean;
   // Nominal yang beneran kepakai di total: nominal apa adanya kalau
-  // flat, atau round(sudahBayarBulanIni * persen / 100) kalau
+  // flat, atau round(sudahBayarPeriode * persen / 100) kalau
   // persentase -- dihitung ulang tiap kali dipanggil, jadi baris kayak
-  // "Fee ISP 3%" otomatis ikut naik/turun seiring Sudah Bayar bulan itu
-  // bertambah, tanpa perlu diedit manual.
+  // "Fee ISP 3%" otomatis ikut naik/turun seiring Sudah Bayar periode
+  // itu bertambah, tanpa perlu diedit manual.
   efektif: number;
 };
 
-function bulanIniRange(): { awal: string; akhir: string } {
-  const now = new Date();
-  const awal = new Date(now.getFullYear(), now.getMonth(), 1);
-  const akhir = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  return { awal: awal.toISOString().slice(0, 10), akhir: akhir.toISOString().slice(0, 10) };
+// periode = "YYYY-MM-01" (format yang sama dengan LaporanBulananItem.periode
+// di getLaporanKeuangan.ts) -- dihitung murni dari string, BUKAN lewat
+// Date/toISOString, supaya nggak kena geser timezone (toISOString selalu
+// convert ke UTC, yang di WIB/UTC+7 bisa nggeser tanggal mundur).
+function periodeRange(periode: string): { awal: string; akhir: string } {
+  const [yearStr, monthStr] = periode.split("-");
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const nextYear = month === 12 ? year + 1 : year;
+  return {
+    awal: `${yearStr}-${monthStr}-01`,
+    akhir: `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`,
+  };
 }
 
-export async function listPengeluaranBulanIni(
+export async function listPengeluaranPeriode(
   client: SupabaseClient,
-  sudahBayarBulanIni: number
+  periode: string,
+  sudahBayarPeriode: number
 ): Promise<PengeluaranItem[]> {
-  const { awal, akhir } = bulanIniRange();
+  const { awal, akhir } = periodeRange(periode);
   const { data, error } = await client
     .from("pengeluaran")
     .select("id, kategori, keterangan, nominal, persen, tanggal, sudah_dibayar")
@@ -53,6 +63,6 @@ export async function listPengeluaranBulanIni(
     efektif:
       row.nominal != null
         ? row.nominal
-        : Math.round((sudahBayarBulanIni * row.persen) / 100),
+        : Math.round((sudahBayarPeriode * row.persen) / 100),
   }));
 }

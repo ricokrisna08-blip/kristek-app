@@ -4,7 +4,7 @@ export type NewPengeluaranInput = {
   kategori: string;
   keterangan: string;
   // Isi salah satu -- nominal (flat Rupiah) atau persen (% dari Sudah
-  // Bayar bulan itu, dihitung otomatis, lihat listPengeluaranBulanIni.ts).
+  // Bayar bulan itu, dihitung otomatis, lihat listPengeluaranPeriode.ts).
   nominal: number | null;
   persen: number | null;
   tanggal: string;

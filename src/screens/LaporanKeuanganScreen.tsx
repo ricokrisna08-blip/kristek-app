@@ -12,9 +12,9 @@ import {
 import { supabase } from "../lib/supabase";
 import { getLaporanKeuangan, type LaporanBulananItem } from "../laporan/getLaporanKeuangan";
 import {
-  listPengeluaranBulanIni,
+  listPengeluaranPeriode,
   type PengeluaranItem,
-} from "../pengeluaran/listPengeluaranBulanIni";
+} from "../pengeluaran/listPengeluaranPeriode";
 import { createPengeluaran } from "../pengeluaran/createPengeluaran";
 import { deletePengeluaran } from "../pengeluaran/deletePengeluaran";
 import { setPengeluaranSudahDibayar } from "../pengeluaran/setPengeluaranSudahDibayar";
@@ -55,6 +55,7 @@ type Mode = "nominal" | "persen";
 export function LaporanKeuanganScreen({ profile, onBack }: Props) {
   const [items, setItems] = useState<LaporanBulananItem[]>([]);
   const [pengeluaranItems, setPengeluaranItems] = useState<PengeluaranItem[]>([]);
+  const [selectedPeriode, setSelectedPeriode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -71,20 +72,37 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const sudahBayarBulanIni = items.find((i) => i.isBulanIni)?.sudahBayar ?? 0;
+  const selectedItem = items.find((i) => i.periode === selectedPeriode) ?? null;
 
-  const reload = useCallback(async () => {
-    const laporan = await getLaporanKeuangan(supabase);
-    setItems(laporan);
-    const sudahBayarIni = laporan.find((i) => i.isBulanIni)?.sudahBayar ?? 0;
-    const pengeluaran = await listPengeluaranBulanIni(supabase, sudahBayarIni);
-    setPengeluaranItems(pengeluaran);
-    setIsLoading(false);
-  }, []);
+  // periode & pengeluaran dimuat bareng (bukan 2 effect terpisah) supaya
+  // gampang dipanggil ulang utuh dari mana aja (habis save/hapus/centang,
+  // atau pindah tab bulan) tanpa harus mikirin urutan/race antar effect.
+  const reloadAll = useCallback(
+    async (periodeOverride?: string) => {
+      setIsLoading(true);
+      const laporan = await getLaporanKeuangan(supabase);
+      setItems(laporan);
+      const currentPeriode =
+        laporan.find((i) => i.isBulanIni)?.periode ?? laporan[laporan.length - 1]?.periode ?? null;
+      const periode = periodeOverride ?? selectedPeriode ?? currentPeriode;
+      setSelectedPeriode(periode);
+
+      if (periode) {
+        const target = laporan.find((i) => i.periode === periode);
+        const pengeluaran = await listPengeluaranPeriode(supabase, periode, target?.sudahBayar ?? 0);
+        setPengeluaranItems(pengeluaran);
+      } else {
+        setPengeluaranItems([]);
+      }
+      setIsLoading(false);
+    },
+    [selectedPeriode]
+  );
 
   useEffect(() => {
-    reload();
-  }, [reload]);
+    reloadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function openForm() {
     setKategori("");
@@ -92,7 +110,10 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
     setMode("nominal");
     setNominalInput("");
     setPersenInput("");
-    setTanggal(toDateString(new Date()));
+    // Bulan berjalan default ke hari ini; bulan lampau default ke
+    // tanggal 1 bulan itu (periode sudah dalam format "YYYY-MM-01") --
+    // tetap bisa diubah bebas lewat DateField.
+    setTanggal(selectedItem?.isBulanIni !== false ? toDateString(new Date()) : selectedPeriode ?? toDateString(new Date()));
     setFormError(null);
     setIsFormVisible(true);
   }
@@ -116,7 +137,7 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
     }
 
     setIsFormVisible(false);
-    await reload();
+    await reloadAll();
   }
 
   async function handleDelete() {
@@ -132,12 +153,12 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
     }
 
     setDeleteTarget(null);
-    await reload();
+    await reloadAll();
   }
 
   async function handleToggleSudahDibayar(item: PengeluaranItem) {
     await setPengeluaranSudahDibayar(supabase, item.id, !item.sudahDibayar);
-    await reload();
+    await reloadAll();
   }
 
   return (
@@ -261,9 +282,29 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
 
       {!isLoading ? (
         <View style={styles.pengeluaranSection}>
-          <Text style={styles.subtitle}>Pengeluaran Bulan Ini</Text>
+          <Text style={styles.subtitle}>
+            Pengeluaran{selectedItem ? ` — ${selectedItem.label}` : ""}
+          </Text>
+          <View style={styles.pillRow}>
+            {items.map((item) => (
+              <TouchableOpacity
+                key={item.periode}
+                style={[styles.pill, item.periode === selectedPeriode && styles.pillSelected]}
+                onPress={() => reloadAll(item.periode)}
+              >
+                <Text
+                  style={item.periode === selectedPeriode ? styles.pillTextSelected : styles.pillText}
+                >
+                  {item.label}
+                  {item.isBulanIni ? " (ini)" : ""}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
           {pengeluaranItems.length === 0 ? (
-            <Text style={styles.emptyText}>Belum ada pengeluaran dicatat bulan ini.</Text>
+            <Text style={styles.emptyText}>
+              Belum ada pengeluaran dicatat{selectedItem?.isBulanIni ? " bulan ini" : ` di ${selectedItem?.label ?? "bulan ini"}`}.
+            </Text>
           ) : (
             pengeluaranItems.map((p) => (
               <View
@@ -388,9 +429,10 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
                     onChangeText={setPersenInput}
                   />
                   <Text style={styles.sectionHint}>
-                    Dihitung otomatis: {persenInput || "0"}% x {formatHarga(sudahBayarBulanIni)} ={" "}
+                    Dihitung otomatis dari Sudah Bayar {selectedItem?.label ?? "bulan ini"}:{" "}
+                    {persenInput || "0"}% x {formatHarga(selectedItem?.sudahBayar ?? 0)} ={" "}
                     {formatHarga(
-                      Math.round(((Number(persenInput) || 0) * sudahBayarBulanIni) / 100)
+                      Math.round(((Number(persenInput) || 0) * (selectedItem?.sudahBayar ?? 0)) / 100)
                     )}
                   </Text>
                 </>
