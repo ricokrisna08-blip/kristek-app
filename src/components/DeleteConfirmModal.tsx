@@ -14,6 +14,7 @@ type Props = {
   isDeleting: boolean;
   onCancel: () => void;
   onConfirm: () => void;
+  confirmLabel?: string;
 };
 
 export function DeleteConfirmModal({
@@ -23,6 +24,7 @@ export function DeleteConfirmModal({
   isDeleting,
   onCancel,
   onConfirm,
+  confirmLabel,
 }: Props) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
@@ -52,7 +54,7 @@ export function DeleteConfirmModal({
               {isDeleting ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.deleteButtonText}>Ya, Hapus</Text>
+                <Text style={styles.deleteButtonText}>{confirmLabel ?? "Ya, Hapus"}</Text>
               )}
             </TouchableOpacity>
           </View>

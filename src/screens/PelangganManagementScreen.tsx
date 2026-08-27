@@ -143,6 +143,11 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
   const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  // Begitu percobaan hapus GAGAL spesifik di langkah Mikrotik, tombol
+  // konfirmasi berikutnya jadi "Hapus Paksa" yang LEWATIN langkah itu --
+  // dipakai kalau router lagi unreachable/secret-nya udah nggak ada di
+  // sana, jadi Pemilik nggak kejebak nggak bisa hapus sama sekali.
+  const [mikrotikDeleteFailed, setMikrotikDeleteFailed] = useState(false);
 
   const [editNama, setEditNama] = useState("");
   const [editAlamat, setEditAlamat] = useState("");
@@ -150,6 +155,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
   const [editOdpId, setEditOdpId] = useState<string | null>(null);
   const [editPaketId, setEditPaketId] = useState<string | null>(null);
   const [editTanggalInstalasi, setEditTanggalInstalasi] = useState("");
+  const [editCatatan, setEditCatatan] = useState("");
   const [editPelangganError, setEditPelangganError] = useState<string | null>(null);
   const [isSavingEditPelanggan, setIsSavingEditPelanggan] = useState(false);
   const [isEditingPelanggan, setIsEditingPelanggan] = useState(false);
@@ -247,6 +253,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
     setEditNoHp(detail?.noHp ?? "");
     setEditOdpId(detail?.odpId ?? null);
     setEditPaketId(detail?.paketId ?? null);
+    setEditCatatan(detail?.catatan ?? "");
     setEditPelangganError(null);
     setIsEditingPelanggan(false);
     setHargaInput(detail?.harga != null ? String(detail.harga) : "");
@@ -280,6 +287,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
     setEditOdpId(selectedDetail.odpId);
     setEditPaketId(selectedDetail.paketId);
     setEditTanggalInstalasi(selectedDetail.tanggalInstalasi ?? "");
+    setEditCatatan(selectedDetail.catatan ?? "");
     setEditPelangganError(null);
     setIsEditingPelanggan(true);
   }
@@ -321,6 +329,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
       wilayahId: odp.wilayahId,
       paketId: editPaketId,
       tanggalInstalasi: editTanggalInstalasi.trim() || null,
+      catatan: editCatatan.trim() || null,
     });
     setIsSavingEditPelanggan(false);
 
@@ -342,6 +351,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
       paketNama: paketList.find((p) => p.id === editPaketId)?.nama ?? selectedDetail.paketNama,
       tanggalInstalasi: result.tanggalInstalasi,
       tagihanProrata: result.tagihanProrata,
+      catatan: editCatatan.trim() || null,
     });
     setIsEditingPelanggan(false);
   }
@@ -533,11 +543,20 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
     // langkah ini gagal, proses hapus Pelanggan ikut dibatalkan (bukan
     // lanjut hapus baris DB-nya saja) supaya tidak ada secret yatim yang
     // ketinggalan aktif di router tanpa ada Pelanggan yang terhubung lagi.
-    const mikrotikResult = await deleteMikrotikSecret(supabase, selectedDetail.id);
-    if (!mikrotikResult.success) {
-      setIsDeleting(false);
-      setDeleteError(`Gagal menghapus secret Mikrotik: ${mikrotikResult.error}`);
-      return;
+    // Pengecualian: kalau percobaan SEBELUMNYA sudah gagal di langkah ini
+    // (mikrotikDeleteFailed), Pemilik sudah eksplisit pilih "Hapus Paksa"
+    // -- lewati langkah ini sama sekali (mis. router lagi unreachable,
+    // atau secret-nya memang sudah nggak ada di router).
+    if (!mikrotikDeleteFailed) {
+      const mikrotikResult = await deleteMikrotikSecret(supabase, selectedDetail.id);
+      if (!mikrotikResult.success) {
+        setIsDeleting(false);
+        setMikrotikDeleteFailed(true);
+        setDeleteError(
+          `Gagal menghapus secret Mikrotik: ${mikrotikResult.error}\n\nTekan "Hapus Paksa" lagi untuk lewati langkah ini (pastikan dulu secret-nya memang sudah tidak ada/tidak perlu dihapus di router).`
+        );
+        return;
+      }
     }
 
     const result = await deletePelanggan(supabase, selectedDetail.id);
@@ -549,6 +568,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
     }
 
     setIsDeleteConfirmVisible(false);
+    setMikrotikDeleteFailed(false);
     setSelectedDetail(null);
     await reload();
   }
@@ -718,6 +738,30 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
               <Text style={styles.infoValue}>
                 {formatTanggal(selectedDetail.tanggalInstalasi)}
               </Text>
+            </View>
+          ) : null}
+
+          {isEditingPelanggan ? (
+            <>
+              <Text style={[styles.fieldLabel, styles.fieldLabelSpacing]}>Catatan</Text>
+              <Text style={styles.sectionHint}>
+                Bebas -- terutama buat bantu DC nemuin lokasi di lapangan (patokan
+                rumah, warna pagar, RT/RW detail, dll). Ditampilkan di layar
+                Penagihan (role DC).
+              </Text>
+              <TextInput
+                style={[styles.input, styles.catatanInput]}
+                placeholder="Contoh: Rumah cat biru, sebelah warung Bu Yanti"
+                placeholderTextColor="#9ca3af"
+                multiline
+                value={editCatatan}
+                onChangeText={setEditCatatan}
+              />
+            </>
+          ) : selectedDetail.catatan ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Catatan</Text>
+              <Text style={styles.infoValue}>{selectedDetail.catatan}</Text>
             </View>
           ) : null}
 
@@ -987,6 +1031,7 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
             style={styles.deleteButton}
             onPress={() => {
               setDeleteError(null);
+              setMikrotikDeleteFailed(false);
               setIsDeleteConfirmVisible(true);
             }}
           >
@@ -999,8 +1044,12 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
           itemLabel={selectedDetail.nama}
           error={deleteError}
           isDeleting={isDeleting}
-          onCancel={() => setIsDeleteConfirmVisible(false)}
+          onCancel={() => {
+            setIsDeleteConfirmVisible(false);
+            setMikrotikDeleteFailed(false);
+          }}
           onConfirm={handleDeletePelanggan}
+          confirmLabel={mikrotikDeleteFailed ? "Hapus Paksa" : "Ya, Hapus"}
         />
         </ScrollView>
       </View>
@@ -1243,6 +1292,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#111827",
     marginBottom: 12,
+  },
+  catatanInput: {
+    minHeight: 72,
+    textAlignVertical: "top",
   },
   error: {
     color: "#DC2626",

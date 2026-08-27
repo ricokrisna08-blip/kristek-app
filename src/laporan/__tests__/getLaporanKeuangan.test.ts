@@ -14,6 +14,7 @@ function fakeClient(options: {
     tagihan_prorata?: number | null;
     kompensasi_nominal?: number | null;
     sudah_bayar_bulan_ini: boolean;
+    dc_flagged_lunas?: boolean;
   }>;
 }): SupabaseClient {
   return {
@@ -53,6 +54,7 @@ test("appends the live current month after the historical rows", async () => {
     omset: 13275334,
     sudahBayar: 12570334,
     belumBayar: 705000,
+    diTanganDc: 0,
     persen: 94.7,
     isBulanIni: false,
   });
@@ -61,8 +63,29 @@ test("appends the live current month after the historical rows", async () => {
     omset: 365000,
     sudahBayar: 165000,
     belumBayar: 200000,
+    diTanganDc: 0,
     persen: 45.2,
     isBulanIni: true,
+  });
+});
+
+test("live current month separates money already in the DC's hands (flagged, not yet approved) from plain belum-bayar", async () => {
+  const client = fakeClient({
+    history: [],
+    pelanggan: [
+      { harga: 165000, sudah_bayar_bulan_ini: false, dc_flagged_lunas: true },
+      { harga: 200000, sudah_bayar_bulan_ini: false, dc_flagged_lunas: false },
+      { harga: 100000, sudah_bayar_bulan_ini: true, dc_flagged_lunas: false },
+    ],
+  });
+
+  const result = await getLaporanKeuangan(client);
+
+  expect(result[0]).toMatchObject({
+    omset: 165000 + 200000 + 100000,
+    sudahBayar: 100000,
+    belumBayar: 165000 + 200000,
+    diTanganDc: 165000,
   });
 });
 

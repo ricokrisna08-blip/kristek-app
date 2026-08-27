@@ -13,6 +13,10 @@ export type UpdatePelangganInput = {
   // fitur Tanggal Instalasi ada, jadi tagihan bulan pertamanya masih
   // bisa dihitung prorata (lihat computeProrata.ts).
   tanggalInstalasi: string | null;
+  // Catatan bebas per-Pelanggan -- terutama buat bantu DC nemuin lokasi
+  // di lapangan (mis. patokan rumah, warna pagar, RT/RW detail).
+  // Ditampilkan di layar Penagihan (role DC).
+  catatan: string | null;
 };
 
 export type UpdatePelangganResult =
@@ -49,6 +53,7 @@ export async function updatePelanggan(
       paket_id: input.paketId,
       tanggal_instalasi: input.tanggalInstalasi,
       tagihan_prorata: tagihanProrata,
+      catatan: input.catatan,
     })
     .eq("id", id);
 

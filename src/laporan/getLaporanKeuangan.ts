@@ -7,6 +7,7 @@ export type LaporanBulananItem = {
   omset: number;
   sudahBayar: number;
   belumBayar: number;
+  diTanganDc: number;
   persen: number;
   isBulanIni: boolean;
 };
@@ -55,7 +56,9 @@ export async function getLaporanKeuangan(
       .order("periode", { ascending: true }),
     client
       .from("pelanggan")
-      .select("harga, tagihan_prorata, kompensasi_nominal, sudah_bayar_bulan_ini"),
+      .select(
+        "harga, tagihan_prorata, kompensasi_nominal, sudah_bayar_bulan_ini, dc_flagged_lunas"
+      ),
   ]);
 
   const history = historyResult.data ?? [];
@@ -66,6 +69,11 @@ export async function getLaporanKeuangan(
     omset: row.omset,
     sudahBayar: row.sudah_bayar,
     belumBayar: row.belum_bayar,
+    // Snapshot bulanan (laporan_bulanan) tidak mencatat ini -- di titik
+    // snapshot (tanggal 15), setoran DC yang masih menggantung sudah
+    // di-reset (lihat mikrotik-daily-billing-cycle), jadi histori bulan
+    // lalu memang tidak relevan buat metrik ini.
+    diTanganDc: 0,
     persen: persenOf(row.sudah_bayar, row.omset),
     isBulanIni: false,
   }));
@@ -75,6 +83,7 @@ export async function getLaporanKeuangan(
   let omset = 0;
   let sudahBayar = 0;
   let belumBayar = 0;
+  let diTanganDc = 0;
   for (const row of pelangganRows as any[]) {
     const dasar = row.tagihan_prorata ?? row.harga ?? 0;
     const tagihan = Math.max(dasar - (row.kompensasi_nominal ?? 0), 0);
@@ -83,6 +92,15 @@ export async function getLaporanKeuangan(
       sudahBayar += tagihan;
     } else {
       belumBayar += tagihan;
+      // Uang yang sudah dicentang DC ("sudah bayar ke saya") tapi belum
+      // di-approve Pemilik -- masih terhitung "belum bayar" di sistem
+      // (RLS/downstream lain belum berubah), tapi fisiknya sudah di
+      // tangan DC, bukan lagi di Pelanggan. Ditampilkan terpisah supaya
+      // Pemilik bisa lihat berapa yang perlu ditagih ke DC, bukan ke
+      // Pelanggan lagi.
+      if (row.dc_flagged_lunas) {
+        diTanganDc += tagihan;
+      }
     }
   }
 
@@ -94,6 +112,7 @@ export async function getLaporanKeuangan(
     omset,
     sudahBayar,
     belumBayar,
+    diTanganDc,
     persen: persenOf(sudahBayar, omset),
     isBulanIni: true,
   });

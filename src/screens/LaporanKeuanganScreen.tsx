@@ -18,6 +18,7 @@ const COL = {
   omset: 108,
   sudahBayar: 108,
   belumBayar: 108,
+  diTanganDc: 108,
   persen: 60,
 };
 
@@ -60,6 +61,9 @@ export function LaporanKeuanganScreen({ onBack }: Props) {
                 <Text style={[styles.headerCell, styles.numCell, { width: COL.belumBayar }]}>
                   Belum Bayar
                 </Text>
+                <Text style={[styles.headerCell, styles.numCell, { width: COL.diTanganDc }]}>
+                  Di Tangan DC
+                </Text>
                 <Text style={[styles.headerCell, styles.numCell, { width: COL.persen }]}>%</Text>
               </View>
 
@@ -92,6 +96,11 @@ export function LaporanKeuanganScreen({ onBack }: Props) {
                   >
                     {item.belumBayar > 0 ? formatAngka(item.belumBayar) : "-"}
                   </Text>
+                  <Text
+                    style={[styles.cell, styles.cellWarning, styles.numCell, { width: COL.diTanganDc }]}
+                  >
+                    {item.diTanganDc > 0 ? formatAngka(item.diTanganDc) : "-"}
+                  </Text>
                   <Text style={[styles.cell, styles.numCell, { width: COL.persen }]}>
                     {item.persen % 1 === 0 ? item.persen : item.persen.toFixed(1)}%
                   </Text>
@@ -105,7 +114,10 @@ export function LaporanKeuanganScreen({ onBack }: Props) {
         Angka bulan ini sudah menghitung kebijakan Pemilik yang aktif per pelanggan:
         Prorata (pelanggan baru join di tengah siklus) dan Kompensasi Gangguan
         (subsidi gangguan layanan) -- keduanya otomatis mengurangi tagihan efektif,
-        lalu balik normal lagi di siklus berikutnya.
+        lalu balik normal lagi di siklus berikutnya. Kolom "Di Tangan DC" adalah
+        bagian dari Belum Bayar yang sudah dicentang DC ("sudah bayar ke saya")
+        tapi masih menunggu approval Pemilik -- uangnya sudah bukan lagi di
+        Pelanggan, tapi belum resmi lunas sampai di-Setujui.
       </Text>
       </ScrollView>
     </View>
@@ -182,6 +194,10 @@ const styles = StyleSheet.create({
   },
   cellDanger: {
     color: "#DC2626",
+    fontWeight: "600",
+  },
+  cellWarning: {
+    color: "#B45309",
     fontWeight: "600",
   },
   numCell: {

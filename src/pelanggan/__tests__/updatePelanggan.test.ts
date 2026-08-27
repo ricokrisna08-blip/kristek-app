@@ -34,6 +34,7 @@ const validInput = {
   wilayahId: "wilayah-2",
   paketId: "paket-2",
   tanggalInstalasi: null,
+  catatan: null,
 };
 
 test("valid input updates the Pelanggan, including moving ODP/Paket/Wilayah", async () => {
