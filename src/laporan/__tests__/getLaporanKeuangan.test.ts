@@ -16,6 +16,11 @@ function fakeClient(options: {
     sudah_bayar_bulan_ini: boolean;
     dc_flagged_lunas?: boolean;
   }>;
+  pengeluaran?: Array<{
+    nominal: number | null;
+    persen: number | null;
+    tanggal: string;
+  }>;
 }): SupabaseClient {
   return {
     from: (table: string) => {
@@ -23,6 +28,13 @@ function fakeClient(options: {
         return {
           select: () => ({
             order: () => Promise.resolve({ data: options.history, error: null }),
+          }),
+        };
+      }
+      if (table === "pengeluaran") {
+        return {
+          select: () => ({
+            gte: () => Promise.resolve({ data: options.pengeluaran ?? [], error: null }),
           }),
         };
       }
@@ -55,6 +67,8 @@ test("appends the live current month after the historical rows", async () => {
     sudahBayar: 12570334,
     belumBayar: 705000,
     diTanganDc: 0,
+    totalPengeluaran: 0,
+    sisaUang: 12570334,
     persen: 94.7,
     isBulanIni: false,
   });
@@ -64,6 +78,8 @@ test("appends the live current month after the historical rows", async () => {
     sudahBayar: 165000,
     belumBayar: 200000,
     diTanganDc: 0,
+    totalPengeluaran: 0,
+    sisaUang: 165000,
     persen: 45.2,
     isBulanIni: true,
   });
@@ -149,4 +165,62 @@ test("only returns the last 3 months (2 historical + the live current month)", a
   expect(result[0].periode).toBe("2025-07-01");
   expect(result[1].periode).toBe("2025-08-01");
   expect(result[2].isBulanIni).toBe(true);
+});
+
+test("totalPengeluaran sums flat-nominal rows for the matching periode, sisaUang subtracts it from sudahBayar", async () => {
+  const client = fakeClient({
+    history: [
+      { periode: "2025-07-01", total_user: 10, omset: 1000000, sudah_bayar: 1000000, belum_bayar: 0 },
+    ],
+    pelanggan: [{ harga: 165000, sudah_bayar_bulan_ini: true }],
+    pengeluaran: [
+      { nominal: 1500000, persen: null, tanggal: "2025-07-05" },
+      { nominal: 500000, persen: null, tanggal: "2025-07-20" },
+    ],
+  });
+
+  const result = await getLaporanKeuangan(client);
+
+  expect(result[0]).toMatchObject({
+    periode: "2025-07-01",
+    sudahBayar: 1000000,
+    totalPengeluaran: 2000000,
+    sisaUang: 1000000 - 2000000,
+  });
+});
+
+test("persen-based pengeluaran rows are computed from that periode's own sudahBayar", async () => {
+  const client = fakeClient({
+    history: [
+      { periode: "2025-07-01", total_user: 10, omset: 1000000, sudah_bayar: 1000000, belum_bayar: 0 },
+    ],
+    pelanggan: [{ harga: 165000, sudah_bayar_bulan_ini: true }],
+    pengeluaran: [{ nominal: null, persen: 3, tanggal: "2025-07-05" }],
+  });
+
+  const result = await getLaporanKeuangan(client);
+
+  expect(result[0]).toMatchObject({
+    totalPengeluaran: 30000, // 3% of 1,000,000
+    sisaUang: 1000000 - 30000,
+  });
+});
+
+test("pengeluaran rows are grouped per periode, not mixed across months", async () => {
+  const client = fakeClient({
+    history: [
+      { periode: "2025-06-01", total_user: 10, omset: 1000000, sudah_bayar: 1000000, belum_bayar: 0 },
+      { periode: "2025-07-01", total_user: 10, omset: 1000000, sudah_bayar: 2000000, belum_bayar: 0 },
+    ],
+    pelanggan: [{ harga: 165000, sudah_bayar_bulan_ini: true }],
+    pengeluaran: [
+      { nominal: 100000, persen: null, tanggal: "2025-06-10" },
+      { nominal: 250000, persen: null, tanggal: "2025-07-10" },
+    ],
+  });
+
+  const result = await getLaporanKeuangan(client);
+
+  expect(result[0]).toMatchObject({ periode: "2025-06-01", totalPengeluaran: 100000 });
+  expect(result[1]).toMatchObject({ periode: "2025-07-01", totalPengeluaran: 250000 });
 });

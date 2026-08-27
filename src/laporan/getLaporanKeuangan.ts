@@ -8,6 +8,8 @@ export type LaporanBulananItem = {
   sudahBayar: number;
   belumBayar: number;
   diTanganDc: number;
+  totalPengeluaran: number;
+  sisaUang: number;
   persen: number;
   isBulanIni: boolean;
 };
@@ -74,6 +76,8 @@ export async function getLaporanKeuangan(
     // di-reset (lihat mikrotik-daily-billing-cycle), jadi histori bulan
     // lalu memang tidak relevan buat metrik ini.
     diTanganDc: 0,
+    totalPengeluaran: 0,
+    sisaUang: row.sudah_bayar,
     persen: persenOf(row.sudah_bayar, row.omset),
     isBulanIni: false,
   }));
@@ -113,10 +117,42 @@ export async function getLaporanKeuangan(
     sudahBayar,
     belumBayar,
     diTanganDc,
+    totalPengeluaran: 0,
+    sisaUang: sudahBayar,
     persen: persenOf(sudahBayar, omset),
     isBulanIni: true,
   });
 
   // Tampilkan cuma 3 bulan terakhir (termasuk bulan berjalan yang live).
-  return items.slice(-3);
+  const shown = items.slice(-3);
+
+  // Pengeluaran (gaji, bandwidth, bagi hasil investor, dll) dicatat per
+  // tanggal asli (bukan snapshot per-siklus kayak laporan_bulanan), jadi
+  // totalnya bisa dihitung LANGSUNG dari tabel pengeluaran buat periode
+  // manapun yang ditampilkan -- termasuk bulan-bulan histori.
+  const earliestPeriode = shown[0]?.periode;
+  if (earliestPeriode) {
+    const { data: pengeluaranRows } = await client
+      .from("pengeluaran")
+      .select("nominal, persen, tanggal")
+      .gte("tanggal", earliestPeriode);
+
+    const sudahBayarByPeriode = new Map(shown.map((item) => [item.periode, item.sudahBayar]));
+    const totalByPeriode = new Map<string, number>();
+
+    for (const row of (pengeluaranRows ?? []) as any[]) {
+      const periodeKey = `${String(row.tanggal).slice(0, 7)}-01`;
+      const sudahBayarPeriode = sudahBayarByPeriode.get(periodeKey) ?? 0;
+      const efektif =
+        row.nominal != null ? row.nominal : Math.round((sudahBayarPeriode * row.persen) / 100);
+      totalByPeriode.set(periodeKey, (totalByPeriode.get(periodeKey) ?? 0) + efektif);
+    }
+
+    for (const item of shown) {
+      item.totalPengeluaran = totalByPeriode.get(item.periode) ?? 0;
+      item.sisaUang = item.sudahBayar - item.totalPengeluaran;
+    }
+  }
+
+  return shown;
 }

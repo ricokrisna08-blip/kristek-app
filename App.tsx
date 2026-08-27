@@ -209,7 +209,9 @@ export default function App() {
       return <LaporanPerformaScreen onBack={() => setScreen("home")} />;
     }
     if (screen === "laporanKeuangan") {
-      return <LaporanKeuanganScreen onBack={() => setScreen("home")} />;
+      return (
+        <LaporanKeuanganScreen profile={currentProfile} onBack={() => setScreen("home")} />
+      );
     }
     if (screen === "pengajuanCuti") {
       return (
