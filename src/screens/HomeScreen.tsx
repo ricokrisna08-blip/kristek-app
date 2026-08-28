@@ -29,6 +29,7 @@ const GREETING_BY_ROLE: Record<UserProfile["role"], string> = {
   admin: "Beranda Admin",
   teknisi: "Beranda Teknisi",
   dc: "Beranda DC",
+  system: "Beranda System",
 };
 
 const ROLE_LABEL: Record<UserProfile["role"], string> = {
@@ -36,6 +37,7 @@ const ROLE_LABEL: Record<UserProfile["role"], string> = {
   admin: "Administrator",
   teknisi: "Teknisi Lapangan",
   dc: "Debt Collector",
+  system: "System (WA Blast)",
 };
 
 const FOOTNOTE_BY_ROLE: Record<UserProfile["role"], string> = {
@@ -43,6 +45,7 @@ const FOOTNOTE_BY_ROLE: Record<UserProfile["role"], string> = {
   admin: "KRISTEK — Aplikasi Manajemen ISP",
   teknisi: "KRISTEK — Aplikasi Teknisi Lapangan",
   dc: "KRISTEK — Aplikasi Penagihan",
+  system: "KRISTEK — Akun System WA Blast",
 };
 
 function getInitials(nama: string): string {

@@ -249,8 +249,9 @@ test("Teknisi cannot view all pengajuan cuti (only their own via submission scre
   expect(canViewPengajuanCuti("teknisi")).toBe(false);
 });
 
-test("Pemilik can trigger WA blast", () => {
+test("Pemilik and System can trigger WA blast", () => {
   expect(canTriggerWaBlast("pemilik")).toBe(true);
+  expect(canTriggerWaBlast("system")).toBe(true);
 });
 
 test("Admin and Teknisi cannot trigger WA blast", () => {

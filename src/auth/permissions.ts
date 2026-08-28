@@ -89,7 +89,7 @@ export function canDeletePengajuanCuti(role: Role): boolean {
 }
 
 export function canTriggerWaBlast(role: Role): boolean {
-  return role === "pemilik";
+  return role === "pemilik" || role === "system";
 }
 
 export function canResetTiketData(role: Role): boolean {
