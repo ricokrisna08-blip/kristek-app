@@ -77,6 +77,7 @@ type Props = {
   onNavigateToDataReset: () => void;
   onNavigateToPenagihanDc: () => void;
   onNavigateToApprovalSetoranDc: () => void;
+  onNavigateToChangePassword: () => void;
   onLogout: () => void;
 };
 
@@ -109,6 +110,7 @@ export function HomeScreen({
   onNavigateToDataReset,
   onNavigateToPenagihanDc,
   onNavigateToApprovalSetoranDc,
+  onNavigateToChangePassword,
   onLogout,
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -220,6 +222,12 @@ export function HomeScreen({
       onPress: onNavigateToApprovalSetoranDc,
     });
   }
+  menuItems.push({
+    key: "changePassword",
+    icon: "🔑",
+    label: "Ganti Password",
+    onPress: onNavigateToChangePassword,
+  });
 
   return (
     <ScrollView contentContainerStyle={styles.container}>

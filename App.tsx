@@ -29,6 +29,7 @@ import { WaBlastScreen } from "./src/screens/WaBlastScreen";
 import { DataResetScreen } from "./src/screens/DataResetScreen";
 import { PenagihanDcScreen } from "./src/screens/PenagihanDcScreen";
 import { ApprovalSetoranDcScreen } from "./src/screens/ApprovalSetoranDcScreen";
+import { ChangePasswordScreen } from "./src/screens/ChangePasswordScreen";
 
 type Screen =
   | "home"
@@ -51,7 +52,8 @@ type Screen =
   | "tiketDetail"
   | "dataReset"
   | "penagihanDc"
-  | "approvalSetoranDc";
+  | "approvalSetoranDc"
+  | "changePassword";
 
 // Web tidak support expo-notifications sama sekali, jadi handler ini cuma
 // perlu di-set di native supaya alert push tetap muncul walau app lagi
@@ -275,6 +277,9 @@ export default function App() {
     if (screen === "approvalSetoranDc") {
       return <ApprovalSetoranDcScreen onBack={() => setScreen("home")} />;
     }
+    if (screen === "changePassword") {
+      return <ChangePasswordScreen onBack={() => setScreen("home")} />;
+    }
     if (screen === "tiketDetail" && selectedTiketId) {
       return (
         <TiketDetailScreen
@@ -310,6 +315,7 @@ export default function App() {
         onNavigateToDataReset={() => setScreen("dataReset")}
         onNavigateToPenagihanDc={() => setScreen("penagihanDc")}
         onNavigateToApprovalSetoranDc={() => setScreen("approvalSetoranDc")}
+        onNavigateToChangePassword={() => setScreen("changePassword")}
         onLogout={handleLogout}
       />
     );
