@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Linking,
   Modal,
   StyleSheet,
   Text,
@@ -17,6 +18,7 @@ import {
 import { flagLunasByDc } from "../pelanggan/flagLunasByDc";
 import type { UserProfile } from "../auth/profile";
 import { ScreenHeader } from "../components/ScreenHeader";
+import { buildWhatsappUrl } from "../pelanggan/waPhone";
 
 type Props = {
   profile: UserProfile;
@@ -34,6 +36,7 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [openingWaById, setOpeningWaById] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     const result = await listBelumBayarUntukDc(supabase, profile.id);
@@ -81,6 +84,24 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
     await reload();
   }
 
+  async function handleOpenWhatsapp(item: PelangganBelumBayarDc) {
+    if (!item.noHp) return;
+    setOpeningWaById(item.id);
+    try {
+      const url = buildWhatsappUrl(item.noHp);
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        setError("WhatsApp tidak tersedia di perangkat ini.");
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      setError("Tidak bisa membuka WhatsApp untuk nomor ini.");
+    } finally {
+      setOpeningWaById(null);
+    }
+  }
+
   return (
     <View style={styles.screen}>
       <ScreenHeader
@@ -125,36 +146,55 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
               </Text>
             }
             renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => setTarget(item)}
-                disabled={item.dcFlaggedLunas && !item.dcFlaggedByMe}
-              >
-                <View style={styles.cardBody}>
-                  <Text style={styles.cardName}>{item.nama}</Text>
-                  <Text style={styles.cardAlamat}>{item.alamat}</Text>
-                  <Text style={styles.cardNoHp}>{item.noHp}</Text>
-                  <Text style={styles.cardHarga}>{formatHarga(item.tagihan)}</Text>
-                  {item.catatan ? (
-                    <Text style={styles.cardCatatan}>📝 {item.catatan}</Text>
-                  ) : null}
-                  {item.dcFlaggedLunas ? (
-                    <Text style={styles.pendingLabel}>
-                      {item.dcFlaggedByMe
-                        ? "Menunggu approval Pemilik — tap untuk batal"
-                        : "Menunggu approval Pemilik"}
-                    </Text>
-                  ) : null}
-                </View>
-                <View
-                  style={[
-                    styles.checkbox,
-                    item.dcFlaggedLunas && styles.checkboxChecked,
-                  ]}
+              <View style={styles.cardRow}>
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => setTarget(item)}
+                  disabled={item.dcFlaggedLunas && !item.dcFlaggedByMe}
                 >
-                  {item.dcFlaggedLunas ? <Text style={styles.checkboxMark}>✓</Text> : null}
-                </View>
-              </TouchableOpacity>
+                  <View style={styles.cardBody}>
+                    <Text style={styles.cardName}>{item.nama}</Text>
+                    <Text style={styles.cardAlamat}>{item.alamat}</Text>
+                    <TouchableOpacity
+                      onPress={() => handleOpenWhatsapp(item)}
+                      disabled={openingWaById === item.id}
+                    >
+                      <Text style={styles.cardNoHp}>{item.noHp}</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.cardHarga}>{formatHarga(item.tagihan)}</Text>
+                    {item.catatan ? (
+                      <Text style={styles.cardCatatan}>📝 {item.catatan}</Text>
+                    ) : null}
+                    {item.dcFlaggedLunas ? (
+                      <Text style={styles.pendingLabel}>
+                        {item.dcFlaggedByMe
+                          ? "Menunggu approval Pemilik — tap untuk batal"
+                          : "Menunggu approval Pemilik"}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View
+                    style={[
+                      styles.checkbox,
+                      item.dcFlaggedLunas && styles.checkboxChecked,
+                    ]}
+                  >
+                    {item.dcFlaggedLunas ? <Text style={styles.checkboxMark}>✓</Text> : null}
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.waButton,
+                    openingWaById === item.id && styles.waButtonDisabled,
+                  ]}
+                  onPress={() => handleOpenWhatsapp(item)}
+                  disabled={openingWaById === item.id || !item.noHp}
+                >
+                  <Text style={styles.waButtonText}>
+                    {openingWaById === item.id ? "..." : "WhatsApp"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             )}
           />
         )}
@@ -267,7 +307,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 24,
   },
+  cardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    gap: 10,
+  },
   card: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
@@ -275,7 +322,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#f0f0f0",
     padding: 14,
-    marginBottom: 10,
   },
   cardBody: {
     flex: 1,
@@ -292,8 +338,26 @@ const styles = StyleSheet.create({
   },
   cardNoHp: {
     fontSize: 12,
-    color: "#6b7280",
+    color: "#1d4ed8",
     marginTop: 2,
+    textDecorationLine: "underline",
+    fontWeight: "600",
+  },
+  waButton: {
+    backgroundColor: "#DCFCE7",
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#86EFAC",
+  },
+  waButtonDisabled: {
+    opacity: 0.7,
+  },
+  waButtonText: {
+    color: "#166534",
+    fontWeight: "700",
+    fontSize: 11,
   },
   cardHarga: {
     fontSize: 14,
