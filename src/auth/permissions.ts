@@ -103,3 +103,7 @@ export function canViewPenagihanDc(role: Role): boolean {
 export function canApproveSetoranDc(role: Role): boolean {
   return role === "pemilik";
 }
+
+export function canManagePrioritasDc(role: Role): boolean {
+  return role === "pemilik";
+}

@@ -21,6 +21,7 @@ import {
   canResetTiketData,
   canViewPenagihanDc,
   canApproveSetoranDc,
+  canManagePrioritasDc,
 } from "../auth/permissions";
 import { NotifikasiBell } from "../components/NotifikasiBell";
 
@@ -77,6 +78,7 @@ type Props = {
   onNavigateToDataReset: () => void;
   onNavigateToPenagihanDc: () => void;
   onNavigateToApprovalSetoranDc: () => void;
+  onNavigateToPrioritasDc: () => void;
   onNavigateToChangePassword: () => void;
   onLogout: () => void;
 };
@@ -110,6 +112,7 @@ export function HomeScreen({
   onNavigateToDataReset,
   onNavigateToPenagihanDc,
   onNavigateToApprovalSetoranDc,
+  onNavigateToPrioritasDc,
   onNavigateToChangePassword,
   onLogout,
 }: Props) {
@@ -220,6 +223,14 @@ export function HomeScreen({
       icon: "✅",
       label: "Approval Setoran DC",
       onPress: onNavigateToApprovalSetoranDc,
+    });
+  }
+  if (canManagePrioritasDc(profile.role)) {
+    menuItems.push({
+      key: "prioritasDc",
+      icon: "🔥",
+      label: "Prioritas DC",
+      onPress: onNavigateToPrioritasDc,
     });
   }
   menuItems.push({

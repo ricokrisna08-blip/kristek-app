@@ -9,6 +9,7 @@ export type PelangganBelumBayarDc = {
   tagihan: number;
   dcFlaggedLunas: boolean;
   dcFlaggedByMe: boolean;
+  prioritasDc: boolean;
 };
 
 // Sama seperti countBelumBayar.ts: tagihan efektif dari Harga
@@ -22,9 +23,10 @@ export async function listBelumBayarUntukDc(
   const { data, error } = await client
     .from("pelanggan")
     .select(
-      "id, nama, alamat, no_hp, catatan, harga, tagihan_prorata, kompensasi_nominal, dc_flagged_lunas, dc_flagged_by"
+      "id, nama, alamat, no_hp, catatan, harga, tagihan_prorata, kompensasi_nominal, dc_flagged_lunas, dc_flagged_by, prioritas_dc"
     )
     .eq("sudah_bayar_bulan_ini", false)
+    .order("prioritas_dc", { ascending: false })
     .order("alamat");
 
   if (error || !data) {
@@ -44,6 +46,7 @@ export async function listBelumBayarUntukDc(
         tagihan,
         dcFlaggedLunas: row.dc_flagged_lunas,
         dcFlaggedByMe: row.dc_flagged_lunas && row.dc_flagged_by === currentUserId,
+        prioritasDc: row.prioritas_dc,
       };
     })
     .filter((row) => row.tagihan > 0);

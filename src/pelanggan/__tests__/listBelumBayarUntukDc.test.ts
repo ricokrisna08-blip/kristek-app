@@ -12,6 +12,7 @@ type Row = {
   kompensasi_nominal?: number | null;
   dc_flagged_lunas: boolean;
   dc_flagged_by?: string | null;
+  prioritas_dc?: boolean;
 };
 
 function fakeClient(rows: Row[]): SupabaseClient {
@@ -19,7 +20,9 @@ function fakeClient(rows: Row[]): SupabaseClient {
     from: () => ({
       select: () => ({
         eq: () => ({
-          order: () => Promise.resolve({ data: rows, error: null }),
+          order: () => ({
+            order: () => Promise.resolve({ data: rows, error: null }),
+          }),
         }),
       }),
     }),
@@ -36,6 +39,7 @@ test("maps rows and computes effective tagihan (prorata basis, minus kompensasi)
       catatan: "Rumah cat biru",
       harga: 165000,
       dc_flagged_lunas: false,
+      prioritas_dc: false,
     },
     {
       id: "p2",
@@ -45,6 +49,7 @@ test("maps rows and computes effective tagihan (prorata basis, minus kompensasi)
       harga: 165000,
       kompensasi_nominal: 50000,
       dc_flagged_lunas: false,
+      prioritas_dc: false,
     },
   ]);
 
@@ -60,6 +65,7 @@ test("maps rows and computes effective tagihan (prorata basis, minus kompensasi)
       tagihan: 165000,
       dcFlaggedLunas: false,
       dcFlaggedByMe: false,
+      prioritasDc: false,
     },
     {
       id: "p2",
@@ -70,6 +76,7 @@ test("maps rows and computes effective tagihan (prorata basis, minus kompensasi)
       tagihan: 115000,
       dcFlaggedLunas: false,
       dcFlaggedByMe: false,
+      prioritasDc: false,
     },
   ]);
 });
@@ -101,7 +108,9 @@ test("returns an empty array instead of throwing on query error", async () => {
     from: () => ({
       select: () => ({
         eq: () => ({
-          order: () => Promise.resolve({ data: null, error: { message: "db error" } }),
+          order: () => ({
+            order: () => Promise.resolve({ data: null, error: { message: "db error" } }),
+          }),
         }),
       }),
     }),
@@ -110,4 +119,16 @@ test("returns an empty array instead of throwing on query error", async () => {
   const result = await listBelumBayarUntukDc(client, "dc-1");
 
   expect(result).toEqual([]);
+});
+
+test("prioritas Pelanggan are mapped from prioritas_dc", async () => {
+  const client = fakeClient([
+    { id: "p1", nama: "Budi", alamat: "A", harga: 100000, dc_flagged_lunas: false, prioritas_dc: true },
+    { id: "p2", nama: "Siti", alamat: "B", harga: 100000, dc_flagged_lunas: false, prioritas_dc: false },
+  ]);
+
+  const result = await listBelumBayarUntukDc(client, "dc-1");
+
+  expect(result[0]).toMatchObject({ prioritasDc: true });
+  expect(result[1]).toMatchObject({ prioritasDc: false });
 });

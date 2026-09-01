@@ -153,6 +153,9 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
                   disabled={item.dcFlaggedLunas && !item.dcFlaggedByMe}
                 >
                   <View style={styles.cardBody}>
+                    {item.prioritasDc ? (
+                      <Text style={styles.prioritasBadge}>🔥 Prioritas</Text>
+                    ) : null}
                     <Text style={styles.cardName}>{item.nama}</Text>
                     <Text style={styles.cardAlamat}>{item.alamat}</Text>
                     <TouchableOpacity
@@ -325,6 +328,12 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     flex: 1,
+  },
+  prioritasBadge: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#B45309",
+    marginBottom: 4,
   },
   cardName: {
     fontSize: 15,

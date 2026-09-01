@@ -31,6 +31,7 @@ import { DataResetScreen } from "./src/screens/DataResetScreen";
 import { PenagihanDcScreen } from "./src/screens/PenagihanDcScreen";
 import { ApprovalSetoranDcScreen } from "./src/screens/ApprovalSetoranDcScreen";
 import { ChangePasswordScreen } from "./src/screens/ChangePasswordScreen";
+import { PrioritasDcScreen } from "./src/screens/PrioritasDcScreen";
 
 type Screen =
   | "home"
@@ -54,7 +55,8 @@ type Screen =
   | "dataReset"
   | "penagihanDc"
   | "approvalSetoranDc"
-  | "changePassword";
+  | "changePassword"
+  | "prioritasDc";
 
 // Web tidak support expo-notifications sama sekali, jadi handler ini cuma
 // perlu di-set di native supaya alert push tetap muncul walau app lagi
@@ -294,6 +296,11 @@ export default function App() {
     if (screen === "changePassword") {
       return <ChangePasswordScreen onBack={() => setScreen("home")} />;
     }
+    if (screen === "prioritasDc") {
+      return (
+        <PrioritasDcScreen profile={currentProfile} onBack={() => setScreen("home")} />
+      );
+    }
     if (screen === "tiketDetail" && selectedTiketId) {
       return (
         <TiketDetailScreen
@@ -329,6 +336,7 @@ export default function App() {
         onNavigateToDataReset={() => setScreen("dataReset")}
         onNavigateToPenagihanDc={() => setScreen("penagihanDc")}
         onNavigateToApprovalSetoranDc={() => setScreen("approvalSetoranDc")}
+        onNavigateToPrioritasDc={() => setScreen("prioritasDc")}
         onNavigateToChangePassword={() => setScreen("changePassword")}
         onLogout={handleLogout}
       />
