@@ -29,6 +29,7 @@
     "jest": "^29.7.0",
     "jest-expo": "^57.0.3",
     "playwright": "^1.62.1",
+    "react-native-clean-project": "^4.0.3",
     "supabase": "^2.15.0",
     "typescript": "~6.0.3"
   },

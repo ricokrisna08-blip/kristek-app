@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, BackHandler, Platform, StyleSheet, View } from "react-native";
+import { ConfirmModal } from "./src/components/ConfirmModal";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as Notifications from "expo-notifications";
@@ -134,12 +135,25 @@ export default function App() {
           setScreen("home");
           return true;
         }
-        return false;
+        // On home screen, show exit confirmation modal instead of exiting immediately
+        setShowExitModal(true);
+        return true;
       }
     );
 
     return () => subscription.remove();
   }, [screen]);
+
+  const [showExitModal, setShowExitModal] = useState(false);
+
+  function confirmExit() {
+    setShowExitModal(false);
+    BackHandler.exitApp();
+  }
+
+  function cancelExit() {
+    setShowExitModal(false);
+  }
 
   async function handleSignedIn(userId: string) {
     const loadedProfile = await fetchUserProfile(supabase, userId);
@@ -336,6 +350,14 @@ export default function App() {
         )}
       </SafeAreaView>
       <StatusBar style={hasDarkHeader ? "light" : "auto"} />
+      <ConfirmModal
+        visible={showExitModal}
+        title="Keluar aplikasi?"
+        fields={[]}
+        isSubmitting={false}
+        onCancel={cancelExit}
+        onConfirm={confirmExit}
+      />
     </SafeAreaProvider>
   );
 }
