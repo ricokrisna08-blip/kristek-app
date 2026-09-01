@@ -41,11 +41,27 @@ function persenOf(sudahBayar: number, omset: number): number {
   return Math.round((sudahBayar / omset) * 1000) / 10;
 }
 
+// Siklus billing baru "resmi" pindah ke bulan kalender berikutnya di
+// tanggal 15 (lihat mikrotik-daily-billing-cycle: snapshot + reset
+// sudah_bayar_bulan_ini terjadi di tanggal itu) -- sebelum tanggal 15,
+// pembayaran yang masuk masih bagian dari siklus bulan sebelumnya, jadi
+// baris "bulan berjalan" di Laporan Keuangan HARUS tetap nunjuk ke bulan
+// sebelumnya juga, supaya nggak kelihatan seolah bulan baru "sudah mulai"
+// padahal siklusnya belum di-reset.
 function currentPeriode(): string {
   const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}-01`;
+  let year = now.getFullYear();
+  let month = now.getMonth() + 1; // 1-12
+
+  if (now.getDate() < 15) {
+    month -= 1;
+    if (month === 0) {
+      month = 12;
+      year -= 1;
+    }
+  }
+
+  return `${year}-${String(month).padStart(2, "0")}-01`;
 }
 
 export async function getLaporanKeuangan(

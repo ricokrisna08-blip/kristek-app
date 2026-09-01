@@ -248,3 +248,36 @@ test("a periode with Pengeluaran rows but no laporan_bulanan snapshot (e.g. cron
     isBulanIni: false,
   });
 });
+
+describe("live current month periode follows the tanggal 15 reset boundary, not the calendar month", () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  test("before tanggal 15, the live row still points to the previous month (siklus belum di-reset)", async () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 8, 1)); // 1 Sep 2026
+    const client = fakeClient({ history: [], pelanggan: [] });
+
+    const result = await getLaporanKeuangan(client);
+
+    expect(result[0]).toMatchObject({ periode: "2026-08-01", label: "Aug-26", isBulanIni: true });
+  });
+
+  test("from tanggal 15 onward, the live row moves to the current calendar month", async () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 8, 15)); // 15 Sep 2026
+    const client = fakeClient({ history: [], pelanggan: [] });
+
+    const result = await getLaporanKeuangan(client);
+
+    expect(result[0]).toMatchObject({ periode: "2026-09-01", label: "Sep-26", isBulanIni: true });
+  });
+
+  test("rolling back from January wraps to December of the previous year", async () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 0, 5)); // 5 Jan 2026
+    const client = fakeClient({ history: [], pelanggan: [] });
+
+    const result = await getLaporanKeuangan(client);
+
+    expect(result[0]).toMatchObject({ periode: "2025-12-01", label: "Dec-25", isBulanIni: true });
+  });
+});
