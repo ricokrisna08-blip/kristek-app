@@ -34,11 +34,7 @@ function fakeClient(options: {
       }
       if (table === "pengeluaran") {
         return {
-          select: () => ({
-            eq: () => ({
-              gte: () => Promise.resolve({ data: options.pengeluaran ?? [], error: null }),
-            }),
-          }),
+          select: () => Promise.resolve({ data: options.pengeluaran ?? [], error: null }),
         };
       }
       return {
@@ -226,4 +222,29 @@ test("pengeluaran rows are grouped per periode, not mixed across months", async 
 
   expect(result[0]).toMatchObject({ periode: "2025-06-01", totalPengeluaran: 100000 });
   expect(result[1]).toMatchObject({ periode: "2025-07-01", totalPengeluaran: 250000 });
+});
+
+test("a periode with Pengeluaran rows but no laporan_bulanan snapshot (e.g. cron gagal tanggal 15) still shows up as a selectable month, instead of disappearing", async () => {
+  const client = fakeClient({
+    history: [
+      { periode: "2025-06-01", total_user: 50, omset: 9000000, sudah_bayar: 9000000, belum_bayar: 0 },
+      { periode: "2025-07-01", total_user: 55, omset: 10000000, sudah_bayar: 9000000, belum_bayar: 1000000 },
+    ],
+    pelanggan: [{ harga: 165000, sudah_bayar_bulan_ini: true }],
+    // "2025-08-01" tidak ada snapshot-nya sama sekali di laporan_bulanan,
+    // tapi ada baris Pengeluaran yang dicatat di bulan itu.
+    pengeluaran: [{ nominal: 300000, persen: null, tanggal: "2025-08-10", sudah_dibayar: true }],
+  });
+
+  const result = await getLaporanKeuangan(client);
+
+  const agustus = result.find((item) => item.periode === "2025-08-01");
+  expect(agustus).toMatchObject({
+    label: "Aug-25",
+    totalUser: 0,
+    omset: 0,
+    sudahBayar: 0,
+    totalPengeluaran: 300000,
+    isBulanIni: false,
+  });
 });

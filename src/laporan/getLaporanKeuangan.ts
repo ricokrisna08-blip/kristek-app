@@ -51,7 +51,7 @@ function currentPeriode(): string {
 export async function getLaporanKeuangan(
   client: SupabaseClient
 ): Promise<LaporanBulananItem[]> {
-  const [historyResult, pelangganResult] = await Promise.all([
+  const [historyResult, pelangganResult, pengeluaranResult] = await Promise.all([
     client
       .from("laporan_bulanan")
       .select("periode, total_user, omset, sudah_bayar, belum_bayar")
@@ -61,6 +61,7 @@ export async function getLaporanKeuangan(
       .select(
         "harga, tagihan_prorata, kompensasi_nominal, sudah_bayar_bulan_ini, dc_flagged_lunas"
       ),
+    client.from("pengeluaran").select("nominal, persen, tanggal, sudah_dibayar"),
   ]);
 
   const history = historyResult.data ?? [];
@@ -123,6 +124,35 @@ export async function getLaporanKeuangan(
     isBulanIni: true,
   });
 
+  const pengeluaranRows = (pengeluaranResult.data ?? []) as any[];
+
+  // laporan_bulanan cuma keisi kalau snapshot tanggal 15 sempat jalan --
+  // kalau cron itu gagal/belum sempat jalan di suatu bulan, bulan itu
+  // hilang dari `items` walau baris Pengeluaran-nya sendiri tetap aman di
+  // tabel `pengeluaran`. Tanpa ini, bulan itu jadi tidak bisa dipilih sama
+  // sekali di app -- kelihatan kayak "hilang" padahal cuma nggak ada pill
+  // buat munculinnya.
+  const knownPeriode = new Set(items.map((item) => item.periode));
+  for (const row of pengeluaranRows) {
+    const periodeKey = `${String(row.tanggal).slice(0, 7)}-01`;
+    if (knownPeriode.has(periodeKey)) continue;
+    knownPeriode.add(periodeKey);
+    items.push({
+      periode: periodeKey,
+      label: formatPeriodeLabel(periodeKey),
+      totalUser: 0,
+      omset: 0,
+      sudahBayar: 0,
+      belumBayar: 0,
+      diTanganDc: 0,
+      totalPengeluaran: 0,
+      sisaUang: 0,
+      persen: 0,
+      isBulanIni: false,
+    });
+  }
+  items.sort((a, b) => (a.periode < b.periode ? -1 : a.periode > b.periode ? 1 : 0));
+
   // Tampilkan cuma 3 bulan terakhir (termasuk bulan berjalan yang live).
   const shown = items.slice(-3);
 
@@ -130,29 +160,21 @@ export async function getLaporanKeuangan(
   // tanggal asli (bukan snapshot per-siklus kayak laporan_bulanan), jadi
   // totalnya bisa dihitung LANGSUNG dari tabel pengeluaran buat periode
   // manapun yang ditampilkan -- termasuk bulan-bulan histori.
-  const earliestPeriode = shown[0]?.periode;
-  if (earliestPeriode) {
-    const { data: pengeluaranRows } = await client
-      .from("pengeluaran")
-      .select("nominal, persen, tanggal, sudah_dibayar")
-      .eq("sudah_dibayar", true)
-      .gte("tanggal", earliestPeriode);
+  const sudahBayarByPeriode = new Map(shown.map((item) => [item.periode, item.sudahBayar]));
+  const totalByPeriode = new Map<string, number>();
 
-    const sudahBayarByPeriode = new Map(shown.map((item) => [item.periode, item.sudahBayar]));
-    const totalByPeriode = new Map<string, number>();
+  for (const row of pengeluaranRows) {
+    if (!row.sudah_dibayar) continue;
+    const periodeKey = `${String(row.tanggal).slice(0, 7)}-01`;
+    const sudahBayarPeriode = sudahBayarByPeriode.get(periodeKey) ?? 0;
+    const efektif =
+      row.nominal != null ? row.nominal : Math.round((sudahBayarPeriode * row.persen) / 100);
+    totalByPeriode.set(periodeKey, (totalByPeriode.get(periodeKey) ?? 0) + efektif);
+  }
 
-    for (const row of (pengeluaranRows ?? []) as any[]) {
-      const periodeKey = `${String(row.tanggal).slice(0, 7)}-01`;
-      const sudahBayarPeriode = sudahBayarByPeriode.get(periodeKey) ?? 0;
-      const efektif =
-        row.nominal != null ? row.nominal : Math.round((sudahBayarPeriode * row.persen) / 100);
-      totalByPeriode.set(periodeKey, (totalByPeriode.get(periodeKey) ?? 0) + efektif);
-    }
-
-    for (const item of shown) {
-      item.totalPengeluaran = totalByPeriode.get(item.periode) ?? 0;
-      item.sisaUang = item.sudahBayar - item.totalPengeluaran;
-    }
+  for (const item of shown) {
+    item.totalPengeluaran = totalByPeriode.get(item.periode) ?? 0;
+    item.sisaUang = item.sudahBayar - item.totalPengeluaran;
   }
 
   return shown;
