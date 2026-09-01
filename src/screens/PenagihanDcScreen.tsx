@@ -89,11 +89,10 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
     setOpeningWaById(item.id);
     try {
       const url = buildWhatsappUrl(item.noHp);
-      const supported = await Linking.canOpenURL(url);
-      if (!supported) {
-        setError("WhatsApp tidak tersedia di perangkat ini.");
-        return;
-      }
+      // Sengaja TIDAK cek Linking.canOpenURL() dulu -- di Android 11+
+      // (targetSdk 30+) itu sering balikin false buat link https:// gara-gara
+      // pembatasan package visibility, walau openURL()-nya sendiri tetap
+      // bisa jalan normal. Sama seperti link Google Maps di TiketDetailView.
       await Linking.openURL(url);
     } catch {
       setError("Tidak bisa membuka WhatsApp untuk nomor ini.");
