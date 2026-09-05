@@ -16,6 +16,10 @@ export function canCreateOdp(role: Role): boolean {
   return role === "admin" || role === "pemilik";
 }
 
+export function canEditOdp(role: Role): boolean {
+  return role === "admin" || role === "pemilik";
+}
+
 export function canDeleteOdp(role: Role): boolean {
   return role === "pemilik";
 }

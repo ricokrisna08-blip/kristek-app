@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,9 +12,10 @@ import {
 import { supabase } from "../lib/supabase";
 import { createOdp } from "../odp/createOdp";
 import { deleteOdp } from "../odp/deleteOdp";
+import { updateOdp } from "../odp/updateOdp";
 import { listOdp, type OdpListItem } from "../odp/listOdp";
 import { listWilayah, type Wilayah } from "../wilayah/listWilayah";
-import { canCreateOdp, canDeleteOdp } from "../auth/permissions";
+import { canCreateOdp, canDeleteOdp, canEditOdp } from "../auth/permissions";
 import type { UserProfile } from "../auth/profile";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
@@ -38,6 +40,13 @@ export function OdpManagementScreen({ profile, onBack }: Props) {
   const [deleteTarget, setDeleteTarget] = useState<OdpListItem | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [editTarget, setEditTarget] = useState<OdpListItem | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [editLokasi, setEditLokasi] = useState("");
+  const [editWilayahId, setEditWilayahId] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const isPemilik = profile.role === "pemilik";
 
@@ -108,6 +117,36 @@ export function OdpManagementScreen({ profile, onBack }: Props) {
     }
 
     setDeleteTarget(null);
+    await reload();
+  }
+
+  function openEdit(item: OdpListItem) {
+    setEditError(null);
+    setEditTarget(item);
+    setEditLabel(item.label);
+    setEditLokasi(item.lokasi);
+    setEditWilayahId(item.wilayahId);
+  }
+
+  async function handleSaveEdit() {
+    if (!editTarget) return;
+    if (!editLabel.trim() || !editLokasi.trim() || (isPemilik && !editWilayahId)) return;
+
+    setEditError(null);
+    setIsSavingEdit(true);
+    const result = await updateOdp(supabase, editTarget.id, {
+      label: editLabel.trim(),
+      lokasi: editLokasi.trim(),
+      wilayahId: (isPemilik ? editWilayahId : editTarget.wilayahId) as string,
+    });
+    setIsSavingEdit(false);
+
+    if (!result.success) {
+      setEditError(result.error);
+      return;
+    }
+
+    setEditTarget(null);
     await reload();
   }
 
@@ -233,6 +272,15 @@ export function OdpManagementScreen({ profile, onBack }: Props) {
                   {item.lokasi} · {item.wilayahNama ?? "Wilayah tidak diketahui"}
                 </Text>
               </View>
+              {canEditOdp(profile.role) ? (
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => openEdit(item)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.editLink}>Edit</Text>
+                </TouchableOpacity>
+              ) : null}
               {canDeleteOdp(profile.role) ? (
                 <TouchableOpacity
                   style={styles.deleteButton}
@@ -258,6 +306,100 @@ export function OdpManagementScreen({ profile, onBack }: Props) {
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />
+
+      <Modal
+        visible={editTarget !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditTarget(null)}
+      >
+        <View style={styles.editBackdrop}>
+          <View style={styles.editCard}>
+            <Text style={styles.title}>Edit ODP</Text>
+
+            <Text style={styles.fieldLabel}>Label</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Misal ODP-KRTK-0001"
+              placeholderTextColor="#9ca3af"
+              autoCapitalize="characters"
+              value={editLabel}
+              onChangeText={setEditLabel}
+            />
+
+            <Text style={styles.fieldLabel}>Lokasi</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Lokasi / alamat singkat"
+              placeholderTextColor="#9ca3af"
+              value={editLokasi}
+              onChangeText={setEditLokasi}
+            />
+
+            {isPemilik ? (
+              <>
+                <Text style={styles.fieldLabel}>Wilayah</Text>
+                <View style={styles.pillRow}>
+                  {wilayahList.map((wilayah) => (
+                    <TouchableOpacity
+                      key={wilayah.id}
+                      style={[
+                        styles.pill,
+                        editWilayahId === wilayah.id && styles.pillSelected,
+                      ]}
+                      onPress={() => setEditWilayahId(wilayah.id)}
+                    >
+                      <Text
+                        style={
+                          editWilayahId === wilayah.id
+                            ? styles.pillTextSelected
+                            : styles.pillText
+                        }
+                      >
+                        {wilayah.nama}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            ) : null}
+
+            {editError ? <Text style={styles.error}>{editError}</Text> : null}
+
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setEditTarget(null)}
+                disabled={isSavingEdit}
+              >
+                <Text style={styles.cancelButtonText}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.saveButton,
+                  (!editLabel.trim() ||
+                    !editLokasi.trim() ||
+                    (isPemilik && !editWilayahId)) &&
+                    styles.buttonDisabled,
+                ]}
+                onPress={handleSaveEdit}
+                disabled={
+                  isSavingEdit ||
+                  !editLabel.trim() ||
+                  !editLokasi.trim() ||
+                  (isPemilik && !editWilayahId)
+                }
+              >
+                {isSavingEdit ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Simpan</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       </ScrollView>
     </View>
   );
@@ -353,6 +495,63 @@ const styles = StyleSheet.create({
     color: "#DC2626",
     fontSize: 13,
     fontWeight: "600",
+  },
+  editLink: {
+    color: "#1B7396",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  editBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  editCard: {
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    padding: 22,
+    width: "100%",
+    maxWidth: 420,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 16,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 4,
+  },
+  cancelButton: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    backgroundColor: "#f1f1f1",
+  },
+  cancelButtonText: {
+    color: "#333",
+    fontWeight: "600",
+  },
+  saveButton: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    backgroundColor: "#1B7396",
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontWeight: "700",
   },
   input: {
     borderWidth: 1,

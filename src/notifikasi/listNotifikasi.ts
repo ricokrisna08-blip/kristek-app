@@ -36,6 +36,7 @@ export async function listNotifikasi(
     .order("created_at", { ascending: false });
 
   if (error || !data) {
+    console.warn("Gagal memuat notifikasi:", error);
     return [];
   }
 
