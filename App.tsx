@@ -32,6 +32,7 @@ import { PenagihanDcScreen } from "./src/screens/PenagihanDcScreen";
 import { ApprovalSetoranDcScreen } from "./src/screens/ApprovalSetoranDcScreen";
 import { ChangePasswordScreen } from "./src/screens/ChangePasswordScreen";
 import { PrioritasDcScreen } from "./src/screens/PrioritasDcScreen";
+import { IsolirMonitorScreen } from "./src/screens/IsolirMonitorScreen";
 
 type Screen =
   | "home"
@@ -56,7 +57,8 @@ type Screen =
   | "penagihanDc"
   | "approvalSetoranDc"
   | "changePassword"
-  | "prioritasDc";
+  | "prioritasDc"
+  | "isolirMonitor";
 
 // Web tidak support expo-notifications sama sekali, jadi handler ini cuma
 // perlu di-set di native supaya alert push tetap muncul walau app lagi
@@ -301,6 +303,9 @@ export default function App() {
         <PrioritasDcScreen profile={currentProfile} onBack={() => setScreen("home")} />
       );
     }
+    if (screen === "isolirMonitor") {
+      return <IsolirMonitorScreen onBack={() => setScreen("home")} />;
+    }
     if (screen === "tiketDetail" && selectedTiketId) {
       return (
         <TiketDetailScreen
@@ -317,6 +322,7 @@ export default function App() {
         onNavigateToWilayah={() => setScreen("wilayah")}
         onNavigateToOdp={() => setScreen("odp")}
         onNavigateToPelanggan={() => setScreen("pelanggan")}
+        onNavigateToIsolirMonitor={() => setScreen("isolirMonitor")}
         onNavigateToPaket={() => setScreen("paket")}
         onNavigateToCreateTiket={() => setScreen("createTiket")}
         onNavigateToDaftarTiket={() => setScreen("daftarTiket")}

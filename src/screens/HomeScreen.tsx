@@ -62,6 +62,7 @@ type Props = {
   onNavigateToWilayah: () => void;
   onNavigateToOdp: () => void;
   onNavigateToPelanggan: () => void;
+  onNavigateToIsolirMonitor: () => void;
   onNavigateToPaket: () => void;
   onNavigateToCreateTiket: () => void;
   onNavigateToDaftarTiket: () => void;
@@ -96,6 +97,7 @@ export function HomeScreen({
   onNavigateToWilayah,
   onNavigateToOdp,
   onNavigateToPelanggan,
+  onNavigateToIsolirMonitor,
   onNavigateToPaket,
   onNavigateToCreateTiket,
   onNavigateToDaftarTiket,
@@ -138,6 +140,12 @@ export function HomeScreen({
   }
   if (canViewPelanggan(profile.role)) {
     menuItems.push({ key: "pelanggan", icon: "👥", label: "Kelola Pelanggan", onPress: onNavigateToPelanggan });
+    menuItems.push({
+      key: "isolirMonitor",
+      icon: "🚫",
+      label: "Monitor Isolir",
+      onPress: onNavigateToIsolirMonitor,
+    });
   }
   if (canManagePaket(profile.role)) {
     menuItems.push({ key: "paket", icon: "📶", label: "Kelola Paket", onPress: onNavigateToPaket });
