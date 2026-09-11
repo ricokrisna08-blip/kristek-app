@@ -105,7 +105,7 @@ test("live current month excludes Pelanggan currently isolir from Total User/Oms
   });
 });
 
-test("live current month excludes Pelanggan installed this calendar month -- their Omset only counts starting next month", async () => {
+test("live current month: Pelanggan installed this calendar month count toward Total User immediately, but not Omset until next month", async () => {
   jest.useFakeTimers().setSystemTime(new Date(2026, 8, 20)); // 20 Sep 2026
   try {
     const client = fakeClient({
@@ -119,7 +119,7 @@ test("live current month excludes Pelanggan installed this calendar month -- the
     const result = await getLaporanKeuangan(client);
 
     expect(result[0]).toMatchObject({
-      totalUser: 1,
+      totalUser: 2,
       omset: 165000,
       sudahBayar: 165000,
       belumBayar: 0,
