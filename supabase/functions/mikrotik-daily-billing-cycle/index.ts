@@ -31,11 +31,11 @@
 //
 // Hari terakhir tiap bulan kalender (28/29/30/31, lihat
 // jakartaIsLastDayOfMonth): snapshot KEDUA yang terpisah dari tanggal 15
-// di atas -- ini "angka mati" final buat bulan kalender itu, dihitung
-// dengan exclude Pelanggan isolir dan Pelanggan yang baru pasang bulan
-// itu juga (tagihan pertama mereka baru resmi masuk hitungan bulan
-// depan). Upsert-nya menimpa angka kasar dari snapshot tanggal 15 buat
-// periode yang sama.
+// di atas -- ini "angka mati" final buat bulan kalender itu, exclude
+// Pelanggan isolir saja (Pelanggan yang baru pasang bulan itu SUDAH ikut
+// kehitung di snapshot final ini, beda dari baris live selama bulan
+// masih berjalan di getLaporanKeuangan.ts). Upsert-nya menimpa angka
+// kasar dari snapshot tanggal 15 buat periode yang sama.
 //
 // HARUS jadi Edge Function (bukan kode di app) karena butuh service_role
 // key (baca/tulis lintas semua Pelanggan tanpa user login) dan kredensial
@@ -332,26 +332,25 @@ Deno.serve(async (req) => {
   // Snapshot "angka mati" akhir bulan kalender -- TERPISAH dari snapshot
   // tanggal 15 di atas (yang nempel ke reset siklus billing jatuh-tempo-3
   // dan TIDAK diubah). Ini permintaan Pemilik: dia mau Total User/Omset
-  // per bulan KALENDER beneran final begitu bulan itu habis, dihitung
-  // pakai cara yang sama seperti baris "bulan berjalan" live di Laporan
-  // Keuangan (getLaporanKeuangan.ts) -- exclude Pelanggan yang sedang
-  // isolir, dan exclude Pelanggan yang baru pasang BULAN INI (tagihan
-  // pertama mereka baru resmi masuk hitungan bulan depan). Upsert ke
-  // periode yang sama akan menimpa angka kasar dari snapshot tanggal 15,
-  // jadi baris bulan itu di app berakhir dengan angka yang lebih akurat.
+  // per bulan KALENDER beneran final begitu bulan itu habis. Beda dari
+  // baris "bulan berjalan" LIVE di Laporan Keuangan (getLaporanKeuangan.ts)
+  // -- exclude Pelanggan baru bulan ini cuma berlaku SELAMA bulan itu masih
+  // berjalan (supaya nggak keburu naik gara-gara instalasi baru beberapa
+  // hari terakhir); begitu bulan itu BENERAN habis (hari terakhir), Pelanggan
+  // yang pasang kapanpun di bulan itu sudah resmi jadi bagian bulan itu, jadi
+  // TIDAK di-exclude di sini -- cuma exclude Pelanggan yang sedang isolir.
+  // Upsert ke periode yang sama akan menimpa angka kasar dari snapshot
+  // tanggal 15, jadi baris bulan itu di app berakhir dengan angka final.
   if (jakartaIsLastDayOfMonth()) {
     const { data: semuaPelanggan, error: monthEndFetchError } = await adminClient
       .from("pelanggan")
-      .select(
-        "harga, tagihan_prorata, kompensasi_nominal, sudah_bayar_bulan_ini, is_isolir, tanggal_instalasi"
-      );
+      .select("harga, tagihan_prorata, kompensasi_nominal, sudah_bayar_bulan_ini, is_isolir");
 
     if (monthEndFetchError) {
       return jsonResponse({ error: monthEndFetchError.message }, 500);
     }
 
     const periode = jakartaCurrentPeriode();
-    const yearMonthPrefix = periode.slice(0, 7); // "YYYY-MM"
 
     let totalUser = 0;
     let omset = 0;
@@ -360,9 +359,6 @@ Deno.serve(async (req) => {
 
     for (const p of semuaPelanggan ?? []) {
       if (p.is_isolir) continue;
-      if (typeof p.tanggal_instalasi === "string" && p.tanggal_instalasi.startsWith(yearMonthPrefix)) {
-        continue;
-      }
 
       const dasar = p.tagihan_prorata ?? p.harga ?? 0;
       const tagihan = Math.max(dasar - (p.kompensasi_nominal ?? 0), 0);
