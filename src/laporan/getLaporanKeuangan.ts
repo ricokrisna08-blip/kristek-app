@@ -78,7 +78,7 @@ export async function getLaporanKeuangan(
     client
       .from("pelanggan")
       .select(
-        "harga, tagihan_prorata, kompensasi_nominal, sudah_bayar_bulan_ini, dc_flagged_lunas"
+        "harga, tagihan_prorata, kompensasi_nominal, sudah_bayar_bulan_ini, dc_flagged_lunas, is_isolir"
       ),
     client.from("pengeluaran").select("nominal, persen, tanggal, sudah_dibayar"),
   ]);
@@ -102,7 +102,11 @@ export async function getLaporanKeuangan(
     isBulanIni: false,
   }));
 
-  const pelangganRows = pelangganResult.data ?? [];
+  // Pelanggan yang sedang diisolir (koneksinya sudah diputus karena belum
+  // bayar) dikeluarkan dari estimasi Omset -- dia bukan lagi bagian dari
+  // "pelanggan aktif yang diharapkan bayar bulan ini" sampai dia bayar dan
+  // di-buka isolirnya lagi.
+  const pelangganRows = (pelangganResult.data ?? []).filter((row: any) => !row.is_isolir);
   const totalUser = pelangganRows.length;
   let omset = 0;
   let sudahBayar = 0;

@@ -15,6 +15,7 @@ function fakeClient(options: {
     kompensasi_nominal?: number | null;
     sudah_bayar_bulan_ini: boolean;
     dc_flagged_lunas?: boolean;
+    is_isolir?: boolean;
   }>;
   pengeluaran?: Array<{
     nominal: number | null;
@@ -81,6 +82,25 @@ test("appends the live current month after the historical rows", async () => {
     sisaUang: 165000,
     persen: 45.2,
     isBulanIni: true,
+  });
+});
+
+test("live current month excludes Pelanggan currently isolir from Total User/Omset", async () => {
+  const client = fakeClient({
+    history: [],
+    pelanggan: [
+      { harga: 165000, sudah_bayar_bulan_ini: true },
+      { harga: 200000, sudah_bayar_bulan_ini: false, is_isolir: true },
+    ],
+  });
+
+  const result = await getLaporanKeuangan(client);
+
+  expect(result[0]).toMatchObject({
+    totalUser: 1,
+    omset: 165000,
+    sudahBayar: 165000,
+    belumBayar: 0,
   });
 });
 
