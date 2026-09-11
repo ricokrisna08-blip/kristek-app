@@ -3,6 +3,7 @@ import { applyTiketEvent, type TiketStatus } from "./stateMachine/applyTiketEven
 import { logTiketStatus } from "./logTiketStatus";
 import { triggerPushNotification } from "../notifikasi/triggerPushNotification";
 import { generateUuid } from "../lib/generateUuid";
+import { activateMikrotikAfterInstalasi } from "./activateMikrotikAfterInstalasi";
 import {
   computeEvidenceStatus,
   isEvidenceComplete,
@@ -15,7 +16,7 @@ export type EndTiketWithEvidenceInput = {
 };
 
 export type EndTiketWithEvidenceResult =
-  | { success: true }
+  | { success: true; mikrotikWarning?: string | null }
   | { success: false; error: string };
 
 // End untuk Tiket Instalasi & Laporan Pelanggan -- beda dari endTiket.ts
@@ -113,5 +114,19 @@ export async function endTiketWithEvidence(
     }
   }
 
-  return { success: true };
+  // Instalasi baru sengaja dibuat NONAKTIF di Mikrotik dari awal (lihat
+  // createTiketWithAssignment.ts) -- begitu Tiket-nya beneran selesai
+  // (checklist bukti lengkap, status sudah di-update di atas), nyalain
+  // lagi di sini. Kalau gagal (mis. router lagi tidak terjangkau), Tiket
+  // TETAP dianggap selesai (pekerjaan fisiknya memang sudah kelar) --
+  // cuma dikasih warning ke pemanggil supaya bisa follow-up manual.
+  let mikrotikWarning: string | null = null;
+  if (tiket.jenis === "instalasi") {
+    const activateResult = await activateMikrotikAfterInstalasi(client, input.tiketId);
+    if (!activateResult.success) {
+      mikrotikWarning = `Tiket selesai, tapi gagal mengaktifkan Mikrotik Pelanggan: ${activateResult.error} Coba nyalakan manual lewat toggle Isolir di detail Pelanggan.`;
+    }
+  }
+
+  return { success: true, mikrotikWarning };
 }

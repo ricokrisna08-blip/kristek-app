@@ -13,6 +13,14 @@
 // sesuai konvensi yang sudah dipakai KRISTEK di Mikrotik) -- tidak
 // dipakai/diubah kalau secretnya cuma di-link.
 //
+// Body request boleh sertakan `disabled: true` (dipakai dari
+// createTiketWithAssignment.ts saat bikin Pelanggan+Tiket Instalasi baru
+// sekaligus) supaya secret dibuat NONAKTIF dari awal -- Pelanggan baru
+// belum bisa konek sampai Teknisi konfirmasi instalasi selesai lewat
+// mikrotik-activate-instalasi. Cuma berlaku buat secret BARU (PUT); kalau
+// ternyata ke-link ke secret yang sudah ada di router, status
+// aktif/nonaktifnya TIDAK diubah.
+//
 // HARUS jadi Edge Function (bukan kode di app) karena butuh kredensial API
 // Mikrotik (MIKROTIK_HOST, MIKROTIK_API_USER, MIKROTIK_API_PASSWORD,
 // MIKROTIK_CA_CERT), yang tidak boleh ada di bundle mobile.
@@ -52,7 +60,8 @@ function jsonResponse(body: unknown, status: number) {
 
 async function createOrLinkMikrotikSecret(
   mikrotikUsername: string,
-  profile: string
+  profile: string,
+  disabled: boolean
 ): Promise<{ success: true; linked: boolean } | { success: false; error: string }> {
   const host = Deno.env.get("MIKROTIK_HOST");
   const user = Deno.env.get("MIKROTIK_API_USER");
@@ -89,6 +98,10 @@ async function createOrLinkMikrotikSecret(
 
     const matches = (await lookupRes.json()) as Array<{ ".id": string }>;
     if (matches && matches.length > 0) {
+      // Secret sudah ada di router dari sebelumnya (pelanggan lama yang
+      // dibuat manual) -- sengaja TIDAK ikut di-disable di sini walau
+      // caller minta `disabled: true`, karena kasus "link" ini cuma buat
+      // pelanggan yang sudah aktif, bukan instalasi baru.
       return { success: true, linked: true };
     }
 
@@ -103,6 +116,7 @@ async function createOrLinkMikrotikSecret(
         password: MIKROTIK_SECRET_PASSWORD,
         service: "pppoe",
         profile,
+        disabled: disabled ? "true" : "false",
       }),
       signal: AbortSignal.timeout(MIKROTIK_TIMEOUT_MS),
       client,
@@ -168,14 +182,14 @@ Deno.serve(async (req) => {
     );
   }
 
-  let body: { pelangganId?: string; mikrotikUsername?: string };
+  let body: { pelangganId?: string; mikrotikUsername?: string; disabled?: boolean };
   try {
     body = await req.json();
   } catch {
     return jsonResponse({ error: "Body request tidak valid" }, 400);
   }
 
-  const { pelangganId, mikrotikUsername } = body;
+  const { pelangganId, mikrotikUsername, disabled } = body;
   if (!pelangganId || !mikrotikUsername || !mikrotikUsername.trim()) {
     return jsonResponse({ error: "Input tidak valid" }, 400);
   }
@@ -212,7 +226,7 @@ Deno.serve(async (req) => {
     );
   }
 
-  const result = await createOrLinkMikrotikSecret(trimmedUsername, mikrotikProfile);
+  const result = await createOrLinkMikrotikSecret(trimmedUsername, mikrotikProfile, disabled === true);
   if (!result.success) {
     return jsonResponse({ error: result.error }, 502);
   }

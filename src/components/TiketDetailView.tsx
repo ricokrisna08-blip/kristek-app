@@ -155,6 +155,7 @@ export function TiketDetailView({ detail, profile, onBack, onChanged, onDeleted 
   const [isCapturingLokasi, setIsCapturingLokasi] = useState(false);
   const [isFinishingWithEvidence, setIsFinishingWithEvidence] = useState(false);
   const [evidenceError, setEvidenceError] = useState<string | null>(null);
+  const [mikrotikWarning, setMikrotikWarning] = useState<string | null>(null);
 
   const [isEditingTeknisi, setIsEditingTeknisi] = useState(false);
   const [teknisiOptions, setTeknisiOptions] = useState<AccountListItem[]>([]);
@@ -504,6 +505,10 @@ export function TiketDetailView({ detail, profile, onBack, onChanged, onDeleted 
       return;
     }
 
+    if (result.mikrotikWarning) {
+      setMikrotikWarning(result.mikrotikWarning);
+    }
+
     onChanged();
   }
 
@@ -604,6 +609,12 @@ export function TiketDetailView({ detail, profile, onBack, onChanged, onDeleted 
       <TiketStatusBar status={effectiveStatus} />
 
       {offlineNotice ? <Text style={styles.offlineNotice}>{offlineNotice}</Text> : null}
+
+      {mikrotikWarning ? (
+        <TouchableOpacity onPress={() => setMikrotikWarning(null)}>
+          <Text style={styles.warningBanner}>{mikrotikWarning} (ketuk untuk tutup)</Text>
+        </TouchableOpacity>
+      ) : null}
 
       {queuedActionsForTiket.length > 0 ? (
         <Text style={styles.offlineNotice}>
@@ -1300,6 +1311,14 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   offlineNotice: {
+    marginTop: 8,
+    fontSize: 12,
+    color: "#92400E",
+    backgroundColor: "#FEF3C7",
+    borderRadius: 12,
+    padding: 12,
+  },
+  warningBanner: {
     marginTop: 8,
     fontSize: 12,
     color: "#92400E",

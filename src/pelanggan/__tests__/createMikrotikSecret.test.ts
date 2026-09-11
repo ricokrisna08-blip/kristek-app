@@ -1,10 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createMikrotikSecret } from "../createMikrotikSecret";
 
-function fakeClient(invokeResult: { data: unknown; error: unknown }): SupabaseClient {
+function fakeClient(
+  invokeResult: { data: unknown; error: unknown },
+  onInvoke?: (body: unknown) => void
+): SupabaseClient {
   return {
     functions: {
-      invoke: () => Promise.resolve(invokeResult),
+      invoke: (_name: string, opts: { body: unknown }) => {
+        onInvoke?.(opts.body);
+        return Promise.resolve(invokeResult);
+      },
     },
   } as unknown as SupabaseClient;
 }
@@ -54,6 +60,22 @@ test("a business error from the function (e.g. missing profile) surfaces its mes
     success: false,
     error: "Paket Pelanggan ini belum ada Nama Profile Mikrotik-nya.",
   });
+});
+
+test("passes disabled: false by default, and disabled: true when requested (new instalasi flow)", async () => {
+  const bodies: unknown[] = [];
+  const client = fakeClient(
+    { data: { success: true, linked: false, renamedFrom: null }, error: null },
+    (body) => bodies.push(body)
+  );
+
+  await createMikrotikSecret(client, "pelanggan-1", "budi123");
+  await createMikrotikSecret(client, "pelanggan-1", "budi123", { disabled: true });
+
+  expect(bodies).toEqual([
+    { pelangganId: "pelanggan-1", mikrotikUsername: "budi123", disabled: false },
+    { pelangganId: "pelanggan-1", mikrotikUsername: "budi123", disabled: true },
+  ]);
 });
 
 test("a non-2xx response (FunctionsHttpError) surfaces the real error message from its body", async () => {

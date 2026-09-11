@@ -11,6 +11,7 @@ function fakeClient(opts: {
   updateTiket?: jest.Mock;
   insertStatusLog?: jest.Mock;
   insertNotifikasi?: jest.Mock;
+  invokeFunctions?: jest.Mock;
 }): SupabaseClient {
   return {
     from: (table: string) => {
@@ -71,7 +72,9 @@ function fakeClient(opts: {
       }
       throw new Error(`Unexpected table: ${table}`);
     },
-    functions: { invoke: jest.fn().mockResolvedValue({ data: null, error: null }) },
+    functions: {
+      invoke: opts.invokeFunctions ?? jest.fn().mockResolvedValue({ data: null, error: null }),
+    },
   } as unknown as SupabaseClient;
 }
 
@@ -105,7 +108,76 @@ test("succeeds once all 4 evidence items are complete, moving the Tiket to Seles
       { id: expect.any(String), user_id: "pemilik-1", tiket_id: "tiket-1", type: "selesai" },
     ])
   );
-  expect(result).toEqual({ success: true });
+  expect(result).toEqual({ success: true, mikrotikWarning: null });
+});
+
+test("Instalasi: activates the Pelanggan's Mikrotik secret after successfully finishing", async () => {
+  const invokeFunctions = jest.fn().mockResolvedValue({ data: { success: true }, error: null });
+  const client = fakeClient({
+    tiketStatus: "dikerjakan",
+    jenis: "instalasi",
+    evidenceLokasiLatitude: -6.2,
+    fotoTypes: ["redaman", "ont", "kabel_jalur"],
+    updateTiket: jest.fn().mockResolvedValue({ error: null }),
+    invokeFunctions,
+  });
+
+  const result = await endTiketWithEvidence(client, {
+    tiketId: "tiket-1",
+    changedBy: "teknisi-1",
+  });
+
+  expect(invokeFunctions).toHaveBeenCalledWith("mikrotik-activate-instalasi", {
+    body: { tiketId: "tiket-1" },
+  });
+  expect(result).toEqual({ success: true, mikrotikWarning: null });
+});
+
+test("Instalasi: a failed Mikrotik activation still leaves the Tiket selesai, just with a warning", async () => {
+  const invokeFunctions = jest
+    .fn()
+    .mockResolvedValue({ data: { error: "Router tidak merespons." }, error: null });
+  const client = fakeClient({
+    tiketStatus: "dikerjakan",
+    jenis: "instalasi",
+    evidenceLokasiLatitude: -6.2,
+    fotoTypes: ["redaman", "ont", "kabel_jalur"],
+    updateTiket: jest.fn().mockResolvedValue({ error: null }),
+    invokeFunctions,
+  });
+
+  const result = await endTiketWithEvidence(client, {
+    tiketId: "tiket-1",
+    changedBy: "teknisi-1",
+  });
+
+  expect(result.success).toBe(true);
+  expect(result).toMatchObject({
+    mikrotikWarning: expect.stringContaining("Router tidak merespons."),
+  });
+});
+
+test("Laporan Pelanggan (gangguan_komplain): does not try to activate anything on Mikrotik", async () => {
+  const invokeFunctions = jest.fn().mockResolvedValue({ data: null, error: null });
+  const client = fakeClient({
+    tiketStatus: "dikerjakan",
+    jenis: "gangguan_komplain",
+    evidenceLokasiLatitude: -6.2,
+    fotoTypes: ["redaman", "ont", "kabel_jalur"],
+    updateTiket: jest.fn().mockResolvedValue({ error: null }),
+    invokeFunctions,
+  });
+
+  const result = await endTiketWithEvidence(client, {
+    tiketId: "tiket-1",
+    changedBy: "teknisi-1",
+  });
+
+  expect(invokeFunctions).not.toHaveBeenCalledWith(
+    "mikrotik-activate-instalasi",
+    expect.anything()
+  );
+  expect(result).toEqual({ success: true, mikrotikWarning: null });
 });
 
 test("works the same way for Laporan Pelanggan (gangguan_komplain), not just Instalasi", async () => {
@@ -123,7 +195,7 @@ test("works the same way for Laporan Pelanggan (gangguan_komplain), not just Ins
     changedBy: "teknisi-1",
   });
 
-  expect(result).toEqual({ success: true });
+  expect(result).toEqual({ success: true, mikrotikWarning: null });
 });
 
 test("rejects a Maintenance Tiket -- it doesn't use this evidence checklist", async () => {

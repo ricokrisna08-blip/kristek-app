@@ -275,7 +275,7 @@ test("Instalasi: Username Mikrotik yang diisi langsung dipakai untuk buat secret
   });
 
   expect(invoke).toHaveBeenCalledWith("mikrotik-create-secret", {
-    body: { pelangganId: "pelanggan-4", mikrotikUsername: "sari01" },
+    body: { pelangganId: "pelanggan-4", mikrotikUsername: "sari01", disabled: true },
   });
   expect(result).toEqual({ success: true, tiketId: "tiket-4", mikrotikWarning: null });
 });

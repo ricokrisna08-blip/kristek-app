@@ -74,11 +74,15 @@ export async function createTiketWithAssignment(
     // Username Mikrotik wajib diisi di form -- Pelanggan-nya sendiri sudah
     // berhasil dibuat di titik ini, jadi kalau langkah Mikrotik ini gagal
     // (mis. Mikrotik lagi mati), tetap lanjut buat Tiket seperti biasa,
-    // cuma bawa pesan warning-nya sampai ke pemanggil.
+    // cuma bawa pesan warning-nya sampai ke pemanggil. Secret dibuat
+    // NONAKTIF (disabled: true) -- Pelanggan baru belum bisa konek sampai
+    // Teknisi konfirmasi instalasi selesai (lihat endTiketWithEvidence.ts,
+    // yang manggil mikrotik-activate-instalasi buat nyalain lagi).
     const mikrotikResult = await createMikrotikSecret(
       client,
       pelangganResult.pelanggan.id,
-      input.pelangganBaru.mikrotikUsername.trim()
+      input.pelangganBaru.mikrotikUsername.trim(),
+      { disabled: true }
     );
     if (!mikrotikResult.success) {
       mikrotikWarning = `Pelanggan & Tiket berhasil dibuat, tapi gagal set Username Mikrotik: ${mikrotikResult.error} Coba set manual di layar detail Pelanggan.`;

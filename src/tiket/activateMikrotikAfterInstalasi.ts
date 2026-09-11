@@ -1,24 +1,24 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type CreateMikrotikSecretResult =
-  | { success: true; linked: boolean; renamedFrom: string | null }
-  | { success: false; error: string };
+export type ActivateMikrotikResult = { success: true } | { success: false; error: string };
 
-// Edge Function sendiri punya timeout ke Mikrotik (lihat index.ts-nya),
-// tapi ini pengaman tambahan di sisi app -- kalau panggilan ke Edge
-// Function-nya sendiri yang macet (bukan Mikrotik-nya), tombol di UI tetap
-// nggak boleh nyangkut selamanya.
 const INVOKE_TIMEOUT_MS = 15_000;
 
-export async function createMikrotikSecret(
+// Dipanggil dari endTiketWithEvidence.ts setelah Tiket Instalasi berhasil
+// di-set status "selesai" -- menyalakan PPP secret Pelanggan itu di
+// Mikrotik (dibuat nonaktif dari awal, lihat createTiketWithAssignment.ts).
+// Sengaja fire-with-warning (bukan fire-and-forget total): kalau gagal,
+// Tiket-nya sendiri TETAP selesai (pekerjaan fisiknya memang sudah kelar),
+// tapi pemanggil perlu tahu supaya bisa follow-up manual (mis. nyalain
+// lewat toggle isolir di detail Pelanggan begitu Mikrotik-nya bisa
+// dihubungi lagi).
+export async function activateMikrotikAfterInstalasi(
   client: SupabaseClient,
-  pelangganId: string,
-  mikrotikUsername: string,
-  options?: { disabled?: boolean }
-): Promise<CreateMikrotikSecretResult> {
+  tiketId: string
+): Promise<ActivateMikrotikResult> {
   const { data, error } = await withTimeout(
-    client.functions.invoke("mikrotik-create-secret", {
-      body: { pelangganId, mikrotikUsername, disabled: options?.disabled ?? false },
+    client.functions.invoke("mikrotik-activate-instalasi", {
+      body: { tiketId },
     }),
     INVOKE_TIMEOUT_MS
   ).catch((err: Error) => ({
@@ -45,11 +45,7 @@ export async function createMikrotikSecret(
     return { success: false, error: data.error as string };
   }
 
-  return {
-    success: true,
-    linked: Boolean(data?.linked),
-    renamedFrom: (data?.renamedFrom as string | null) ?? null,
-  };
+  return { success: true };
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -73,9 +69,6 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-// Supabase JS membungkus response non-2xx dari Edge Function jadi
-// FunctionsHttpError, dengan body asli (termasuk pesan error kita) cuma
-// bisa diakses lewat error.context (objek Response), bukan lewat `data`.
 async function readFunctionErrorMessage(error: unknown): Promise<string | null> {
   const context = (error as { context?: Response } | null)?.context;
   if (!context || typeof context.json !== "function") return null;
