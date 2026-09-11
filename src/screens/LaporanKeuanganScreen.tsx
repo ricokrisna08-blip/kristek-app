@@ -235,7 +235,11 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
                   <Text
                     style={[styles.cell, styles.cellDanger, styles.numCell, { width: COL.belumBayar }]}
                   >
-                    {item.belumBayar > 0 ? formatAngka(item.belumBayar) : "-"}
+                    {/* Bulan berjalan masih estimasi (siklus belum kelar), jadi
+                        Belum Bayar belum benar-benar berlaku -- Omset/Sudah
+                        Bayar/% tetap dihitung normal, cuma kolom ini yang
+                        dikosongkan. */}
+                    {!item.isBulanIni && item.belumBayar > 0 ? formatAngka(item.belumBayar) : "-"}
                   </Text>
                   <Text
                     style={[styles.cell, styles.cellWarning, styles.numCell, { width: COL.diTanganDc }]}
