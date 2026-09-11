@@ -16,7 +16,6 @@ function fakeClient(options: {
     sudah_bayar_bulan_ini: boolean;
     dc_flagged_lunas?: boolean;
     is_isolir?: boolean;
-    tanggal_instalasi?: string | null;
   }>;
   pengeluaran?: Array<{
     nominal: number | null;
@@ -109,30 +108,6 @@ test("live current month keeps Pelanggan currently isolir in Total User/Omset/Be
     angkaIsolir: 200000,
     pendapatanSetelahIsolir: 165000,
   });
-});
-
-test("live current month: Pelanggan installed this calendar month count toward Total User immediately, but not Omset until next month", async () => {
-  jest.useFakeTimers().setSystemTime(new Date(2026, 8, 20)); // 20 Sep 2026
-  try {
-    const client = fakeClient({
-      history: [],
-      pelanggan: [
-        { harga: 165000, sudah_bayar_bulan_ini: true, tanggal_instalasi: "2026-08-25" },
-        { harga: 200000, sudah_bayar_bulan_ini: false, tanggal_instalasi: "2026-09-05" },
-      ],
-    });
-
-    const result = await getLaporanKeuangan(client);
-
-    expect(result[0]).toMatchObject({
-      totalUser: 2,
-      omset: 165000,
-      sudahBayar: 165000,
-      belumBayar: 0,
-    });
-  } finally {
-    jest.useRealTimers();
-  }
 });
 
 test("live current month separates money already in the DC's hands (flagged, not yet approved) from plain belum-bayar", async () => {

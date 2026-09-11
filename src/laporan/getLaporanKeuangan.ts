@@ -74,20 +74,6 @@ function currentPeriode(): string {
   return `${year}-${String(month).padStart(2, "0")}-01`;
 }
 
-// Pelanggan yang baru pasang di bulan kalender berjalan belum "resmi"
-// nyumbang ke Omset bulan ini -- tagihan prorata pertamanya baru
-// ditagihkan/dihitung mulai bulan berikutnya (permintaan Pemilik: supaya
-// Total User/Omset bulan berjalan nggak keburu naik cuma karena ada
-// instalasi baru beberapa hari terakhir). `tanggalInstalasiIso`:
-// "YYYY-MM-DD" (kolom `date` murni).
-function isInstalledThisCalendarMonth(tanggalInstalasiIso: string | null, now: Date): boolean {
-  if (!tanggalInstalasiIso) return false;
-  const install = new Date(`${tanggalInstalasiIso}T00:00:00`);
-  return (
-    install.getFullYear() === now.getFullYear() && install.getMonth() === now.getMonth()
-  );
-}
-
 export async function getLaporanKeuangan(
   client: SupabaseClient
 ): Promise<LaporanBulananItem[]> {
@@ -99,7 +85,7 @@ export async function getLaporanKeuangan(
     client
       .from("pelanggan")
       .select(
-        "harga, tagihan_prorata, kompensasi_nominal, sudah_bayar_bulan_ini, dc_flagged_lunas, is_isolir, tanggal_instalasi"
+        "harga, tagihan_prorata, kompensasi_nominal, sudah_bayar_bulan_ini, dc_flagged_lunas, is_isolir"
       ),
     client.from("pengeluaran").select("nominal, persen, tanggal, sudah_dibayar"),
   ]);
@@ -126,16 +112,12 @@ export async function getLaporanKeuangan(
     pendapatanSetelahIsolir: row.omset,
   }));
 
-  // Total User & Omset baris live ikut SEMUA Pelanggan (termasuk yang
-  // isolir) -- isolir TIDAK di-exclude diam-diam, tapi ditampilkan
-  // terpisah lewat jumlahIsolir/angkaIsolir/pendapatanSetelahIsolir di
-  // bawah supaya Pemilik bisa lihat dampaknya secara transparan. Pelanggan
-  // yang baru pasang bulan kalender ini tetap ikut Total User (biar
-  // langsung kelihatan begitu ada penambahan), tapi belum nyumbang ke
-  // Omset/Sudah Bayar/Belum Bayar/Di Tangan DC (lihat
-  // isInstalledThisCalendarMonth) -- tagihan pertama mereka baru resmi
-  // masuk hitungan bulan depan.
-  const now = new Date();
+  // Total User & Omset baris live ikut SEMUA Pelanggan (termasuk yang baru
+  // pasang bulan ini dan yang lagi isolir) -- keduanya bergerak bareng,
+  // nggak ada exclude diam-diam. Isolir ditampilkan terpisah lewat
+  // jumlahIsolir/angkaIsolir/pendapatanSetelahIsolir di bawah supaya
+  // Pemilik bisa lihat dampaknya secara transparan tanpa Omset jadi
+  // ganjil dibanding Total User.
   const pelangganRows = pelangganResult.data ?? [];
   const totalUser = pelangganRows.length;
   let omset = 0;
@@ -145,8 +127,6 @@ export async function getLaporanKeuangan(
   let jumlahIsolir = 0;
   let angkaIsolir = 0;
   for (const row of pelangganRows as any[]) {
-    if (isInstalledThisCalendarMonth(row.tanggal_instalasi, now)) continue;
-
     const dasar = row.tagihan_prorata ?? row.harga ?? 0;
     const tagihan = Math.max(dasar - (row.kompensasi_nominal ?? 0), 0);
     omset += tagihan;
