@@ -308,11 +308,19 @@ Deno.serve(async (req) => {
     return jsonResponse({ action: "none", reason: "outside jendela isolir (7-14)" }, 200);
   }
 
+  // `tagihan_prorata` masih ke-set (bukan null) artinya Pelanggan ini
+  // masih di siklus prorata PERTAMA-nya (baru pasang, lihat
+  // computeProrata.ts) -- baru dikosongkan lagi pas reset tanggal 15 di
+  // atas. Dikecualikan dari isolir supaya Pelanggan baru dapet 1 siklus
+  // penuh buat sempat bayar tagihan prorata pertamanya, bukan langsung
+  // keisolir cuma karena kebetulan pasang beberapa hari sebelum window
+  // isolir (7-14) ini mulai.
   const { data: belumBayar, error: fetchError } = await adminClient
     .from("pelanggan")
     .select("id, mikrotik_username")
     .eq("sudah_bayar_bulan_ini", false)
     .eq("is_isolir", false)
+    .is("tagihan_prorata", null)
     .not("mikrotik_username", "is", null);
 
   if (fetchError) {
