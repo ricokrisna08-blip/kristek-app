@@ -41,19 +41,22 @@ function persenOf(sudahBayar: number, omset: number): number {
   return Math.round((sudahBayar / omset) * 1000) / 10;
 }
 
-// Siklus billing baru "resmi" pindah ke bulan kalender berikutnya di
-// tanggal 15 (lihat mikrotik-daily-billing-cycle: snapshot + reset
-// sudah_bayar_bulan_ini terjadi di tanggal itu) -- sebelum tanggal 15,
-// pembayaran yang masuk masih bagian dari siklus bulan sebelumnya, jadi
-// baris "bulan berjalan" di Laporan Keuangan HARUS tetap nunjuk ke bulan
-// sebelumnya juga, supaya nggak kelihatan seolah bulan baru "sudah mulai"
-// padahal siklusnya belum di-reset.
+// Siklus billing beneran (reset sudah_bayar_bulan_ini, snapshot
+// laporan_bulanan) baru terjadi tanggal 15 -- lihat
+// mikrotik-daily-billing-cycle, itu TIDAK berubah. Ini cuma soal kapan
+// baris "bulan berjalan" di TAMPILAN Laporan Keuangan mulai nunjuk ke
+// bulan kalender baru (permintaan Pemilik: tanggal 11, supaya Omset bulan
+// baru kelihatan lebih awal) -- sebelum tanggal itu, tabelnya masih nunjuk
+// ke bulan sebelumnya. Sengaja terpisah dari CUTOFF_DAY di
+// computeProrata.ts (beda concern: itu ngitung prorata tagihan pertama).
+const BULAN_INI_DISPLAY_CUTOFF_DAY = 11;
+
 function currentPeriode(): string {
   const now = new Date();
   let year = now.getFullYear();
   let month = now.getMonth() + 1; // 1-12
 
-  if (now.getDate() < 15) {
+  if (now.getDate() < BULAN_INI_DISPLAY_CUTOFF_DAY) {
     month -= 1;
     if (month === 0) {
       month = 12;
