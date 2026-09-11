@@ -161,6 +161,8 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
     await reloadAll();
   }
 
+  const bulanIniItem = items.find((item) => item.isBulanIni) ?? null;
+
   return (
     <View style={styles.screen}>
       <ScreenHeader
@@ -265,6 +267,24 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
           </ScrollView>
         </View>
       )}
+      {bulanIniItem && bulanIniItem.jumlahIsolir > 0 ? (
+        <View style={styles.isolirCard}>
+          <View style={[styles.row, styles.headerRow]}>
+            <Text style={[styles.headerCell, { flex: 1 }]}>Total User Isolir</Text>
+            <Text style={[styles.headerCell, { flex: 1 }]}>Angka Isolir</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={[styles.cell, { flex: 1 }]}>{bulanIniItem.jumlahIsolir}</Text>
+            <Text style={[styles.cell, styles.cellDanger, { flex: 1 }]}>
+              {formatAngka(bulanIniItem.angkaIsolir)}
+            </Text>
+          </View>
+          <Text style={styles.isolirNote}>
+            Pendapatan setelah dikeluarkan data isolir adalah{" "}
+            <Text style={styles.cellBold}>{formatAngka(bulanIniItem.pendapatanSetelahIsolir)}</Text>
+          </Text>
+        </View>
+      ) : null}
       <Text style={styles.note}>
         Angka bulan ini sudah menghitung kebijakan Pemilik yang aktif per pelanggan:
         Prorata (pelanggan baru join di tengah siklus) dan Kompensasi Gangguan
@@ -588,6 +608,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     color: "#64748B",
+  },
+  isolirCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E4E7EB",
+    padding: 12,
+    marginTop: 12,
+    maxWidth: 320,
+  },
+  isolirNote: {
+    marginTop: 10,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: "#374151",
   },
   subtitle: {
     fontSize: 15,

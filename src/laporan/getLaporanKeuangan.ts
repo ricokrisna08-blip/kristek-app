@@ -12,6 +12,13 @@ export type LaporanBulananItem = {
   sisaUang: number;
   persen: number;
   isBulanIni: boolean;
+  // Breakdown Pelanggan isolir -- ditampilkan TERPISAH (bukan di-exclude
+  // diam-diam) supaya Pemilik bisa lihat berapa besar dampaknya. Cuma
+  // terisi buat baris live "bulan ini"; baris histori (dari
+  // laporan_bulanan, tidak menyimpan status isolir per Pelanggan) selalu 0.
+  jumlahIsolir: number;
+  angkaIsolir: number;
+  pendapatanSetelahIsolir: number;
 };
 
 const MONTH_LABELS = [
@@ -114,30 +121,41 @@ export async function getLaporanKeuangan(
     sisaUang: row.sudah_bayar,
     persen: persenOf(row.sudah_bayar, row.omset),
     isBulanIni: false,
+    jumlahIsolir: 0,
+    angkaIsolir: 0,
+    pendapatanSetelahIsolir: row.omset,
   }));
 
-  // Pelanggan yang sedang diisolir (koneksinya sudah diputus karena belum
-  // bayar) dikeluarkan sama sekali -- dia bukan lagi bagian dari
-  // "pelanggan aktif" sampai dia bayar dan di-buka isolirnya lagi.
+  // Total User & Omset baris live ikut SEMUA Pelanggan (termasuk yang
+  // isolir) -- isolir TIDAK di-exclude diam-diam, tapi ditampilkan
+  // terpisah lewat jumlahIsolir/angkaIsolir/pendapatanSetelahIsolir di
+  // bawah supaya Pemilik bisa lihat dampaknya secara transparan. Pelanggan
+  // yang baru pasang bulan kalender ini tetap ikut Total User (biar
+  // langsung kelihatan begitu ada penambahan), tapi belum nyumbang ke
+  // Omset/Sudah Bayar/Belum Bayar/Di Tangan DC (lihat
+  // isInstalledThisCalendarMonth) -- tagihan pertama mereka baru resmi
+  // masuk hitungan bulan depan.
   const now = new Date();
-  const pelangganRows = (pelangganResult.data ?? []).filter((row: any) => !row.is_isolir);
-  // Total User ikut SEMUA Pelanggan aktif, termasuk yang baru pasang bulan
-  // ini -- biar langsung kelihatan begitu ada penambahan. Omset/Sudah
-  // Bayar/Belum Bayar/Di Tangan DC tetap exclude Pelanggan baru bulan ini
-  // (tagihan pertama mereka baru resmi masuk hitungan bulan depan, lihat
-  // isInstalledThisCalendarMonth) -- dua metrik ini sengaja dipisah biar
-  // Total User terasa "hidup" tanpa bikin Omset naik prematur.
+  const pelangganRows = pelangganResult.data ?? [];
   const totalUser = pelangganRows.length;
   let omset = 0;
   let sudahBayar = 0;
   let belumBayar = 0;
   let diTanganDc = 0;
+  let jumlahIsolir = 0;
+  let angkaIsolir = 0;
   for (const row of pelangganRows as any[]) {
     if (isInstalledThisCalendarMonth(row.tanggal_instalasi, now)) continue;
 
     const dasar = row.tagihan_prorata ?? row.harga ?? 0;
     const tagihan = Math.max(dasar - (row.kompensasi_nominal ?? 0), 0);
     omset += tagihan;
+
+    if (row.is_isolir) {
+      jumlahIsolir += 1;
+      angkaIsolir += tagihan;
+    }
+
     if (row.sudah_bayar_bulan_ini) {
       sudahBayar += tagihan;
     } else {
@@ -167,6 +185,9 @@ export async function getLaporanKeuangan(
     sisaUang: sudahBayar,
     persen: persenOf(sudahBayar, omset),
     isBulanIni: true,
+    jumlahIsolir,
+    angkaIsolir,
+    pendapatanSetelahIsolir: omset - angkaIsolir,
   });
 
   const pengeluaranRows = (pengeluaranResult.data ?? []) as any[];
@@ -194,6 +215,9 @@ export async function getLaporanKeuangan(
       sisaUang: 0,
       persen: 0,
       isBulanIni: false,
+      jumlahIsolir: 0,
+      angkaIsolir: 0,
+      pendapatanSetelahIsolir: 0,
     });
   }
   items.sort((a, b) => (a.periode < b.periode ? -1 : a.periode > b.periode ? 1 : 0));

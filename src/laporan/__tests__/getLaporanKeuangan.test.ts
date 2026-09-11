@@ -72,6 +72,9 @@ test("appends the live current month after the historical rows", async () => {
     sisaUang: 12570334,
     persen: 94.7,
     isBulanIni: false,
+    jumlahIsolir: 0,
+    angkaIsolir: 0,
+    pendapatanSetelahIsolir: 13275334,
   });
   expect(result[1]).toMatchObject({
     totalUser: 2,
@@ -86,7 +89,7 @@ test("appends the live current month after the historical rows", async () => {
   });
 });
 
-test("live current month excludes Pelanggan currently isolir from Total User/Omset", async () => {
+test("live current month keeps Pelanggan currently isolir in Total User/Omset/Belum Bayar, but surfaces them separately", async () => {
   const client = fakeClient({
     history: [],
     pelanggan: [
@@ -98,10 +101,13 @@ test("live current month excludes Pelanggan currently isolir from Total User/Oms
   const result = await getLaporanKeuangan(client);
 
   expect(result[0]).toMatchObject({
-    totalUser: 1,
-    omset: 165000,
+    totalUser: 2,
+    omset: 365000,
     sudahBayar: 165000,
-    belumBayar: 0,
+    belumBayar: 200000,
+    jumlahIsolir: 1,
+    angkaIsolir: 200000,
+    pendapatanSetelahIsolir: 165000,
   });
 });
 
