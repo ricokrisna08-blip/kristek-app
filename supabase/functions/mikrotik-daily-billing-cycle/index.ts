@@ -29,6 +29,14 @@
 // berlaku 1 siklus, jadi begitu siklus itu lewat, Pelanggan itu balik
 // ditagih harga normal.
 //
+// Hari terakhir tiap bulan kalender (28/29/30/31, lihat
+// jakartaIsLastDayOfMonth): snapshot KEDUA yang terpisah dari tanggal 15
+// di atas -- ini "angka mati" final buat bulan kalender itu, dihitung
+// dengan exclude Pelanggan isolir dan Pelanggan yang baru pasang bulan
+// itu juga (tagihan pertama mereka baru resmi masuk hitungan bulan
+// depan). Upsert-nya menimpa angka kasar dari snapshot tanggal 15 buat
+// periode yang sama.
+//
 // HARUS jadi Edge Function (bukan kode di app) karena butuh service_role
 // key (baca/tulis lintas semua Pelanggan tanpa user login) dan kredensial
 // API Mikrotik, dua-duanya tidak boleh ada di bundle mobile.
@@ -89,6 +97,23 @@ function jakartaDayOfMonth(): number {
   }).formatToParts(new Date());
   const day = parts.find((p) => p.type === "day")?.value;
   return day ? parseInt(day, 10) : new Date().getDate();
+}
+
+// Hari terakhir kalender bulan berjalan (waktu Asia/Jakarta) -- dipakai
+// buat snapshot "angka mati" akhir bulan, bukan literal tanggal 30 supaya
+// tetap benar di Februari (28/29) dan bulan 31 hari.
+function jakartaIsLastDayOfMonth(): boolean {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const year = parseInt(parts.find((p) => p.type === "year")!.value, 10);
+  const month = parseInt(parts.find((p) => p.type === "month")!.value, 10);
+  const day = parseInt(parts.find((p) => p.type === "day")!.value, 10);
+  const lastDayOfMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return day === lastDayOfMonth;
 }
 
 // Tanggal 1 dari bulan berjalan (waktu Asia/Jakarta), format "YYYY-MM-01"
@@ -300,6 +325,69 @@ Deno.serve(async (req) => {
 
     return jsonResponse(
       { action: "reset", resetCount: count ?? 0, snapshot: { totalUser, omset, sudahBayar, belumBayar } },
+      200
+    );
+  }
+
+  // Snapshot "angka mati" akhir bulan kalender -- TERPISAH dari snapshot
+  // tanggal 15 di atas (yang nempel ke reset siklus billing jatuh-tempo-3
+  // dan TIDAK diubah). Ini permintaan Pemilik: dia mau Total User/Omset
+  // per bulan KALENDER beneran final begitu bulan itu habis, dihitung
+  // pakai cara yang sama seperti baris "bulan berjalan" live di Laporan
+  // Keuangan (getLaporanKeuangan.ts) -- exclude Pelanggan yang sedang
+  // isolir, dan exclude Pelanggan yang baru pasang BULAN INI (tagihan
+  // pertama mereka baru resmi masuk hitungan bulan depan). Upsert ke
+  // periode yang sama akan menimpa angka kasar dari snapshot tanggal 15,
+  // jadi baris bulan itu di app berakhir dengan angka yang lebih akurat.
+  if (jakartaIsLastDayOfMonth()) {
+    const { data: semuaPelanggan, error: monthEndFetchError } = await adminClient
+      .from("pelanggan")
+      .select(
+        "harga, tagihan_prorata, kompensasi_nominal, sudah_bayar_bulan_ini, is_isolir, tanggal_instalasi"
+      );
+
+    if (monthEndFetchError) {
+      return jsonResponse({ error: monthEndFetchError.message }, 500);
+    }
+
+    const periode = jakartaCurrentPeriode();
+    const yearMonthPrefix = periode.slice(0, 7); // "YYYY-MM"
+
+    let totalUser = 0;
+    let omset = 0;
+    let sudahBayar = 0;
+    let belumBayar = 0;
+
+    for (const p of semuaPelanggan ?? []) {
+      if (p.is_isolir) continue;
+      if (typeof p.tanggal_instalasi === "string" && p.tanggal_instalasi.startsWith(yearMonthPrefix)) {
+        continue;
+      }
+
+      const dasar = p.tagihan_prorata ?? p.harga ?? 0;
+      const tagihan = Math.max(dasar - (p.kompensasi_nominal ?? 0), 0);
+      totalUser += 1;
+      omset += tagihan;
+      if (p.sudah_bayar_bulan_ini) {
+        sudahBayar += tagihan;
+      } else {
+        belumBayar += tagihan;
+      }
+    }
+
+    const { error: monthEndSnapshotError } = await adminClient
+      .from("laporan_bulanan")
+      .upsert(
+        { periode, total_user: totalUser, omset, sudah_bayar: sudahBayar, belum_bayar: belumBayar },
+        { onConflict: "periode" }
+      );
+
+    if (monthEndSnapshotError) {
+      return jsonResponse({ error: monthEndSnapshotError.message }, 500);
+    }
+
+    return jsonResponse(
+      { action: "month-end-snapshot", periode, snapshot: { totalUser, omset, sudahBayar, belumBayar } },
       200
     );
   }

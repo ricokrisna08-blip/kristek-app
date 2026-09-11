@@ -7,7 +7,10 @@ angka bulan berjalan (Total User/Omset/Sudah Bayar/Belum Bayar) di-snapshot
 ke tabel `laporan_bulanan` (buat Laporan Keuangan Pemilik di app), baru
 setelah itu status "Sudah Bayar" di-reset (bukan awal siklus, cuma
 ngosongin status biar siap dipakai lagi buat siklus jatuh-tempo
-berikutnya). Baca seluruh file ini sebelum lanjut ke bagian jadwal cron.
+berikutnya). Hari terakhir tiap bulan kalender, ada snapshot KEDUA
+("angka mati" final bulan itu, exclude Pelanggan isolir & Pelanggan baru
+bulan itu) yang menimpa snapshot tanggal 15 buat periode yang sama. Baca
+seluruh file ini sebelum lanjut ke bagian jadwal cron.
 
 ## 1. Deploy function-nya
 

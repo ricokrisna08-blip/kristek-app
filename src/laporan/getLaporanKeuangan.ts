@@ -67,6 +67,20 @@ function currentPeriode(): string {
   return `${year}-${String(month).padStart(2, "0")}-01`;
 }
 
+// Pelanggan yang baru pasang di bulan kalender berjalan belum "resmi"
+// nyumbang ke Omset bulan ini -- tagihan prorata pertamanya baru
+// ditagihkan/dihitung mulai bulan berikutnya (permintaan Pemilik: supaya
+// Total User/Omset bulan berjalan nggak keburu naik cuma karena ada
+// instalasi baru beberapa hari terakhir). `tanggalInstalasiIso`:
+// "YYYY-MM-DD" (kolom `date` murni).
+function isInstalledThisCalendarMonth(tanggalInstalasiIso: string | null, now: Date): boolean {
+  if (!tanggalInstalasiIso) return false;
+  const install = new Date(`${tanggalInstalasiIso}T00:00:00`);
+  return (
+    install.getFullYear() === now.getFullYear() && install.getMonth() === now.getMonth()
+  );
+}
+
 export async function getLaporanKeuangan(
   client: SupabaseClient
 ): Promise<LaporanBulananItem[]> {
@@ -78,7 +92,7 @@ export async function getLaporanKeuangan(
     client
       .from("pelanggan")
       .select(
-        "harga, tagihan_prorata, kompensasi_nominal, sudah_bayar_bulan_ini, dc_flagged_lunas, is_isolir"
+        "harga, tagihan_prorata, kompensasi_nominal, sudah_bayar_bulan_ini, dc_flagged_lunas, is_isolir, tanggal_instalasi"
       ),
     client.from("pengeluaran").select("nominal, persen, tanggal, sudah_dibayar"),
   ]);
@@ -105,8 +119,12 @@ export async function getLaporanKeuangan(
   // Pelanggan yang sedang diisolir (koneksinya sudah diputus karena belum
   // bayar) dikeluarkan dari estimasi Omset -- dia bukan lagi bagian dari
   // "pelanggan aktif yang diharapkan bayar bulan ini" sampai dia bayar dan
-  // di-buka isolirnya lagi.
-  const pelangganRows = (pelangganResult.data ?? []).filter((row: any) => !row.is_isolir);
+  // di-buka isolirnya lagi. Pelanggan yang baru pasang bulan kalender ini
+  // juga dikeluarkan -- lihat isInstalledThisCalendarMonth.
+  const now = new Date();
+  const pelangganRows = (pelangganResult.data ?? []).filter(
+    (row: any) => !row.is_isolir && !isInstalledThisCalendarMonth(row.tanggal_instalasi, now)
+  );
   const totalUser = pelangganRows.length;
   let omset = 0;
   let sudahBayar = 0;
