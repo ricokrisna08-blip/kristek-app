@@ -27,6 +27,8 @@ import { deleteMikrotikSecret } from "../pelanggan/deleteMikrotikSecret";
 import { setPelangganIsolir } from "../pelanggan/setPelangganIsolir";
 import { endPelangganConnection } from "../pelanggan/endPelangganConnection";
 import { updatePelangganStatus } from "../pelanggan/updatePelangganStatus";
+import { listPelangganForExport } from "../pelanggan/listPelangganForExport";
+import { exportPelangganExcel } from "../pelanggan/exportPelangganExcel";
 import {
   canDeletePelanggan,
   canEditPelanggan,
@@ -35,6 +37,7 @@ import {
   canManageIsolir,
   canManageMikrotikUsername,
   canManagePelangganStatus,
+  canExportPelanggan,
 } from "../auth/permissions";
 import type { UserProfile } from "../auth/profile";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
@@ -135,6 +138,9 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [odpList, setOdpList] = useState<OdpListItem[]>([]);
   const [paketList, setPaketList] = useState<Paket[]>([]);
+
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const [selectedDetail, setSelectedDetail] = useState<PelangganDetail | null>(
     null
@@ -244,6 +250,18 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
 
     return () => subscription.remove();
   }, [selectedDetail]);
+
+  async function handleExportExcel() {
+    setExportError(null);
+    setIsExporting(true);
+    const rows = await listPelangganForExport(supabase);
+    const result = await exportPelangganExcel(rows);
+    setIsExporting(false);
+
+    if (!result.success) {
+      setExportError(result.error);
+    }
+  }
 
   async function handleSelect(item: PelangganListItem) {
     const detail = await getPelangganDetail(supabase, item.id);
@@ -1062,7 +1080,24 @@ export function PelangganManagementScreen({ profile, onBack }: Props) {
         title="Manajemen Pelanggan"
         subtitle={`${results.length} Pelanggan ditemukan`}
         onBack={onBack}
+        right={
+          canExportPelanggan(profile.role) ? (
+            <TouchableOpacity
+              style={styles.exportButton}
+              onPress={handleExportExcel}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.exportButtonText}>📥 Excel</Text>
+              )}
+            </TouchableOpacity>
+          ) : undefined
+        }
       />
+
+      {exportError ? <Text style={styles.exportErrorBanner}>{exportError}</Text> : null}
 
       <View style={styles.listBody}>
       <View style={styles.searchBox}>
@@ -1146,6 +1181,28 @@ const styles = StyleSheet.create({
   listContainer: {
     flex: 1,
     backgroundColor: "#F8FAFC",
+  },
+  exportButton: {
+    backgroundColor: "rgba(255,255,255,0.16)",
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    minWidth: 72,
+    alignItems: "center",
+  },
+  exportButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  exportErrorBanner: {
+    marginHorizontal: 24,
+    marginTop: 12,
+    fontSize: 12,
+    color: "#DC2626",
+    backgroundColor: "#FEE2E2",
+    borderRadius: 12,
+    padding: 12,
   },
   listBody: {
     flex: 1,
