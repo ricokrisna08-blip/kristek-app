@@ -227,32 +227,25 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
                   <Text style={[styles.cell, styles.cellBold, styles.numCell, { width: COL.omset }]}>
                     {formatAngka(item.omset)}
                   </Text>
-                  {/* Bulan berjalan ("bulan ini") masih estimasi -- siklus
-                      belum kelar, jadi status Sudah Bayar/Belum Bayar/dst
-                      belum benar-benar final. Cuma Total User & Omset yang
-                      berarti buat baris ini, sisanya dikosongkan sampai
-                      bulan itu selesai (jadi baris histori). */}
                   <Text
                     style={[styles.cell, styles.cellSuccess, styles.numCell, { width: COL.sudahBayar }]}
                   >
-                    {!item.isBulanIni && item.sudahBayar > 0 ? formatAngka(item.sudahBayar) : "-"}
+                    {item.sudahBayar > 0 ? formatAngka(item.sudahBayar) : "-"}
                   </Text>
                   <Text
                     style={[styles.cell, styles.cellDanger, styles.numCell, { width: COL.belumBayar }]}
                   >
-                    {!item.isBulanIni && item.belumBayar > 0 ? formatAngka(item.belumBayar) : "-"}
+                    {item.belumBayar > 0 ? formatAngka(item.belumBayar) : "-"}
                   </Text>
                   <Text
                     style={[styles.cell, styles.cellWarning, styles.numCell, { width: COL.diTanganDc }]}
                   >
-                    {!item.isBulanIni && item.diTanganDc > 0 ? formatAngka(item.diTanganDc) : "-"}
+                    {item.diTanganDc > 0 ? formatAngka(item.diTanganDc) : "-"}
                   </Text>
                   <Text
                     style={[styles.cell, styles.cellDanger, styles.numCell, { width: COL.pengeluaran }]}
                   >
-                    {!item.isBulanIni && item.totalPengeluaran > 0
-                      ? formatAngka(item.totalPengeluaran)
-                      : "-"}
+                    {item.totalPengeluaran > 0 ? formatAngka(item.totalPengeluaran) : "-"}
                   </Text>
                   <Text
                     style={[
@@ -263,12 +256,10 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
                       { width: COL.sisa },
                     ]}
                   >
-                    {item.isBulanIni ? "-" : formatAngka(item.sisaUang)}
+                    {formatAngka(item.sisaUang)}
                   </Text>
                   <Text style={[styles.cell, styles.numCell, { width: COL.persen }]}>
-                    {item.isBulanIni
-                      ? "-"
-                      : `${item.persen % 1 === 0 ? item.persen : item.persen.toFixed(1)}%`}
+                    {item.persen % 1 === 0 ? item.persen : item.persen.toFixed(1)}%
                   </Text>
                 </View>
               ))}
