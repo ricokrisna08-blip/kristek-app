@@ -153,22 +153,33 @@ export async function getLaporanKeuangan(
   }
 
   const periode = currentPeriode();
-  items.push({
-    periode,
-    label: formatPeriodeLabel(periode),
-    totalUser,
-    omset,
-    sudahBayar,
-    belumBayar,
-    diTanganDc,
-    totalPengeluaran: 0,
-    sisaUang: sudahBayar,
-    persen: persenOf(sudahBayar, omset),
-    isBulanIni: true,
-    jumlahIsolir,
-    angkaIsolir,
-    pendapatanSetelahIsolir: omset - angkaIsolir,
-  });
+  // Kalau snapshot tanggal 15 buat periode ini SUDAH sempat jalan (mis.
+  // baru saja terjadi hari ini), laporan_bulanan sudah punya baris final
+  // buat periode yang sama -- jangan dobel push baris live di atasnya
+  // (bakal keliatan 2 baris "Sep-26"). Baris histori itu yang lebih
+  // akurat (final, bukan estimasi), jadi live row di-skip dan baris
+  // histori itu cukup ditandain isBulanIni.
+  const existingHistoryItem = items.find((item) => item.periode === periode);
+  if (existingHistoryItem) {
+    existingHistoryItem.isBulanIni = true;
+  } else {
+    items.push({
+      periode,
+      label: formatPeriodeLabel(periode),
+      totalUser,
+      omset,
+      sudahBayar,
+      belumBayar,
+      diTanganDc,
+      totalPengeluaran: 0,
+      sisaUang: sudahBayar,
+      persen: persenOf(sudahBayar, omset),
+      isBulanIni: true,
+      jumlahIsolir,
+      angkaIsolir,
+      pendapatanSetelahIsolir: omset - angkaIsolir,
+    });
+  }
 
   const pengeluaranRows = (pengeluaranResult.data ?? []) as any[];
 

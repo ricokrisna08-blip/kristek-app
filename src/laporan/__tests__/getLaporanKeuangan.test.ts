@@ -275,6 +275,38 @@ test("a periode with Pengeluaran rows but no laporan_bulanan snapshot (e.g. cron
   });
 });
 
+test("when tanggal-15 snapshot already ran for the current periode, the historical row is used (not duplicated) and gets isBulanIni", async () => {
+  jest.useFakeTimers().setSystemTime(new Date(2026, 8, 15)); // 15 Sep 2026
+  try {
+    const client = fakeClient({
+      history: [
+        { periode: "2026-08-01", total_user: 130, omset: 21000499, sudah_bayar: 19845499, belum_bayar: 1155000 },
+        // Snapshot tanggal 15 SUDAH sempat jalan buat September (mis.
+        // manual trigger setelah cron sempat gagal beberapa hari).
+        { periode: "2026-09-01", total_user: 137, omset: 22540000, sudah_bayar: 20920000, belum_bayar: 1620000 },
+      ],
+      pelanggan: [
+        { harga: 165000, sudah_bayar_bulan_ini: false },
+        { harga: 200000, sudah_bayar_bulan_ini: false },
+      ],
+    });
+
+    const result = await getLaporanKeuangan(client);
+
+    const septemberRows = result.filter((item) => item.periode === "2026-09-01");
+    expect(septemberRows).toHaveLength(1);
+    expect(septemberRows[0]).toMatchObject({
+      isBulanIni: true,
+      totalUser: 137,
+      omset: 22540000,
+      sudahBayar: 20920000,
+      belumBayar: 1620000,
+    });
+  } finally {
+    jest.useRealTimers();
+  }
+});
+
 describe("live current month periode follows the tanggal 11 display cutoff, not the calendar month", () => {
   afterEach(() => {
     jest.useRealTimers();
