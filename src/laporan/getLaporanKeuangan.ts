@@ -48,27 +48,17 @@ function persenOf(sudahBayar: number, omset: number): number {
   return Math.round((sudahBayar / omset) * 1000) / 10;
 }
 
-// Siklus billing beneran tutup tiap tanggal 15 (reset sudah_bayar_bulan_ini
-// + snapshot laporan_bulanan, lihat mikrotik-daily-billing-cycle) -- jadi
-// tanggal 15 juga batas buat TAMPILAN "bulan berjalan": sebelum tanggal
-// itu, siklus bulan kalender ini belum ditutup, jadi baris live masih
-// nunjuk ke bulan sebelumnya; begitu tanggal 15 lewat (siklus ditutup),
-// pembayaran early yang masuk sudah resmi milik bulan kalender berjalan.
-const BULAN_INI_DISPLAY_CUTOFF_DAY = 15;
-
+// Baris "bulan ini" SELALU ngikutin bulan kalender hari ini, nggak nunggu
+// tanggal berapa pun -- siklus billing beneran (reset tanggal 15, lihat
+// mikrotik-daily-billing-cycle) tetap jalan apa adanya di belakang layar,
+// tapi TAMPILAN live-nya (Sudah Bayar/Belum Bayar dst di bawah, per
+// centangan Pelanggan saat ini) harus selalu kelihatan langsung begitu
+// ada perubahan, kapan pun tanggalnya -- termasuk yang telat bayar
+// mepet tanggal 14 sekalipun.
 function currentPeriode(): string {
   const now = new Date();
-  let year = now.getFullYear();
-  let month = now.getMonth() + 1; // 1-12
-
-  if (now.getDate() < BULAN_INI_DISPLAY_CUTOFF_DAY) {
-    month -= 1;
-    if (month === 0) {
-      month = 12;
-      year -= 1;
-    }
-  }
-
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1; // 1-12
   return `${year}-${String(month).padStart(2, "0")}-01`;
 }
 

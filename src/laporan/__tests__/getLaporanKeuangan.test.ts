@@ -310,22 +310,13 @@ test("when tanggal-15 snapshot already ran for the current periode, the live row
   }
 });
 
-describe("live current month periode follows the tanggal 15 billing-reset boundary, not the calendar month", () => {
+describe("live current month periode always follows today's calendar month", () => {
   afterEach(() => {
     jest.useRealTimers();
   });
 
-  test("before tanggal 15, the live row still points to the previous month (siklus belum direset)", async () => {
-    jest.useFakeTimers().setSystemTime(new Date(2026, 8, 14)); // 14 Sep 2026
-    const client = fakeClient({ history: [], pelanggan: [] });
-
-    const result = await getLaporanKeuangan(client);
-
-    expect(result[0]).toMatchObject({ periode: "2026-08-01", label: "Aug-26", isBulanIni: true });
-  });
-
-  test("from tanggal 15 onward, the live row moves to the current calendar month", async () => {
-    jest.useFakeTimers().setSystemTime(new Date(2026, 8, 15)); // 15 Sep 2026
+  test("early in the month, the live row already points to this calendar month (no cutoff delay)", async () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 8, 1)); // 1 Sep 2026
     const client = fakeClient({ history: [], pelanggan: [] });
 
     const result = await getLaporanKeuangan(client);
@@ -333,12 +324,29 @@ describe("live current month periode follows the tanggal 15 billing-reset bounda
     expect(result[0]).toMatchObject({ periode: "2026-09-01", label: "Sep-26", isBulanIni: true });
   });
 
-  test("rolling back from January wraps to December of the previous year", async () => {
-    jest.useFakeTimers().setSystemTime(new Date(2026, 0, 5)); // 5 Jan 2026
+  test("a late payment on tanggal 14 still shows up live, under the current month", async () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 8, 14)); // 14 Sep 2026
+    const client = fakeClient({
+      history: [],
+      pelanggan: [{ harga: 165000, sudah_bayar_bulan_ini: true }],
+    });
+
+    const result = await getLaporanKeuangan(client);
+
+    expect(result[0]).toMatchObject({
+      periode: "2026-09-01",
+      label: "Sep-26",
+      isBulanIni: true,
+      sudahBayar: 165000,
+    });
+  });
+
+  test("rolling over from December wraps to January of the next year", async () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 11, 20)); // 20 Dec 2026
     const client = fakeClient({ history: [], pelanggan: [] });
 
     const result = await getLaporanKeuangan(client);
 
-    expect(result[0]).toMatchObject({ periode: "2025-12-01", label: "Dec-25", isBulanIni: true });
+    expect(result[0]).toMatchObject({ periode: "2026-12-01", label: "Dec-26", isBulanIni: true });
   });
 });
