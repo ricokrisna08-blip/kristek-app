@@ -275,18 +275,19 @@ test("a periode with Pengeluaran rows but no laporan_bulanan snapshot (e.g. cron
   });
 });
 
-test("when tanggal-15 snapshot already ran for the current periode, the historical row is used (not duplicated) and gets isBulanIni", async () => {
+test("when tanggal-15 snapshot already ran for the current periode, the live row stays live instead of freezing (early payment after reset shows up immediately)", async () => {
   jest.useFakeTimers().setSystemTime(new Date(2026, 8, 15)); // 15 Sep 2026
   try {
     const client = fakeClient({
       history: [
         { periode: "2026-08-01", total_user: 130, omset: 21000499, sudah_bayar: 19845499, belum_bayar: 1155000 },
-        // Snapshot tanggal 15 SUDAH sempat jalan buat September (mis.
-        // manual trigger setelah cron sempat gagal beberapa hari).
+        // Snapshot tanggal 15 baru saja jalan buat September pagi ini --
+        // angkanya BEKU di titik itu, tapi ada Pelanggan (mis. "Ami")
+        // yang baru dicentang Sudah Bayar SETELAH snapshot itu.
         { periode: "2026-09-01", total_user: 137, omset: 22540000, sudah_bayar: 20920000, belum_bayar: 1620000 },
       ],
       pelanggan: [
-        { harga: 165000, sudah_bayar_bulan_ini: false },
+        { harga: 165000, sudah_bayar_bulan_ini: true },
         { harga: 200000, sudah_bayar_bulan_ini: false },
       ],
     });
@@ -295,25 +296,27 @@ test("when tanggal-15 snapshot already ran for the current periode, the historic
 
     const septemberRows = result.filter((item) => item.periode === "2026-09-01");
     expect(septemberRows).toHaveLength(1);
+    // Bukan angka beku dari snapshot (20920000/1620000) -- ini angka LIVE
+    // dari tabel pelanggan, yang sudah mencerminkan centangan baru.
     expect(septemberRows[0]).toMatchObject({
       isBulanIni: true,
-      totalUser: 137,
-      omset: 22540000,
-      sudahBayar: 20920000,
-      belumBayar: 1620000,
+      totalUser: 2,
+      omset: 365000,
+      sudahBayar: 165000,
+      belumBayar: 200000,
     });
   } finally {
     jest.useRealTimers();
   }
 });
 
-describe("live current month periode follows the tanggal 11 display cutoff, not the calendar month", () => {
+describe("live current month periode follows the tanggal 15 billing-reset boundary, not the calendar month", () => {
   afterEach(() => {
     jest.useRealTimers();
   });
 
-  test("before tanggal 11, the live row still points to the previous month (siklus belum direset, tapi tampilan udah geser)", async () => {
-    jest.useFakeTimers().setSystemTime(new Date(2026, 8, 1)); // 1 Sep 2026
+  test("before tanggal 15, the live row still points to the previous month (siklus belum direset)", async () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 8, 14)); // 14 Sep 2026
     const client = fakeClient({ history: [], pelanggan: [] });
 
     const result = await getLaporanKeuangan(client);
@@ -321,8 +324,8 @@ describe("live current month periode follows the tanggal 11 display cutoff, not 
     expect(result[0]).toMatchObject({ periode: "2026-08-01", label: "Aug-26", isBulanIni: true });
   });
 
-  test("from tanggal 11 onward, the live row moves to the current calendar month", async () => {
-    jest.useFakeTimers().setSystemTime(new Date(2026, 8, 11)); // 11 Sep 2026
+  test("from tanggal 15 onward, the live row moves to the current calendar month", async () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 8, 15)); // 15 Sep 2026
     const client = fakeClient({ history: [], pelanggan: [] });
 
     const result = await getLaporanKeuangan(client);

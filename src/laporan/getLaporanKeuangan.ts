@@ -48,15 +48,13 @@ function persenOf(sudahBayar: number, omset: number): number {
   return Math.round((sudahBayar / omset) * 1000) / 10;
 }
 
-// Siklus billing beneran (reset sudah_bayar_bulan_ini, snapshot
-// laporan_bulanan) baru terjadi tanggal 15 -- lihat
-// mikrotik-daily-billing-cycle, itu TIDAK berubah. Ini cuma soal kapan
-// baris "bulan berjalan" di TAMPILAN Laporan Keuangan mulai nunjuk ke
-// bulan kalender baru (permintaan Pemilik: tanggal 11, supaya Omset bulan
-// baru kelihatan lebih awal) -- sebelum tanggal itu, tabelnya masih nunjuk
-// ke bulan sebelumnya. Sengaja terpisah dari CUTOFF_DAY di
-// computeProrata.ts (beda concern: itu ngitung prorata tagihan pertama).
-const BULAN_INI_DISPLAY_CUTOFF_DAY = 11;
+// Siklus billing beneran tutup tiap tanggal 15 (reset sudah_bayar_bulan_ini
+// + snapshot laporan_bulanan, lihat mikrotik-daily-billing-cycle) -- jadi
+// tanggal 15 juga batas buat TAMPILAN "bulan berjalan": sebelum tanggal
+// itu, siklus bulan kalender ini belum ditutup, jadi baris live masih
+// nunjuk ke bulan sebelumnya; begitu tanggal 15 lewat (siklus ditutup),
+// pembayaran early yang masuk sudah resmi milik bulan kalender berjalan.
+const BULAN_INI_DISPLAY_CUTOFF_DAY = 15;
 
 function currentPeriode(): string {
   const now = new Date();
@@ -90,7 +88,15 @@ export async function getLaporanKeuangan(
     client.from("pengeluaran").select("nominal, persen, tanggal, sudah_dibayar"),
   ]);
 
-  const history = historyResult.data ?? [];
+  const periode = currentPeriode();
+
+  // Snapshot laporan_bulanan buat periode BERJALAN sendiri (kalau tanggal
+  // 15 sudah lewat hari ini) sengaja DIABAIKAN di sini -- baris "bulan
+  // ini" harus tetap LIVE (pembayaran yang baru masuk setelah reset
+  // langsung kelihatan), bukan beku di angka pas-reset-tadi-pagi. Baris
+  // histori beneran cuma buat bulan-bulan yang SUDAH LEWAT dari periode
+  // berjalan.
+  const history = (historyResult.data ?? []).filter((row: any) => row.periode !== periode);
   const items: LaporanBulananItem[] = history.map((row: any) => ({
     periode: row.periode,
     label: formatPeriodeLabel(row.periode),
@@ -152,34 +158,22 @@ export async function getLaporanKeuangan(
     }
   }
 
-  const periode = currentPeriode();
-  // Kalau snapshot tanggal 15 buat periode ini SUDAH sempat jalan (mis.
-  // baru saja terjadi hari ini), laporan_bulanan sudah punya baris final
-  // buat periode yang sama -- jangan dobel push baris live di atasnya
-  // (bakal keliatan 2 baris "Sep-26"). Baris histori itu yang lebih
-  // akurat (final, bukan estimasi), jadi live row di-skip dan baris
-  // histori itu cukup ditandain isBulanIni.
-  const existingHistoryItem = items.find((item) => item.periode === periode);
-  if (existingHistoryItem) {
-    existingHistoryItem.isBulanIni = true;
-  } else {
-    items.push({
-      periode,
-      label: formatPeriodeLabel(periode),
-      totalUser,
-      omset,
-      sudahBayar,
-      belumBayar,
-      diTanganDc,
-      totalPengeluaran: 0,
-      sisaUang: sudahBayar,
-      persen: persenOf(sudahBayar, omset),
-      isBulanIni: true,
-      jumlahIsolir,
-      angkaIsolir,
-      pendapatanSetelahIsolir: omset - angkaIsolir,
-    });
-  }
+  items.push({
+    periode,
+    label: formatPeriodeLabel(periode),
+    totalUser,
+    omset,
+    sudahBayar,
+    belumBayar,
+    diTanganDc,
+    totalPengeluaran: 0,
+    sisaUang: sudahBayar,
+    persen: persenOf(sudahBayar, omset),
+    isBulanIni: true,
+    jumlahIsolir,
+    angkaIsolir,
+    pendapatanSetelahIsolir: omset - angkaIsolir,
+  });
 
   const pengeluaranRows = (pengeluaranResult.data ?? []) as any[];
 
