@@ -363,6 +363,14 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
               </View>
             ))
           )}
+          {pengeluaranItems.length > 0 ? (
+            <View style={styles.pengeluaranTotalRow}>
+              <Text style={styles.pengeluaranTotalLabel}>Total Pengeluaran</Text>
+              <Text style={styles.pengeluaranTotalValue}>
+                {formatHarga(pengeluaranItems.reduce((sum, p) => sum + p.efektif, 0))}
+              </Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
       </ScrollView>
@@ -704,6 +712,26 @@ const styles = StyleSheet.create({
   deleteIcon: {
     fontSize: 16,
     marginLeft: 8,
+  },
+  pengeluaranTotalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    marginTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: "#E4E7EB",
+  },
+  pengeluaranTotalLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: KRISTEK_NAVY,
+  },
+  pengeluaranTotalValue: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#DC2626",
   },
   backdrop: {
     flex: 1,
