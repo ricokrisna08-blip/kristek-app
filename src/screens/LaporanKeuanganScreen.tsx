@@ -73,6 +73,8 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const selectedItem = items.find((i) => i.periode === selectedPeriode) ?? null;
+  const totalPengeluaranTercatat = pengeluaranItems.reduce((sum, p) => sum + p.efektif, 0);
+  const sisaUangOmset = (selectedItem?.omset ?? 0) - totalPengeluaranTercatat;
 
   // periode & pengeluaran dimuat bareng (bukan 2 effect terpisah) supaya
   // gampang dipanggil ulang utuh dari mana aja (habis save/hapus/centang,
@@ -367,7 +369,7 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
             <View style={styles.pengeluaranTotalRow}>
               <Text style={styles.pengeluaranTotalLabel}>Total Pengeluaran</Text>
               <Text style={styles.pengeluaranTotalValue}>
-                {formatHarga(pengeluaranItems.reduce((sum, p) => sum + p.efektif, 0))}
+                {formatHarga(totalPengeluaranTercatat)}
               </Text>
             </View>
           ) : null}
@@ -377,10 +379,10 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
               <Text
                 style={[
                   styles.pengeluaranTotalValue,
-                  selectedItem.sisaUang < 0 ? styles.pengeluaranSisaNegatif : styles.pengeluaranSisaPositif,
+                  sisaUangOmset < 0 ? styles.pengeluaranSisaNegatif : styles.pengeluaranSisaPositif,
                 ]}
               >
-                {formatHarga(selectedItem.sisaUang)}
+                {formatHarga(sisaUangOmset)}
               </Text>
             </View>
           ) : null}
