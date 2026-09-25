@@ -73,8 +73,15 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const selectedItem = items.find((i) => i.periode === selectedPeriode) ?? null;
+  const bulanIniItem = items.find((item) => item.isBulanIni) ?? null;
   const totalPengeluaranTercatat = pengeluaranItems.reduce((sum, p) => sum + p.efektif, 0);
-  const sisaUangOmset = (selectedItem?.omset ?? 0) - totalPengeluaranTercatat;
+  // Pendapatan setelah isolir == Omset kalau nggak ada isolir bulan itu
+  // (angkaIsolir 0), jadi formula ini otomatis nyusut jadi "Omset - Total
+  // Pengeluaran" waktu nggak ada isolir, tanpa perlu cabang terpisah.
+  const sisaUangOmset = (selectedItem?.pendapatanSetelahIsolir ?? 0) - totalPengeluaranTercatat;
+  const sisaUangDiKotakIsolir = Boolean(
+    bulanIniItem && bulanIniItem.jumlahIsolir > 0 && selectedItem?.periode === bulanIniItem.periode
+  );
 
   // periode & pengeluaran dimuat bareng (bukan 2 effect terpisah) supaya
   // gampang dipanggil ulang utuh dari mana aja (habis save/hapus/centang,
@@ -162,8 +169,6 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
     await setPengeluaranSudahDibayar(supabase, item.id, !item.sudahDibayar);
     await reloadAll();
   }
-
-  const bulanIniItem = items.find((item) => item.isBulanIni) ?? null;
 
   return (
     <View style={styles.screen}>
@@ -285,6 +290,19 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
             Pendapatan setelah dikeluarkan data isolir adalah{" "}
             <Text style={styles.cellBold}>{formatAngka(bulanIniItem.pendapatanSetelahIsolir)}</Text>
           </Text>
+          {sisaUangDiKotakIsolir && pengeluaranItems.length > 0 ? (
+            <View style={styles.pengeluaranSisaRow}>
+              <Text style={styles.pengeluaranTotalLabel}>Sisa Uang</Text>
+              <Text
+                style={[
+                  styles.pengeluaranTotalValue,
+                  sisaUangOmset < 0 ? styles.pengeluaranSisaNegatif : styles.pengeluaranSisaPositif,
+                ]}
+              >
+                {formatHarga(sisaUangOmset)}
+              </Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
       <Text style={styles.note}>
@@ -294,12 +312,16 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
         lalu balik normal lagi di siklus berikutnya. Kolom "Di Tangan DC" adalah
         bagian dari Belum Bayar yang sudah dicentang DC ("sudah bayar ke saya")
         tapi masih menunggu approval Pemilik -- uangnya sudah bukan lagi di
-        Pelanggan, tapi belum resmi lunas sampai di-Setujui. Pengeluaran dicatat
-        sebagai rencana dulu -- centang di list bawah begitu beneran dibayar,
-        baru ikut kehitung ke kolom Pengeluaran/"Sisa Uang" (= Sudah Bayar
-        dikurangi Pengeluaran yang sudah dicentang). Baris pengeluaran yang
-        diisi Persen (%) dihitung otomatis dari Sudah Bayar bulan itu, ikut
-        naik/turun kalau ada pelanggan baru bayar.
+        Pelanggan, tapi belum resmi lunas sampai di-Setujui. "Sisa Uang" di
+        bawah list Pengeluaran = Omset dikurangi Total Pengeluaran yang
+        tercatat bulan itu (baik yang sudah maupun belum dicentang dibayar);
+        kalau ada Pelanggan isolir bulan ini, Omset yang dipakai sudah
+        dikurangi Angka Isolir duluan (lihat kotak isolir di atas). Pelanggan
+        yang lagi diisolir otomatis jadi Nonaktif dan tidak lagi ikut
+        kehitung di Total User/Omset/Sudah Bayar/Belum Bayar sampai
+        isolirnya dicabut. Baris pengeluaran yang diisi Persen (%) dihitung
+        otomatis dari Sudah Bayar bulan itu, ikut naik/turun kalau ada
+        pelanggan baru bayar.
       </Text>
 
       {!isLoading ? (
@@ -373,7 +395,7 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
               </Text>
             </View>
           ) : null}
-          {pengeluaranItems.length > 0 && selectedItem ? (
+          {pengeluaranItems.length > 0 && selectedItem && !sisaUangDiKotakIsolir ? (
             <View style={styles.pengeluaranSisaRow}>
               <Text style={styles.pengeluaranTotalLabel}>Sisa Uang</Text>
               <Text

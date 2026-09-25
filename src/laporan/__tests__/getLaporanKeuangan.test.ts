@@ -16,6 +16,7 @@ function fakeClient(options: {
     sudah_bayar_bulan_ini: boolean;
     dc_flagged_lunas?: boolean;
     is_isolir?: boolean;
+    is_active?: boolean;
   }>;
   pengeluaran?: Array<{
     nominal: number | null;
@@ -106,6 +107,33 @@ test("live current month keeps Pelanggan currently isolir in Total User/Omset/Be
     belumBayar: 200000,
     jumlahIsolir: 1,
     angkaIsolir: 200000,
+    pendapatanSetelahIsolir: 165000,
+  });
+});
+
+test("live current month excludes Nonaktif (is_active=false) Pelanggan entirely -- isolir now auto-flags Nonaktif so they drop out of Total User/Omset/Sudah Bayar/Belum Bayar", async () => {
+  const client = fakeClient({
+    history: [],
+    pelanggan: [
+      { harga: 165000, sudah_bayar_bulan_ini: true },
+      {
+        harga: 200000,
+        sudah_bayar_bulan_ini: false,
+        is_isolir: true,
+        is_active: false,
+      },
+    ],
+  });
+
+  const result = await getLaporanKeuangan(client);
+
+  expect(result[0]).toMatchObject({
+    totalUser: 1,
+    omset: 165000,
+    sudahBayar: 165000,
+    belumBayar: 0,
+    jumlahIsolir: 0,
+    angkaIsolir: 0,
     pendapatanSetelahIsolir: 165000,
   });
 });

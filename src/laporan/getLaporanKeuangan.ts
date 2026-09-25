@@ -73,7 +73,7 @@ export async function getLaporanKeuangan(
     client
       .from("pelanggan")
       .select(
-        "harga, tagihan_prorata, kompensasi_nominal, sudah_bayar_bulan_ini, dc_flagged_lunas, is_isolir"
+        "harga, tagihan_prorata, kompensasi_nominal, sudah_bayar_bulan_ini, dc_flagged_lunas, is_isolir, is_active"
       ),
     client.from("pengeluaran").select("nominal, persen, tanggal, sudah_dibayar"),
   ]);
@@ -108,13 +108,18 @@ export async function getLaporanKeuangan(
     pendapatanSetelahIsolir: row.omset,
   }));
 
-  // Total User & Omset baris live ikut SEMUA Pelanggan (termasuk yang baru
-  // pasang bulan ini dan yang lagi isolir) -- keduanya bergerak bareng,
-  // nggak ada exclude diam-diam. Isolir ditampilkan terpisah lewat
-  // jumlahIsolir/angkaIsolir/pendapatanSetelahIsolir di bawah supaya
-  // Pemilik bisa lihat dampaknya secara transparan tanpa Omset jadi
-  // ganjil dibanding Total User.
-  const pelangganRows = pelangganResult.data ?? [];
+  // Total User & Omset baris live ikut SEMUA Pelanggan AKTIF (termasuk yang
+  // baru pasang bulan ini) -- Pelanggan Nonaktif (is_active=false) di-skip
+  // total, nggak ikut kehitung sama sekali. Isolir manual/otomatis (lihat
+  // mikrotik-set-isolir & mikrotik-daily-billing-cycle) otomatis nge-set
+  // is_active=false juga, jadi begitu Pelanggan diisolir, langsung hilang
+  // dari angka pembayaran. jumlahIsolir/angkaIsolir di bawah cuma nyisa
+  // buat kasus lama (is_isolir=true tapi is_active masih true dari
+  // sebelum linkage ini ada) -- transparansi transisi, bukan exclude
+  // kedua kalinya.
+  const pelangganRows = (pelangganResult.data ?? []).filter(
+    (row: any) => row.is_active !== false
+  );
   const totalUser = pelangganRows.length;
   let omset = 0;
   let sudahBayar = 0;

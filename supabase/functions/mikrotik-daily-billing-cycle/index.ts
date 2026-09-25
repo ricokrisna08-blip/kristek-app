@@ -425,9 +425,14 @@ Deno.serve(async (req) => {
       continue;
     }
 
+    // Isolir otomatis krn nunggak juga digandeng ke Nonaktif ("is_active")
+    // supaya langsung nggak ikut kehitung di angka pembayaran Laporan
+    // Keuangan -- sama kayak isolir manual lewat tombol di app (lihat
+    // mikrotik-set-isolir). Cabut isolir tetap manual lewat app, jadi
+    // is_active cuma dibalikin true di situ, bukan di sini.
     const { error: updateError } = await adminClient
       .from("pelanggan")
-      .update({ is_isolir: true, isolir_at: new Date().toISOString() })
+      .update({ is_isolir: true, isolir_at: new Date().toISOString(), is_active: false })
       .eq("id", pelanggan.id);
 
     if (updateError) {

@@ -197,9 +197,14 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: result.error }, 502);
   }
 
+  // Isolir dan status Nonaktif ("is_active") sengaja digandeng otomatis di
+  // sini -- Pelanggan yang lagi diisolir seharusnya nggak ikut kehitung di
+  // angka pembayaran Laporan Keuangan (lihat getLaporanKeuangan.ts). Cabut
+  // isolir otomatis balikin Aktif lagi, simetris, supaya nggak ada yang
+  // kelupaan manual re-aktifin dan nyangkut nggak ketagih terus-terusan.
   const { error: updateError } = await adminClient
     .from("pelanggan")
-    .update({ is_isolir: isolir, isolir_at: new Date().toISOString() })
+    .update({ is_isolir: isolir, isolir_at: new Date().toISOString(), is_active: !isolir })
     .eq("id", pelangganId);
 
   if (updateError) {
