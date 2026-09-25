@@ -371,6 +371,19 @@ export function LaporanKeuanganScreen({ profile, onBack }: Props) {
               </Text>
             </View>
           ) : null}
+          {pengeluaranItems.length > 0 && selectedItem ? (
+            <View style={styles.pengeluaranSisaRow}>
+              <Text style={styles.pengeluaranTotalLabel}>Sisa Uang</Text>
+              <Text
+                style={[
+                  styles.pengeluaranTotalValue,
+                  selectedItem.sisaUang < 0 ? styles.pengeluaranSisaNegatif : styles.pengeluaranSisaPositif,
+                ]}
+              >
+                {formatHarga(selectedItem.sisaUang)}
+              </Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
       </ScrollView>
@@ -731,6 +744,19 @@ const styles = StyleSheet.create({
   pengeluaranTotalValue: {
     fontSize: 15,
     fontWeight: "700",
+    color: "#DC2626",
+  },
+  pengeluaranSisaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  pengeluaranSisaPositif: {
+    color: "#16A34A",
+  },
+  pengeluaranSisaNegatif: {
     color: "#DC2626",
   },
   backdrop: {
