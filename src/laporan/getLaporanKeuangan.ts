@@ -48,17 +48,25 @@ function persenOf(sudahBayar: number, omset: number): number {
   return Math.round((sudahBayar / omset) * 1000) / 10;
 }
 
-// Baris "bulan ini" SELALU ngikutin bulan kalender hari ini, nggak nunggu
-// tanggal berapa pun -- siklus billing beneran (reset tanggal 15, lihat
-// mikrotik-daily-billing-cycle) tetap jalan apa adanya di belakang layar,
-// tapi TAMPILAN live-nya (Sudah Bayar/Belum Bayar dst di bawah, per
-// centangan Pelanggan saat ini) harus selalu kelihatan langsung begitu
-// ada perubahan, kapan pun tanggalnya -- termasuk yang telat bayar
-// mepet tanggal 14 sekalipun.
+// Baris "bulan ini" baru pindah ke bulan kalender baru pas tanggal 10 --
+// sebelum itu (tanggal 1-9), Omset bulan baru belum relevan buat dilihat
+// Pemilik, jadi baris live tetap nunjuk bulan sebelumnya. Siklus billing
+// beneran (reset tanggal 15, lihat mikrotik-daily-billing-cycle) tetap
+// jalan apa adanya di belakang layar -- ini murni cutoff TAMPILAN, bukan
+// nunda reset beneran.
+const LIVE_PERIODE_CUTOFF_DAY = 10;
+
 function currentPeriode(): string {
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1; // 1-12
+  let year = now.getFullYear();
+  let month = now.getMonth() + 1; // 1-12
+  if (now.getDate() < LIVE_PERIODE_CUTOFF_DAY) {
+    month -= 1;
+    if (month === 0) {
+      month = 12;
+      year -= 1;
+    }
+  }
   return `${year}-${String(month).padStart(2, "0")}-01`;
 }
 
