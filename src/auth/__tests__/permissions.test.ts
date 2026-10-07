@@ -4,6 +4,7 @@ import {
   canViewOdp,
   canCreateOdp,
   canViewPelanggan,
+  canViewIsolirMonitor,
   canCreatePelanggan,
   canManagePaket,
   canCreateTiket,
@@ -81,6 +82,20 @@ test("Admin can view Pelanggan", () => {
 
 test("Teknisi cannot view Pelanggan (in this ticket's screen)", () => {
   expect(canViewPelanggan("teknisi")).toBe(false);
+});
+
+test("DC can view Monitor Isolir, even though DC cannot view Kelola Pelanggan", () => {
+  expect(canViewIsolirMonitor("dc")).toBe(true);
+  expect(canViewPelanggan("dc")).toBe(false);
+});
+
+test("Pemilik and Admin can also view Monitor Isolir", () => {
+  expect(canViewIsolirMonitor("pemilik")).toBe(true);
+  expect(canViewIsolirMonitor("admin")).toBe(true);
+});
+
+test("Teknisi cannot view Monitor Isolir", () => {
+  expect(canViewIsolirMonitor("teknisi")).toBe(false);
 });
 
 test("Admin can create Pelanggan", () => {

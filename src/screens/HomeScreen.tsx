@@ -10,6 +10,7 @@ import {
   canManageWilayah,
   canViewOdp,
   canViewPelanggan,
+  canViewIsolirMonitor,
   canManagePaket,
   canCreateTiket,
   canViewAllTiket,
@@ -140,6 +141,8 @@ export function HomeScreen({
   }
   if (canViewPelanggan(profile.role)) {
     menuItems.push({ key: "pelanggan", icon: "👥", label: "Kelola Pelanggan", onPress: onNavigateToPelanggan });
+  }
+  if (canViewIsolirMonitor(profile.role)) {
     menuItems.push({
       key: "isolirMonitor",
       icon: "🚫",

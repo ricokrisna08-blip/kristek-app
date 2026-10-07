@@ -28,6 +28,13 @@ export function canViewPelanggan(role: Role): boolean {
   return role === "pemilik" || role === "admin";
 }
 
+// DC perlu lihat Pelanggan yang sedang diisolir supaya bisa tetap
+// ditagih di lapangan, meskipun DC tidak dikasih akses "Kelola
+// Pelanggan" (canViewPelanggan) secara umum.
+export function canViewIsolirMonitor(role: Role): boolean {
+  return role === "pemilik" || role === "admin" || role === "dc";
+}
+
 export function canCreatePelanggan(role: Role): boolean {
   return role === "admin" || role === "pemilik";
 }
