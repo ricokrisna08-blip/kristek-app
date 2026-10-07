@@ -23,7 +23,7 @@ export async function listBelumBayarUntukDc(
   const { data, error } = await client
     .from("pelanggan")
     .select(
-      "id, nama, alamat, no_hp, catatan, harga, tagihan_prorata, kompensasi_nominal, dc_flagged_lunas, dc_flagged_by, prioritas_dc, is_active"
+      "id, nama, alamat, no_hp, catatan, harga, tagihan_prorata, kompensasi_nominal, dc_flagged_lunas, dc_flagged_by, prioritas_dc, is_active, is_isolir"
     )
     .eq("sudah_bayar_bulan_ini", false)
     .order("prioritas_dc", { ascending: false })
@@ -34,10 +34,12 @@ export async function listBelumBayarUntukDc(
   }
 
   return data
-    // Pelanggan Nonaktif (termasuk yang otomatis Nonaktif krn diisolir,
-    // lihat getLaporanKeuangan.ts) sudah nggak ikut ditagih -- jangan
-    // muncul di daftar Prioritas/Penagihan DC juga.
-    .filter((row: any) => row.is_active !== false)
+    // Pelanggan Nonaktif MANUAL (mis. sudah berhenti berlangganan) nggak
+    // ikut ditagih lagi -- tetap di-exclude. Tapi Nonaktif OTOMATIS krn
+    // diisolir (lihat getLaporanKeuangan.ts) masih harus muncul di sini --
+    // itu justru tagihan yang perlu DC tagih di lapangan supaya isolirnya
+    // bisa dicabut.
+    .filter((row: any) => row.is_active !== false || row.is_isolir === true)
     .map((row: any) => {
       const dasar = row.tagihan_prorata ?? row.harga ?? 0;
       const tagihan = Math.max(dasar - (row.kompensasi_nominal ?? 0), 0);

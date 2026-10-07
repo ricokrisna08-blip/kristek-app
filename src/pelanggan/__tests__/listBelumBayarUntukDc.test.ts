@@ -14,6 +14,7 @@ type Row = {
   dc_flagged_by?: string | null;
   prioritas_dc?: boolean;
   is_active?: boolean;
+  is_isolir?: boolean;
 };
 
 function fakeClient(rows: Row[]): SupabaseClient {
@@ -122,10 +123,21 @@ test("returns an empty array instead of throwing on query error", async () => {
   expect(result).toEqual([]);
 });
 
-test("excludes Pelanggan Nonaktif (is_active=false) -- e.g. auto-Nonaktif from isolir -- from the DC list entirely", async () => {
+test("excludes Pelanggan Nonaktif MANUAL (is_active=false, not isolir) -- e.g. sudah berhenti berlangganan", async () => {
   const client = fakeClient([
     { id: "p1", nama: "Budi", alamat: "A", harga: 100000, dc_flagged_lunas: false, is_active: true },
-    { id: "p2", nama: "Siti", alamat: "B", harga: 100000, dc_flagged_lunas: false, is_active: false },
+    { id: "p2", nama: "Siti", alamat: "B", harga: 100000, dc_flagged_lunas: false, is_active: false, is_isolir: false },
+  ]);
+
+  const result = await listBelumBayarUntukDc(client, "dc-1");
+
+  expect(result).toHaveLength(1);
+  expect(result[0]).toMatchObject({ id: "p1" });
+});
+
+test("still includes Pelanggan auto-Nonaktif from isolir (is_active=false, is_isolir=true) -- DC needs to keep billing them", async () => {
+  const client = fakeClient([
+    { id: "p1", nama: "Budi", alamat: "A", harga: 100000, dc_flagged_lunas: false, is_active: false, is_isolir: true },
   ]);
 
   const result = await listBelumBayarUntukDc(client, "dc-1");
