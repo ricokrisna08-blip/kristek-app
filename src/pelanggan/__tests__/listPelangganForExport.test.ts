@@ -51,7 +51,7 @@ test("maps Pelanggan rows including Paket name", async () => {
   ]);
 });
 
-test("status is Nonaktif when is_active is false, regardless of isolir", async () => {
+test("status is Nonaktif when is_active is false and not isolir -- genuinely berhenti berlangganan", async () => {
   const client = fakeClient({
     data: [
       {
@@ -60,7 +60,7 @@ test("status is Nonaktif when is_active is false, regardless of isolir", async (
         no_hp: "1",
         harga: 100000,
         is_active: false,
-        is_isolir: true,
+        is_isolir: false,
       },
     ],
     error: null,
@@ -71,10 +71,23 @@ test("status is Nonaktif when is_active is false, regardless of isolir", async (
   expect(result[0].status).toBe("Nonaktif");
 });
 
-test("status is Isolir when active but currently isolir", async () => {
+test("status is Isolir when active and currently isolir", async () => {
   const client = fakeClient({
     data: [
       { nama: "Siti", alamat: "B", no_hp: "2", harga: 100000, is_active: true, is_isolir: true },
+    ],
+    error: null,
+  });
+
+  const result = await listPelangganForExport(client);
+
+  expect(result[0].status).toBe("Isolir");
+});
+
+test("status is still Isolir even though isolir auto-sets is_active=false -- not Nonaktif", async () => {
+  const client = fakeClient({
+    data: [
+      { nama: "Dedi", alamat: "C", no_hp: "3", harga: 100000, is_active: false, is_isolir: true },
     ],
     error: null,
   });

@@ -9,12 +9,17 @@ export type PelangganExportRow = {
   status: "Aktif" | "Isolir" | "Nonaktif";
 };
 
-// "Status Pelanggan": Nonaktif menang duluan (Pelanggan yang sudah
-// berhenti berlangganan, lihat is_active di updatePelangganStatus.ts),
-// baru Isolir (koneksi diputus karena belum bayar), sisanya Aktif.
+// "Status Pelanggan": Isolir menang duluan -- isolir SEKARANG selalu ikut
+// nge-set is_active=false juga (lihat setPelangganIsolir.ts/
+// mikrotik-set-isolir), jadi kalau is_active dicek duluan, Pelanggan yang
+// cuma lagi diisolir (masih pelanggan, internetnya diputus sementara
+// karena nunggak) bakal kebaca "Nonaktif" -- padahal "Nonaktif" artinya
+// beneran sudah berhenti berlangganan (lihat is_active di
+// updatePelangganStatus.ts). Isolir harus tetap kebaca "Isolir" meskipun
+// is_active-nya ikut false.
 function computeStatus(isActive: boolean, isIsolir: boolean): PelangganExportRow["status"] {
-  if (!isActive) return "Nonaktif";
   if (isIsolir) return "Isolir";
+  if (!isActive) return "Nonaktif";
   return "Aktif";
 }
 
