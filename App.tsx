@@ -304,7 +304,7 @@ export default function App() {
       );
     }
     if (screen === "isolirMonitor") {
-      return <IsolirMonitorScreen onBack={() => setScreen("home")} />;
+      return <IsolirMonitorScreen profile={currentProfile} onBack={() => setScreen("home")} />;
     }
     if (screen === "tiketDetail" && selectedTiketId) {
       return (

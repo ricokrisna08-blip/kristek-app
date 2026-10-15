@@ -11,20 +11,26 @@ import {
 } from "react-native";
 import { supabase } from "../lib/supabase";
 import { listPelangganIsolir, type PelangganIsolir } from "../pelanggan/listPelangganIsolir";
+import { setPelangganIsolir } from "../pelanggan/setPelangganIsolir";
 import { buildWhatsappUrl } from "../pelanggan/waPhone";
 import { formatRelativeTanggal } from "../tiket/formatRelativeTanggal";
 import { ScreenHeader } from "../components/ScreenHeader";
+import type { UserProfile } from "../auth/profile";
+import { canManageIsolir } from "../auth/permissions";
 
 type Props = {
+  profile: UserProfile;
   onBack: () => void;
 };
 
-export function IsolirMonitorScreen({ onBack }: Props) {
+export function IsolirMonitorScreen({ profile, onBack }: Props) {
   const [items, setItems] = useState<PelangganIsolir[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [openingWaById, setOpeningWaById] = useState<string | null>(null);
+  const [cabutIsolirById, setCabutIsolirById] = useState<string | null>(null);
+  const [cabutIsolirError, setCabutIsolirError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     const result = await listPelangganIsolir(supabase);
@@ -60,6 +66,22 @@ export function IsolirMonitorScreen({ onBack }: Props) {
     }
   }
 
+  async function handleCabutIsolir(item: PelangganIsolir) {
+    setCabutIsolirError(null);
+    setCabutIsolirById(item.id);
+    const result = await setPelangganIsolir(supabase, item.id, false);
+    setCabutIsolirById(null);
+
+    if (!result.success) {
+      setCabutIsolirError(`${item.nama}: ${result.error}`);
+      return;
+    }
+
+    // Begitu dicabut, Pelanggan ini bukan lagi "sedang diisolir" -- hilang
+    // dari daftar ini begitu di-reload, bukan di-update di tempat.
+    await reload();
+  }
+
   return (
     <View style={styles.screen}>
       <ScreenHeader
@@ -80,6 +102,7 @@ export function IsolirMonitorScreen({ onBack }: Props) {
         </View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
+        {cabutIsolirError ? <Text style={styles.error}>{cabutIsolirError}</Text> : null}
 
         {isLoading ? (
           <ActivityIndicator style={styles.loading} />
@@ -116,18 +139,34 @@ export function IsolirMonitorScreen({ onBack }: Props) {
                     ) : null}
                   </View>
                 </View>
-                <TouchableOpacity
-                  style={[
-                    styles.waButton,
-                    openingWaById === item.id && styles.waButtonDisabled,
-                  ]}
-                  onPress={() => handleOpenWhatsapp(item)}
-                  disabled={openingWaById === item.id || !item.noHp}
-                >
-                  <Text style={styles.waButtonText}>
-                    {openingWaById === item.id ? "..." : "WhatsApp"}
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity
+                    style={[
+                      styles.waButton,
+                      openingWaById === item.id && styles.waButtonDisabled,
+                    ]}
+                    onPress={() => handleOpenWhatsapp(item)}
+                    disabled={openingWaById === item.id || !item.noHp}
+                  >
+                    <Text style={styles.waButtonText}>
+                      {openingWaById === item.id ? "..." : "WhatsApp"}
+                    </Text>
+                  </TouchableOpacity>
+                  {canManageIsolir(profile.role) ? (
+                    <TouchableOpacity
+                      style={[
+                        styles.cabutIsolirButton,
+                        cabutIsolirById === item.id && styles.waButtonDisabled,
+                      ]}
+                      onPress={() => handleCabutIsolir(item)}
+                      disabled={cabutIsolirById === item.id}
+                    >
+                      <Text style={styles.cabutIsolirButtonText}>
+                        {cabutIsolirById === item.id ? "..." : "Cabut Isolir"}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
               </View>
             )}
           />
@@ -223,6 +262,9 @@ const styles = StyleSheet.create({
     color: "#DC2626",
     marginTop: 6,
   },
+  actionButtons: {
+    gap: 8,
+  },
   waButton: {
     backgroundColor: "#DCFCE7",
     borderRadius: 12,
@@ -238,5 +280,19 @@ const styles = StyleSheet.create({
     color: "#166534",
     fontWeight: "700",
     fontSize: 11,
+  },
+  cabutIsolirButton: {
+    backgroundColor: "#DBEAFE",
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#93C5FD",
+  },
+  cabutIsolirButtonText: {
+    color: "#1D4ED8",
+    fontWeight: "700",
+    fontSize: 11,
+    textAlign: "center",
   },
 });
