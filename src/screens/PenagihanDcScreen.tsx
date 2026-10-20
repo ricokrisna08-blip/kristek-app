@@ -4,6 +4,7 @@ import {
   FlatList,
   Linking,
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -19,7 +20,6 @@ import { flagLunasByDc } from "../pelanggan/flagLunasByDc";
 import { listDcUsers, type DcUser } from "../pelanggan/listDcUsers";
 import type { UserProfile } from "../auth/profile";
 import { ScreenHeader } from "../components/ScreenHeader";
-import { Dropdown } from "../components/Dropdown";
 import { buildWhatsappUrl } from "../pelanggan/waPhone";
 
 const DIRI_SENDIRI_ID = "__diri_sendiri__";
@@ -252,15 +252,28 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
             {!target?.dcFlaggedByMe ? (
               <View style={styles.dcDropdownRow}>
                 <Text style={styles.dcDropdownLabel}>Dibayar ke</Text>
-                <Dropdown
-                  variant="field"
-                  title="Pelanggan ini bayar ke siapa?"
-                  valueLabel={
-                    dcDropdownOptions.find((o) => o.id === paidToDcId)?.label ?? "Saya sendiri"
-                  }
-                  options={dcDropdownOptions}
-                  onSelect={setPaidToDcId}
-                />
+                <ScrollView style={styles.dcOptionList} nestedScrollEnabled>
+                  {dcDropdownOptions.map((option) => {
+                    const isSelected = option.id === paidToDcId;
+                    return (
+                      <TouchableOpacity
+                        key={option.id}
+                        style={[styles.dcOption, isSelected && styles.dcOptionSelected]}
+                        onPress={() => setPaidToDcId(option.id)}
+                      >
+                        <Text
+                          style={[
+                            styles.dcOptionText,
+                            isSelected && styles.dcOptionTextSelected,
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                        {isSelected ? <Text style={styles.dcOptionCheck}>✓</Text> : null}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
               </View>
             ) : null}
 
@@ -485,6 +498,38 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#374151",
     marginBottom: 6,
+  },
+  dcOptionList: {
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 12,
+    overflow: "hidden",
+    maxHeight: 180,
+  },
+  dcOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eef0f2",
+    backgroundColor: "#f9fafb",
+  },
+  dcOptionSelected: {
+    backgroundColor: "#E0F2FE",
+  },
+  dcOptionText: {
+    fontSize: 14,
+    color: "#111827",
+  },
+  dcOptionTextSelected: {
+    color: "#0369A1",
+    fontWeight: "700",
+  },
+  dcOptionCheck: {
+    color: "#0369A1",
+    fontWeight: "700",
   },
   modalButtonRow: {
     flexDirection: "row",
