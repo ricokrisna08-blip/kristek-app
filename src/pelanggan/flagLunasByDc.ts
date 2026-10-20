@@ -7,11 +7,16 @@ export type FlagLunasByDcResult = { success: true } | { success: false; error: s
 export async function flagLunasByDc(
   client: SupabaseClient,
   pelangganId: string,
-  flagged: boolean
+  flagged: boolean,
+  // Diisi kalau Pelanggan ternyata sudah bayar ke DC LAIN (bukan DC yang
+  // lagi nyentang) -- biar Pemilik nagih setoran ke orang yang beneran
+  // pegang uangnya. Null = default ke diri sendiri (perilaku lama).
+  paidToDcId?: string | null
 ): Promise<FlagLunasByDcResult> {
   const { error } = await client.rpc("dc_flag_pelanggan_lunas", {
     p_pelanggan_id: pelangganId,
     p_flagged: flagged,
+    p_paid_to_dc_id: paidToDcId ?? null,
   });
 
   if (error) {

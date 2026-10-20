@@ -60,12 +60,29 @@ type NotifikasiRow = {
     tanggal_selesai: string | null;
     teknisi: { nama: string } | null;
   } | null;
+  setoranPelanggan: {
+    nama: string;
+    alamat: string | null;
+    dcFlaggedBy: { nama: string } | null;
+  } | null;
 };
 
 // Replika logic src/notifikasi/notifikasiLabel.ts -- beda runtime (RN vs
 // Deno) jadi tidak bisa di-share langsung, tapi harus tetap sinkron kalau
 // salah satu diubah.
 function buildNotifikasiMessage(row: NotifikasiRow): { title: string; body: string } {
+  if (row.type === "setoran_dc") {
+    const nama = row.setoranPelanggan?.nama ?? "Pelanggan";
+    const alamatSuffix = row.setoranPelanggan?.alamat ? ` (${row.setoranPelanggan.alamat})` : "";
+    const dcSuffix = row.setoranPelanggan?.dcFlaggedBy?.nama
+      ? ` — dibayar ke ${row.setoranPelanggan.dcFlaggedBy.nama}`
+      : "";
+    return {
+      title: "KRISTEK",
+      body: `Setoran dari DC untuk ${nama}${alamatSuffix} menunggu approval${dcSuffix}`,
+    };
+  }
+
   if (row.type === "cuti_diajukan") {
     const nama = row.cuti?.teknisi?.nama ?? "Teknisi";
     const rentang =
@@ -205,7 +222,8 @@ Deno.serve(async (req) => {
     .select(
       `id, user_id, type, notes,
        tiket:tiket_id ( jenis, pelanggan:pelanggan_id ( nama ), odp:odp_id ( label ) ),
-       cuti:cuti_id ( tanggal_mulai, tanggal_selesai, teknisi:teknisi_id ( nama ) )`
+       cuti:cuti_id ( tanggal_mulai, tanggal_selesai, teknisi:teknisi_id ( nama ) ),
+       setoranPelanggan:pelanggan_id ( nama, alamat, dcFlaggedBy:dc_flagged_by ( nama ) )`
     )
     .eq("id", notifikasiId)
     .single();

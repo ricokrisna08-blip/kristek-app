@@ -18,6 +18,10 @@ export type Notifikasi = {
   setoranPelangganId: string | null;
   setoranPelangganNama: string | null;
   setoranPelangganAlamat: string | null;
+  // Nama DC yang BENERAN pegang uangnya -- bisa beda dari DC yang
+  // nyentang kalau Pelanggan ternyata sudah bayar ke DC lain (lihat
+  // dc_flag_pelanggan_lunas / p_paid_to_dc_id).
+  setoranDcNama: string | null;
 };
 
 export async function listNotifikasi(
@@ -30,7 +34,7 @@ export async function listNotifikasi(
       `id, tiket_id, type, read_at, created_at, notes,
        tiket:tiket_id ( jenis, pelanggan:pelanggan_id ( nama ), odp:odp_id ( label ) ),
        cuti:cuti_id ( tanggal_mulai, tanggal_selesai, teknisi_nama_snapshot ),
-       setoranPelanggan:pelanggan_id ( id, nama, alamat )`
+       setoranPelanggan:pelanggan_id ( id, nama, alamat, dcFlaggedBy:dc_flagged_by ( nama ) )`
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
@@ -56,5 +60,6 @@ export async function listNotifikasi(
     setoranPelangganId: row.setoranPelanggan?.id ?? null,
     setoranPelangganNama: row.setoranPelanggan?.nama ?? null,
     setoranPelangganAlamat: row.setoranPelanggan?.alamat ?? null,
+    setoranDcNama: row.setoranPelanggan?.dcFlaggedBy?.nama ?? null,
   }));
 }

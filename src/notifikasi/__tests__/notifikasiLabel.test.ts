@@ -18,6 +18,7 @@ function baseNotif(overrides: Partial<Notifikasi>): Notifikasi {
     setoranPelangganId: null,
     setoranPelangganNama: null,
     setoranPelangganAlamat: null,
+    setoranDcNama: null,
     ...overrides,
   };
 }
@@ -116,4 +117,20 @@ test("Setoran DC falls back gracefully when the Pelanggan name/alamat is missing
   const label = notifikasiLabel(baseNotif({ type: "setoran_dc", tiketId: null }));
 
   expect(label).toBe("Setoran dari DC untuk Pelanggan menunggu approval");
+});
+
+test("Setoran DC mentions which DC actually holds the money, when Pelanggan paid a different DC", () => {
+  const label = notifikasiLabel(
+    baseNotif({
+      type: "setoran_dc",
+      tiketId: null,
+      setoranPelangganNama: "Budi",
+      setoranPelangganAlamat: "Jl. Mawar 1",
+      setoranDcNama: "Eris",
+    })
+  );
+
+  expect(label).toBe(
+    "Setoran dari DC untuk Budi (Jl. Mawar 1) menunggu approval — dibayar ke Eris"
+  );
 });

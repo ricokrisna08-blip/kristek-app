@@ -46,10 +46,26 @@ test("flagging lunas calls the RPC and notifies every pemilik", async () => {
 
   expect(result).toEqual({ success: true });
   expect(rpcCalls).toEqual([
-    { name: "dc_flag_pelanggan_lunas", args: { p_pelanggan_id: "pelanggan-1", p_flagged: true } },
+    {
+      name: "dc_flag_pelanggan_lunas",
+      args: { p_pelanggan_id: "pelanggan-1", p_flagged: true, p_paid_to_dc_id: null },
+    },
   ]);
   expect(notifikasiInserts).toEqual([
     [{ id: expect.any(String), user_id: "pemilik-1", pelanggan_id: "pelanggan-1", type: "setoran_dc" }],
+  ]);
+});
+
+test("flagging lunas with paidToDcId passes it through to the RPC -- Pelanggan already paid a different DC", async () => {
+  const { client, rpcCalls } = fakeClient({ pemilikRows: [] });
+
+  await flagLunasByDc(client, "pelanggan-1", true, "dc-eris");
+
+  expect(rpcCalls).toEqual([
+    {
+      name: "dc_flag_pelanggan_lunas",
+      args: { p_pelanggan_id: "pelanggan-1", p_flagged: true, p_paid_to_dc_id: "dc-eris" },
+    },
   ]);
 });
 

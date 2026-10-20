@@ -16,9 +16,13 @@ import {
   type PelangganBelumBayarDc,
 } from "../pelanggan/listBelumBayarUntukDc";
 import { flagLunasByDc } from "../pelanggan/flagLunasByDc";
+import { listDcUsers, type DcUser } from "../pelanggan/listDcUsers";
 import type { UserProfile } from "../auth/profile";
 import { ScreenHeader } from "../components/ScreenHeader";
+import { Dropdown } from "../components/Dropdown";
 import { buildWhatsappUrl } from "../pelanggan/waPhone";
+
+const DIRI_SENDIRI_ID = "__diri_sendiri__";
 
 type Props = {
   profile: UserProfile;
@@ -37,6 +41,8 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [openingWaById, setOpeningWaById] = useState<string | null>(null);
+  const [dcUsers, setDcUsers] = useState<DcUser[]>([]);
+  const [paidToDcId, setPaidToDcId] = useState(DIRI_SENDIRI_ID);
 
   const reload = useCallback(async () => {
     const result = await listBelumBayarUntukDc(supabase, profile.id);
@@ -47,6 +53,25 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
     setIsLoading(true);
     reload().then(() => setIsLoading(false));
   }, [reload]);
+
+  useEffect(() => {
+    listDcUsers(supabase).then(setDcUsers);
+  }, []);
+
+  // DC lain yang bisa dipilih di dropdown "Dibayar ke" -- diri sendiri
+  // nggak usah muncul dobel, itu udah jadi opsi default.
+  const dcDropdownOptions = useMemo(
+    () => [
+      { id: DIRI_SENDIRI_ID, label: "Saya sendiri" },
+      ...dcUsers.filter((dc) => dc.id !== profile.id).map((dc) => ({ id: dc.id, label: dc.nama })),
+    ],
+    [dcUsers, profile.id]
+  );
+
+  function openConfirm(item: PelangganBelumBayarDc) {
+    setPaidToDcId(DIRI_SENDIRI_ID);
+    setTarget(item);
+  }
 
   // Total yang harus disetor DC ini ke Pemilik -- cuma yang DIA sendiri
   // yang centang (dcFlaggedByMe), bukan total belum-bayar semua Pelanggan.
@@ -72,7 +97,12 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
     setIsSaving(true);
     setError(null);
     const nextFlagged = !target.dcFlaggedByMe;
-    const result = await flagLunasByDc(supabase, target.id, nextFlagged);
+    const result = await flagLunasByDc(
+      supabase,
+      target.id,
+      nextFlagged,
+      nextFlagged && paidToDcId !== DIRI_SENDIRI_ID ? paidToDcId : null
+    );
     setIsSaving(false);
 
     if (!result.success) {
@@ -148,7 +178,7 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
               <View style={styles.cardRow}>
                 <TouchableOpacity
                   style={styles.card}
-                  onPress={() => setTarget(item)}
+                  onPress={() => openConfirm(item)}
                   disabled={item.dcFlaggedLunas && !item.dcFlaggedByMe}
                 >
                   <View style={styles.cardBody}>
@@ -216,8 +246,23 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
             <Text style={styles.modalSubtitle}>
               {target?.dcFlaggedByMe
                 ? `${target?.nama} akan kembali muncul sebagai belum bayar.`
-                : `${target?.nama} sudah bayar ${target ? formatHarga(target.tagihan) : ""} ke kamu? Pemilik akan diminta approve setoran ini.`}
+                : `${target?.nama} sudah bayar ${target ? formatHarga(target.tagihan) : ""}. Pemilik akan diminta approve setoran ini.`}
             </Text>
+
+            {!target?.dcFlaggedByMe ? (
+              <View style={styles.dcDropdownRow}>
+                <Text style={styles.dcDropdownLabel}>Dibayar ke</Text>
+                <Dropdown
+                  variant="field"
+                  title="Pelanggan ini bayar ke siapa?"
+                  valueLabel={
+                    dcDropdownOptions.find((o) => o.id === paidToDcId)?.label ?? "Saya sendiri"
+                  }
+                  options={dcDropdownOptions}
+                  onSelect={setPaidToDcId}
+                />
+              </View>
+            ) : null}
 
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -431,6 +476,15 @@ const styles = StyleSheet.create({
   error: {
     color: "#DC2626",
     marginBottom: 12,
+  },
+  dcDropdownRow: {
+    marginBottom: 12,
+  },
+  dcDropdownLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 6,
   },
   modalButtonRow: {
     flexDirection: "row",

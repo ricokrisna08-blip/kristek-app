@@ -18,6 +18,7 @@ function notif(readAt: string | null): Notifikasi {
     setoranPelangganId: null,
     setoranPelangganNama: null,
     setoranPelangganAlamat: null,
+    setoranDcNama: null,
   };
 }
 

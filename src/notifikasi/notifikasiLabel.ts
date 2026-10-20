@@ -17,7 +17,8 @@ export function notifikasiLabel(notifikasi: Notifikasi): string {
     const alamatSuffix = notifikasi.setoranPelangganAlamat
       ? ` (${notifikasi.setoranPelangganAlamat})`
       : "";
-    return `Setoran dari DC untuk ${nama}${alamatSuffix} menunggu approval`;
+    const dcSuffix = notifikasi.setoranDcNama ? ` — dibayar ke ${notifikasi.setoranDcNama}` : "";
+    return `Setoran dari DC untuk ${nama}${alamatSuffix} menunggu approval${dcSuffix}`;
   }
 
   if (notifikasi.type === "cuti_diajukan") {

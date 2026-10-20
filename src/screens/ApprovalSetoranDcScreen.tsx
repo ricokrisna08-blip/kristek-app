@@ -99,7 +99,7 @@ export function ApprovalSetoranDcScreen({ onBack }: Props) {
                   <Text style={styles.cardAlamat}>{item.alamat}</Text>
                   <Text style={styles.cardHarga}>{formatHarga(item.tagihan)}</Text>
                   <Text style={styles.cardMeta}>
-                    Dicentang oleh {item.dcNama} · {formatWaktu(item.flaggedAt)}
+                    Dibayar ke {item.dcNama} · {formatWaktu(item.flaggedAt)}
                   </Text>
 
                   {errorById[item.id] ? (
