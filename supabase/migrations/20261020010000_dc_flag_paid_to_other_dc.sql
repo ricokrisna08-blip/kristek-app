@@ -8,6 +8,13 @@
 -- beneran pegang uangnya -- dc_flagged_by jadi "siapa yang pegang uang",
 -- bukan lagi selalu "siapa yang nyentang". Null/tidak diisi = default ke
 -- diri sendiri (perilaku lama, tidak berubah).
+--
+-- `create or replace` cuma nimpa fungsi dengan signature PERSIS sama --
+-- nambah parameter baru bikin Postgres nganggep ini overload baru, bukan
+-- gantiin versi 2-argumen lama, jadi versi lama perlu di-drop eksplisit
+-- dulu supaya nggak ada dua definisi nyangkut berbarengan.
+drop function if exists public.dc_flag_pelanggan_lunas(uuid, boolean);
+
 create or replace function public.dc_flag_pelanggan_lunas(
   p_pelanggan_id uuid,
   p_flagged boolean,
