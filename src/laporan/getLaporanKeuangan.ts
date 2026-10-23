@@ -121,29 +121,38 @@ export async function getLaporanKeuangan(
   // total, nggak ikut kehitung sama sekali. Isolir manual/otomatis (lihat
   // mikrotik-set-isolir & mikrotik-daily-billing-cycle) otomatis nge-set
   // is_active=false juga, jadi begitu Pelanggan diisolir, langsung hilang
-  // dari angka pembayaran. jumlahIsolir/angkaIsolir di bawah cuma nyisa
-  // buat kasus lama (is_isolir=true tapi is_active masih true dari
-  // sebelum linkage ini ada) -- transparansi transisi, bukan exclude
-  // kedua kalinya.
-  const pelangganRows = (pelangganResult.data ?? []).filter(
-    (row: any) => row.is_active !== false
-  );
-  const totalUser = pelangganRows.length;
+  // dari angka pembayaran DI ATAS.
+  //
+  // jumlahIsolir/angkaIsolir TETAP dihitung dari SEMUA Pelanggan yang
+  // is_isolir=true, LEPAS dari is_active -- kalau filter is_active
+  // diterapin DULUAN kayak baris-baris di atas, breakdown isolir ini
+  // selalu 0 (karena isolir SEKARANG selalu bikin is_active=false juga,
+  // jadi dua-duanya saling exclude). Breakdown ini transparansi ("sekian
+  // Pelanggan lagi diisolir, makanya nggak ikut Omset di atas"), BUKAN
+  // exclude kedua kalinya -- makanya pendapatanSetelahIsolir di bawah
+  // cuma `omset` polos, nggak dikurangin angkaIsolir lagi (omset-nya udah
+  // nggak pernah ikut ngitung Pelanggan isolir dari awal).
+  const allRows = (pelangganResult.data ?? []) as any[];
+  let totalUser = 0;
   let omset = 0;
   let sudahBayar = 0;
   let belumBayar = 0;
   let diTanganDc = 0;
   let jumlahIsolir = 0;
   let angkaIsolir = 0;
-  for (const row of pelangganRows as any[]) {
+  for (const row of allRows) {
     const dasar = row.tagihan_prorata ?? row.harga ?? 0;
     const tagihan = Math.max(dasar - (row.kompensasi_nominal ?? 0), 0);
-    omset += tagihan;
 
     if (row.is_isolir) {
       jumlahIsolir += 1;
       angkaIsolir += tagihan;
     }
+
+    if (row.is_active === false) continue;
+
+    totalUser += 1;
+    omset += tagihan;
 
     if (row.sudah_bayar_bulan_ini) {
       sudahBayar += tagihan;
@@ -175,7 +184,10 @@ export async function getLaporanKeuangan(
     isBulanIni: true,
     jumlahIsolir,
     angkaIsolir,
-    pendapatanSetelahIsolir: omset - angkaIsolir,
+    // `omset` udah nggak pernah ikut ngitung Pelanggan isolir dari awal
+    // (lihat loop di atas) -- jangan dikurangin angkaIsolir lagi di sini,
+    // itu bakal ke-kurang dua kali.
+    pendapatanSetelahIsolir: omset,
   });
 
   const pengeluaranRows = (pengeluaranResult.data ?? []) as any[];

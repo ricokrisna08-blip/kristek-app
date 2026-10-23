@@ -89,7 +89,7 @@ test("appends the live current month after the historical rows", async () => {
   });
 });
 
-test("live current month keeps Pelanggan currently isolir in Total User/Omset/Belum Bayar, but surfaces them separately", async () => {
+test("legacy case: is_isolir=true WITHOUT is_active=false (data from before the auto-linkage) still counts fully in Total User/Omset", async () => {
   const client = fakeClient({
     history: [],
     pelanggan: [
@@ -107,11 +107,11 @@ test("live current month keeps Pelanggan currently isolir in Total User/Omset/Be
     belumBayar: 200000,
     jumlahIsolir: 1,
     angkaIsolir: 200000,
-    pendapatanSetelahIsolir: 165000,
+    pendapatanSetelahIsolir: 365000,
   });
 });
 
-test("live current month excludes Nonaktif (is_active=false) Pelanggan entirely -- isolir now auto-flags Nonaktif so they drop out of Total User/Omset/Sudah Bayar/Belum Bayar", async () => {
+test("realistic case: isolir now always sets is_active=false too -- jumlahIsolir/angkaIsolir still reflect it even though the Pelanggan drops out of Total User/Omset/Sudah Bayar/Belum Bayar", async () => {
   const client = fakeClient({
     history: [],
     pelanggan: [
@@ -132,8 +132,14 @@ test("live current month excludes Nonaktif (is_active=false) Pelanggan entirely 
     omset: 165000,
     sudahBayar: 165000,
     belumBayar: 0,
-    jumlahIsolir: 0,
-    angkaIsolir: 0,
+    // Sebelum fix: ini 0/0 -- filter is_active dijalanin SEBELUM loop yang
+    // ngitung jumlahIsolir/angkaIsolir, jadi Pelanggan isolir (yang
+    // SELALU is_active=false) nggak pernah ketemu di loop itu sama
+    // sekali. Breakdown isolir jadi dead code walau ada isolir beneran.
+    jumlahIsolir: 1,
+    angkaIsolir: 200000,
+    // omset (165000) udah nggak pernah ikut ngitung si Pelanggan isolir
+    // dari awal -- bukan omset-angkaIsolir (itu bakal ke-kurang 2x).
     pendapatanSetelahIsolir: 165000,
   });
 });
