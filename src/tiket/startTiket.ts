@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { applyTiketEvent, type TiketStatus } from "./stateMachine/applyTiketEvent";
 import { logTiketStatus } from "./logTiketStatus";
+import { statusTransitionErrorMessage } from "./statusTransitionError";
 
 const PHOTO_BUCKET = "tiket-foto";
 
@@ -72,7 +73,10 @@ export async function startTiket(
     .eq("id", input.tiketId);
 
   if (updateError) {
-    return { success: false, error: "Gagal mengubah status Tiket. Coba lagi." };
+    return {
+      success: false,
+      error: statusTransitionErrorMessage(updateError, "Gagal mengubah status Tiket. Coba lagi."),
+    };
   }
 
   await logTiketStatus(client, {

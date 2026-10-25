@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createPelanggan } from "../pelanggan/createPelanggan";
 import { createMikrotikSecret } from "../pelanggan/createMikrotikSecret";
 import { logTiketStatus } from "./logTiketStatus";
+import { statusTransitionErrorMessage } from "./statusTransitionError";
 import { triggerPushNotification } from "../notifikasi/triggerPushNotification";
 import { generateUuid } from "../lib/generateUuid";
 
@@ -102,7 +103,10 @@ export async function createTiketWithAssignment(
     .single();
 
   if (tiketError || !tiket) {
-    return { success: false, error: "Gagal membuat Tiket. Coba lagi." };
+    return {
+      success: false,
+      error: statusTransitionErrorMessage(tiketError, "Gagal membuat Tiket. Coba lagi."),
+    };
   }
 
   const tiketId = tiket.id;

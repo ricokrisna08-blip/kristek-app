@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { applyTiketEvent, type TiketStatus } from "./stateMachine/applyTiketEvent";
 import { logTiketStatus } from "./logTiketStatus";
+import { statusTransitionErrorMessage } from "./statusTransitionError";
 
 export type BatalkanTiketInput = {
   tiketId: string;
@@ -40,7 +41,10 @@ export async function batalkanTiket(
     .eq("id", input.tiketId);
 
   if (updateError) {
-    return { success: false, error: "Gagal membatalkan Tiket. Coba lagi." };
+    return {
+      success: false,
+      error: statusTransitionErrorMessage(updateError, "Gagal membatalkan Tiket. Coba lagi."),
+    };
   }
 
   await logTiketStatus(client, {
