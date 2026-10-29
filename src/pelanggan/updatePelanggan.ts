@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { computeProrata } from "./computeProrata";
+import { computeTagihanProrata } from "./computeProrata";
 
 export type UpdatePelangganInput = {
   nama: string;
@@ -38,7 +38,7 @@ export async function updatePelanggan(
       .single();
 
     if (paket?.harga != null) {
-      tagihanProrata = computeProrata(input.tanggalInstalasi, paket.harga);
+      tagihanProrata = computeTagihanProrata(input.tanggalInstalasi, paket.harga);
     }
   }
 

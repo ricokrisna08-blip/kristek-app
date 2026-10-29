@@ -1,6 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { updatePelanggan } from "../updatePelanggan";
 
+beforeEach(() => {
+  jest.useFakeTimers().setSystemTime(new Date(2026, 7, 25)); // 25 Aug 2026
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+});
+
 function fakeClient(options: {
   paketHarga?: number | null;
   updateResult: { error: unknown };
@@ -71,4 +79,16 @@ test("an update failure returns a clear error instead of crashing", async () => 
     success: false,
     error: "Gagal menyimpan perubahan Pelanggan. Coba lagi.",
   });
+});
+
+test("editing a Pelanggan whose prorata cycle has already passed does not bring the prorata back", async () => {
+  jest.setSystemTime(new Date(2026, 9, 29)); // 29 Oct 2026
+  const client = fakeClient({ paketHarga: 165000, updateResult: { error: null } });
+
+  const result = await updatePelanggan(client, "pelanggan-1", {
+    ...validInput,
+    tanggalInstalasi: "2026-06-13",
+  });
+
+  expect(result).toEqual({ success: true, tanggalInstalasi: "2026-06-13", tagihanProrata: null });
 });

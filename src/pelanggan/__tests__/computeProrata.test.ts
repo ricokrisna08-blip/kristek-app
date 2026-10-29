@@ -1,4 +1,4 @@
-import { computeProrata } from "../computeProrata";
+import { computeProrata, computeTagihanProrata } from "../computeProrata";
 
 test("installing mid-cycle (after the 3rd) prorates against the next month's cutoff", () => {
   // Instalasi 20 Agustus -> jatuh tempo berikutnya 3 September (siklus
@@ -20,4 +20,17 @@ test("works across a shorter month (February)", () => {
   // Instalasi 1 Februari -> jatuh tempo 3 Februari (siklus 3 Januari -
   // 3 Februari = 31 hari, sisa dari 1 Februari = 2 hari).
   expect(computeProrata("2026-02-01", 100000)).toBe(6452);
+});
+
+test("tagihan prorata still applies before the reset on the 15th after its first due date", () => {
+  // Instalasi 20 Agustus -> jatuh tempo 3 September -> masih berlaku
+  // sampai sebelum reset 15 September.
+  expect(computeTagihanProrata("2026-08-20", 165000, new Date(2026, 8, 14))).toBe(74516);
+});
+
+test("tagihan prorata is expired once that reset has passed (Pelanggan lama diinput belakangan)", () => {
+  // Kasus KRTK-000943: Instalasi 13 Juni, baru diinput/diedit Oktober ->
+  // prorata-nya sudah lewat (reset 15 Juli), tagih harga normal.
+  expect(computeTagihanProrata("2026-06-13", 165000, new Date(2026, 9, 29))).toBeNull();
+  expect(computeTagihanProrata("2026-08-20", 165000, new Date(2026, 8, 15))).toBeNull();
 });

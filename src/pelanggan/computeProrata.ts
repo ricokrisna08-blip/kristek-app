@@ -24,3 +24,25 @@ export function computeProrata(tanggalInstalasiIso: string, hargaNormal: number)
   if (totalHariSiklus <= 0) return hargaNormal;
   return Math.round((hargaNormal * sisaHari) / totalHariSiklus);
 }
+
+// Tagihan prorata cuma berlaku buat siklus pertama Pelanggan --
+// mikrotik-daily-billing-cycle mengosongkan tagihan_prorata tiap tanggal
+// 15 setelah jatuh tempo tanggal 3 siklus itu. Jadi kalau Tanggal
+// Instalasi diisi/diedit setelah tanggal 15 itu lewat (mis. Pelanggan
+// lama yang baru diinput belakangan), prorata-nya sudah kedaluwarsa dan
+// Pelanggan ditagih harga normal -- jangan diisi lagi.
+const RESET_DAY = 15;
+
+export function computeTagihanProrata(
+  tanggalInstalasiIso: string,
+  hargaNormal: number,
+  now: Date = new Date()
+): number | null {
+  const install = new Date(`${tanggalInstalasiIso}T00:00:00`);
+  const cycleEndMonth =
+    install.getDate() >= CUTOFF_DAY ? install.getMonth() + 1 : install.getMonth();
+  const resetAt = new Date(install.getFullYear(), cycleEndMonth, RESET_DAY);
+
+  if (now.getTime() >= resetAt.getTime()) return null;
+  return computeProrata(tanggalInstalasiIso, hargaNormal);
+}

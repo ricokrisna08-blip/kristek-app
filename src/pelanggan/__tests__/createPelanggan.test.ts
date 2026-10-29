@@ -1,6 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createPelanggan } from "../createPelanggan";
 
+beforeEach(() => {
+  jest.useFakeTimers().setSystemTime(new Date(2026, 7, 25)); // 25 Aug 2026
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+});
+
 function fakeClient(options: {
   paketHarga?: number | null;
   insertResult: { data: unknown; error: unknown };

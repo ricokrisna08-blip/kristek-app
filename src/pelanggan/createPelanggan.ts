@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { computeProrata } from "./computeProrata";
+import { computeTagihanProrata } from "./computeProrata";
 
 export type NewPelangganInput = {
   nama: string;
@@ -46,7 +46,7 @@ export async function createPelanggan(
   const harga = paket?.harga ?? null;
   // Tagihan bulan pertama (prorata) -- cuma referensi info, TIDAK
   // ditagihkan otomatis lewat field harga (lihat computeProrata.ts).
-  const tagihanProrata = harga != null ? computeProrata(input.tanggalInstalasi, harga) : null;
+  const tagihanProrata = harga != null ? computeTagihanProrata(input.tanggalInstalasi, harga) : null;
 
   const { data, error } = await client
     .from("pelanggan")

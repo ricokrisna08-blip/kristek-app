@@ -1,6 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createTiketWithAssignment } from "../createTiketWithAssignment";
 
+beforeEach(() => {
+  jest.useFakeTimers().setSystemTime(new Date(2026, 7, 25)); // 25 Aug 2026
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+});
+
 function fakeClient(handlers: Record<string, any>): SupabaseClient {
   return {
     from: (table: string) => handlers[table],
