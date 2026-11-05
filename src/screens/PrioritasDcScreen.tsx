@@ -35,7 +35,10 @@ export function PrioritasDcScreen({ profile, onBack }: Props) {
 
   const reload = useCallback(async () => {
     const result = await listBelumBayarUntukDc(supabase, profile.id);
-    setItems(result);
+    // Sama seperti PenagihanDcScreen: yang sudah dicentang DC (uang sudah
+    // di tangan DC, tinggal nunggu approval) nggak perlu diprioritaskan
+    // lagi buat ditagih -- keluar dari daftar.
+    setItems(result.filter((item) => !item.dcFlaggedLunas));
   }, [profile.id]);
 
   useEffect(() => {
