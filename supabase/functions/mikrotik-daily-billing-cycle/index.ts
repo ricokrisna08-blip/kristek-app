@@ -5,12 +5,13 @@
 // setup cron itu secara manual.
 //
 // Siklus billing KRISTEK: jatuh tempo tanggal 3, masa tenggang sampai
-// tanggal 6, isolir kalau belum bayar per tanggal 7 jam 00:00 WIB.
+// tanggal 6 jam 12:00 WIB, isolir kalau belum bayar per tanggal 6 jam
+// 12:00 WIB (cron-nya dijadwalkan jam 12:00 WIB, lihat DEPLOY.md).
 //
-// Tanggal 7-14 (waktu Asia/Jakarta): Pelanggan yang `sudah_bayar_bulan_ini`
+// Tanggal 6-14 (waktu Asia/Jakarta): Pelanggan yang `sudah_bayar_bulan_ini`
 // masih false dan belum di-isolir, dan punya `mikrotik_username` ke-set,
-// di-isolir lewat Mikrotik RouterOS v7 REST API. Jendela 7-14 (bukan cuma
-// tanggal 7 doang) supaya kalau cron sempat gagal jalan tanggal 7 persis,
+// di-isolir lewat Mikrotik RouterOS v7 REST API. Jendela 6-14 (bukan cuma
+// tanggal 6 doang) supaya kalau cron sempat gagal jalan tanggal 6 persis,
 // masih ke-tangkep di hari-hari berikutnya sebelum reset tanggal 15
 // (idempotent -- Pelanggan yang sudah is_isolir=true dilewati).
 // Tanggal 15: SEBELUM reset, snapshot angka bulan yang baru saja berjalan
@@ -388,8 +389,8 @@ Deno.serve(async (req) => {
     );
   }
 
-  if (dayOfMonth < 7 || dayOfMonth > 14) {
-    return jsonResponse({ action: "none", reason: "outside jendela isolir (7-14)" }, 200);
+  if (dayOfMonth < 6 || dayOfMonth > 14) {
+    return jsonResponse({ action: "none", reason: "outside jendela isolir (6-14)" }, 200);
   }
 
   // `tagihan_prorata` masih ke-set (bukan null) artinya Pelanggan ini
@@ -398,7 +399,7 @@ Deno.serve(async (req) => {
   // atas. Dikecualikan dari isolir supaya Pelanggan baru dapet 1 siklus
   // penuh buat sempat bayar tagihan prorata pertamanya, bukan langsung
   // keisolir cuma karena kebetulan pasang beberapa hari sebelum window
-  // isolir (7-14) ini mulai.
+  // isolir (6-14) ini mulai.
   const { data: belumBayar, error: fetchError } = await adminClient
     .from("pelanggan")
     .select("id, mikrotik_username")

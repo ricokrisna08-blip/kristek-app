@@ -2,7 +2,7 @@
 
 ⚠️ Ini function yang **otomatis motong internet pelanggan**. Siklus
 billing KRISTEK: jatuh tempo tanggal 3, masa tenggang sampai tanggal 6,
-kalau belum bayar diisolir otomatis jam 00:00 WIB tanggal 7. Tanggal 15,
+kalau belum bayar diisolir otomatis tanggal 6 jam 12:00 WIB. Tanggal 15,
 angka bulan berjalan (Total User/Omset/Sudah Bayar/Belum Bayar) di-snapshot
 ke tabel `laporan_bulanan` (buat Laporan Keuangan Pemilik di app), baru
 setelah itu status "Sudah Bayar" di-reset (bukan awal siklus, cuma
@@ -31,7 +31,7 @@ dan cara set 4 secret: `MIKROTIK_HOST`, `MIKROTIK_API_USER`,
 `MIKROTIK_API_PASSWORD`, `MIKROTIK_CA_CERT`.
 
 Selama secret ini belum diset, function tetap bisa jalan (reset tanggal 15
-tetap jalan karena tidak butuh Mikrotik), tapi isolir tanggal 7-14 akan
+tetap jalan karena tidak butuh Mikrotik), tapi isolir tanggal 6-14 akan
 gagal dengan pesan jelas per Pelanggan di `failed[]` pada response — tidak
 ada Pelanggan yang ke-isolir tanpa kredensial valid.
 
@@ -49,18 +49,18 @@ Ganti `<project-ref>` (Project Settings → General) dan `<service_role key>`
 (Project Settings → API). Perhatikan responsnya (tergantung tanggal hari
 ini saat kamu tes):
 
-- Kalau tanggal hari ini 1-6 atau 15-31 (di luar jendela isolir):
-  `{"action":"none","reason":"outside jendela isolir (7-14)"}` — aman,
+- Kalau tanggal hari ini 1-5 atau 15-31 (di luar jendela isolir):
+  `{"action":"none","reason":"outside jendela isolir (6-14)"}` — aman,
   tidak ada aksi (kecuali tanggal 15, lihat di bawah).
 - Kalau tanggal 15: `{"action":"reset","resetCount":N,"snapshot":{...}}` —
   mencatat baris baru di Laporan Keuangan buat bulan berjalan, lalu
   mereset N Pelanggan yang tadinya "Sudah Bayar" balik ke "Belum Bayar".
-- Kalau tanggal 7-14: `{"action":"isolir","isolirCount":N,"failed":[...]}`
+- Kalau tanggal 6-14: `{"action":"isolir","isolirCount":N,"failed":[...]}`
   — **ini yang benar-benar memutus akses N Pelanggan**. Cek dulu
   `isolirCount` masuk akal (bandingkan manual ke daftar Pelanggan yang
   belum centang "Sudah Bayar Bulan Ini" di app) sebelum percaya penuh ke
-  function ini. Jendela 7-14 (bukan cuma tanggal 7) sengaja dibuat sebagai
-  jaring pengaman kalau cron sempat gagal jalan pas tanggal 7 persis —
+  function ini. Jendela 6-14 (bukan cuma tanggal 6) sengaja dibuat sebagai
+  jaring pengaman kalau cron sempat gagal jalan pas tanggal 6 persis —
   Pelanggan yang sudah `is_isolir=true` otomatis dilewati di hari-hari
   berikutnya, jadi tidak dobel-isolir.
 
@@ -78,11 +78,9 @@ ekspektasi.
 2. Klik **Create a new cron job**.
 3. Isi:
    - **Name**: `mikrotik-daily-billing-cycle`
-   - **Schedule**: `5 17 * * *` (jalan tiap hari jam 00:05 WIB — cron
-     Supabase pakai UTC, WIB = UTC+7, jadi jam 17:05 UTC hari sebelumnya =
-     00:05 WIB. Dipilih deket jam 00:00 WIB tanggal 7 sesuai aturan
-     bisnisnya, dengan jeda 5 menit biar tidak persis di titik pergantian
-     hari)
+   - **Schedule**: `0 5 * * *` (jalan tiap hari jam 12:00 WIB — cron
+     Supabase pakai UTC, WIB = UTC+7, jadi jam 05:00 UTC = 12:00 WIB.
+     Sesuai aturan bisnisnya: isolir tanggal 6 jam 12:00 siang)
    - **Type**: HTTP Request
    - **Method**: POST
    - **URL**: `https://<project-ref>.supabase.co/functions/v1/mikrotik-daily-billing-cycle`
