@@ -43,6 +43,7 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
   const [openingWaById, setOpeningWaById] = useState<string | null>(null);
   const [dcUsers, setDcUsers] = useState<DcUser[]>([]);
   const [paidToDcId, setPaidToDcId] = useState(DIRI_SENDIRI_ID);
+  const [isShowingPending, setIsShowingPending] = useState(false);
 
   const reload = useCallback(async () => {
     const result = await listBelumBayarUntukDc(supabase, profile.id);
@@ -86,11 +87,29 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
     };
   }, [items]);
 
+  // Pelanggan yang sudah dicentang DC (uang sudah di tangan DC, tinggal
+  // nunggu approval Pemilik) nggak perlu ditagih lagi -- keluar dari
+  // daftar tagihan. Yang DIA sendiri centang masih bisa dilihat (dan
+  // dibatalkan kalau salah centang) lewat tap kotak Total setor di atas.
+  const belumDitagihItems = useMemo(
+    () => items.filter((item) => !item.dcFlaggedLunas),
+    [items]
+  );
+
   const filteredItems = useMemo(() => {
+    const source = isShowingPending
+      ? items.filter((item) => item.dcFlaggedByMe)
+      : belumDitagihItems;
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return items;
-    return items.filter((item) => item.nama.toLowerCase().includes(query));
-  }, [items, searchQuery]);
+    if (!query) return source;
+    return source.filter((item) => item.nama.toLowerCase().includes(query));
+  }, [items, belumDitagihItems, isShowingPending, searchQuery]);
+
+  // Begitu semua yang menunggu approval sudah di-approve/dibatalkan, balik
+  // ke daftar tagihan biasa -- jangan nyangkut di daftar kosong.
+  useEffect(() => {
+    if (jumlahPelangganSetor === 0) setIsShowingPending(false);
+  }, [jumlahPelangganSetor]);
 
   async function handleConfirm() {
     if (!target) return;
@@ -135,7 +154,7 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
     <View style={styles.screen}>
       <ScreenHeader
         title="Penagihan"
-        subtitle={`${items.length} Pelanggan belum bayar`}
+        subtitle={`${belumDitagihItems.length} Pelanggan belum bayar`}
         onBack={onBack}
       />
       <View style={styles.container}>
@@ -150,7 +169,10 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
           />
         </View>
         {jumlahPelangganSetor > 0 ? (
-          <View style={styles.summaryCard}>
+          <TouchableOpacity
+            style={styles.summaryCard}
+            onPress={() => setIsShowingPending((prev) => !prev)}
+          >
             <Text style={styles.summaryLabel}>
               Total setor ke Pemilik ({jumlahPelangganSetor} Pelanggan)
             </Text>
@@ -159,7 +181,12 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
               Cocokkan angka ini waktu serahin uang cash ke Pemilik, sebelum dia Setujui
               satu-satu.
             </Text>
-          </View>
+            <Text style={styles.summaryToggle}>
+              {isShowingPending
+                ? "← Kembali ke daftar tagihan"
+                : "Lihat daftar menunggu approval →"}
+            </Text>
+          </TouchableOpacity>
         ) : null}
         {isLoading ? (
           <ActivityIndicator style={styles.loading} />
@@ -171,7 +198,9 @@ export function PenagihanDcScreen({ profile, onBack }: Props) {
               <Text style={styles.emptyText}>
                 {searchQuery
                   ? "Tidak ada Pelanggan yang cocok."
-                  : "Semua Pelanggan sudah bayar bulan ini."}
+                  : isShowingPending
+                    ? "Tidak ada yang menunggu approval Pemilik."
+                    : "Semua Pelanggan sudah bayar bulan ini."}
               </Text>
             }
             renderItem={({ item }) => (
@@ -358,6 +387,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#B45309",
     marginTop: 6,
+  },
+  summaryToggle: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#B45309",
+    marginTop: 8,
   },
   loading: {
     marginTop: 24,
