@@ -7,6 +7,7 @@ export type PelangganExportRow = {
   harga: number | null;
   noHp: string;
   status: "Aktif" | "Isolir" | "Nonaktif";
+  statusPembayaran: "Sudah Bayar" | "Belum Bayar";
 };
 
 // "Status Pelanggan": Isolir menang duluan -- isolir SEKARANG selalu ikut
@@ -28,7 +29,9 @@ export async function listPelangganForExport(
 ): Promise<PelangganExportRow[]> {
   const { data, error } = await client
     .from("pelanggan")
-    .select("nama, alamat, no_hp, harga, is_active, is_isolir, paket:paket_id ( nama )")
+    .select(
+      "nama, alamat, no_hp, harga, is_active, is_isolir, sudah_bayar_bulan_ini, paket:paket_id ( nama )"
+    )
     .order("nama");
 
   if (error || !data) {
@@ -42,5 +45,6 @@ export async function listPelangganForExport(
     harga: row.harga ?? null,
     noHp: row.no_hp,
     status: computeStatus(row.is_active, row.is_isolir),
+    statusPembayaran: row.sudah_bayar_bulan_ini ? "Sudah Bayar" : "Belum Bayar",
   }));
 }

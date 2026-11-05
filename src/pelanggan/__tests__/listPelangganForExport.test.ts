@@ -8,6 +8,7 @@ type Row = {
   harga: number | null;
   is_active: boolean;
   is_isolir: boolean;
+  sudah_bayar_bulan_ini?: boolean;
   paket?: { nama: string } | null;
 };
 
@@ -31,6 +32,7 @@ test("maps Pelanggan rows including Paket name", async () => {
         harga: 165000,
         is_active: true,
         is_isolir: false,
+        sudah_bayar_bulan_ini: true,
         paket: { nama: "Paket 10 Mbps" },
       },
     ],
@@ -47,8 +49,23 @@ test("maps Pelanggan rows including Paket name", async () => {
       harga: 165000,
       noHp: "6281111111111",
       status: "Aktif",
+      statusPembayaran: "Sudah Bayar",
     },
   ]);
+});
+
+test("statusPembayaran is Belum Bayar when sudah_bayar_bulan_ini is false or missing", async () => {
+  const client = fakeClient({
+    data: [
+      { nama: "Budi", alamat: "A", no_hp: "1", harga: 100000, is_active: true, is_isolir: false, sudah_bayar_bulan_ini: false },
+      { nama: "Siti", alamat: "B", no_hp: "2", harga: 100000, is_active: true, is_isolir: false },
+    ],
+    error: null,
+  });
+
+  const result = await listPelangganForExport(client);
+
+  expect(result.map((r) => r.statusPembayaran)).toEqual(["Belum Bayar", "Belum Bayar"]);
 });
 
 test("status is Nonaktif when is_active is false and not isolir -- genuinely berhenti berlangganan", async () => {

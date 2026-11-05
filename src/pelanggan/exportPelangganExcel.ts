@@ -12,6 +12,7 @@ const SHEET_COLUMN_WIDTHS = [
   { wch: 12 }, // Harga
   { wch: 16 }, // Nomor Telepon
   { wch: 10 }, // Status
+  { wch: 16 }, // Pembayaran
 ];
 
 const XLSX_MIME_TYPE =

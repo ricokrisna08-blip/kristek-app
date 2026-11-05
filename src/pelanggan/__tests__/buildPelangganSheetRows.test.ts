@@ -9,6 +9,7 @@ test("maps export rows to sheet columns", () => {
       harga: 165000,
       noHp: "6281111111111",
       status: "Aktif",
+      statusPembayaran: "Sudah Bayar",
     },
   ]);
 
@@ -20,16 +21,17 @@ test("maps export rows to sheet columns", () => {
       Harga: 165000,
       "Nomor Telepon": "6281111111111",
       Status: "Aktif",
+      Pembayaran: "✅ Sudah Bayar",
     },
   ]);
 });
 
 test("missing Paket falls back to a dash, missing harga falls back to 0", () => {
   const result = buildPelangganSheetRows([
-    { nama: "Siti", alamat: "Jl. Melati", paketNama: null, harga: null, noHp: "1", status: "Isolir" },
+    { nama: "Siti", alamat: "Jl. Melati", paketNama: null, harga: null, noHp: "1", status: "Isolir", statusPembayaran: "Belum Bayar" },
   ]);
 
-  expect(result[0]).toMatchObject({ Paket: "-", Harga: 0 });
+  expect(result[0]).toMatchObject({ Paket: "-", Harga: 0, Pembayaran: "❌ Belum Bayar" });
 });
 
 test("empty input produces an empty sheet", () => {

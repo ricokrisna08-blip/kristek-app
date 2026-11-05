@@ -7,6 +7,15 @@ export type PelangganSheetRow = {
   Harga: number;
   "Nomor Telepon": string;
   Status: string;
+  Pembayaran: string;
+};
+
+// Tanda ✅/❌ di kolom Pembayaran biar langsung keliatan sekilas waktu
+// di-scroll -- warna sel nggak bisa karena SheetJS versi community
+// nggak support nulis styling.
+const PEMBAYARAN_LABEL: Record<PelangganExportRow["statusPembayaran"], string> = {
+  "Sudah Bayar": "✅ Sudah Bayar",
+  "Belum Bayar": "❌ Belum Bayar",
 };
 
 // Baris polos siap-tulis buat sheet Excel -- dipisah dari
@@ -21,5 +30,6 @@ export function buildPelangganSheetRows(rows: PelangganExportRow[]): PelangganSh
     Harga: row.harga ?? 0,
     "Nomor Telepon": row.noHp,
     Status: row.status,
+    Pembayaran: PEMBAYARAN_LABEL[row.statusPembayaran],
   }));
 }
