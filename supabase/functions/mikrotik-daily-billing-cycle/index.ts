@@ -5,8 +5,8 @@
 // setup cron itu secara manual.
 //
 // Siklus billing KRISTEK: jatuh tempo tanggal 3, masa tenggang sampai
-// tanggal 6 jam 12:00 WIB, isolir kalau belum bayar per tanggal 6 jam
-// 12:00 WIB (cron-nya dijadwalkan jam 12:00 WIB, lihat DEPLOY.md).
+// tanggal 6 jam 18:00 WIB, isolir kalau belum bayar per tanggal 6 jam
+// 18:00 WIB (cron-nya dijadwalkan jam 18:00 WIB, lihat DEPLOY.md).
 //
 // Tanggal 6-14 (waktu Asia/Jakarta): Pelanggan yang `sudah_bayar_bulan_ini`
 // masih false dan belum di-isolir, dan punya `mikrotik_username` ke-set,

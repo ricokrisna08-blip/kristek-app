@@ -2,7 +2,7 @@
 
 ⚠️ Ini function yang **otomatis motong internet pelanggan**. Siklus
 billing KRISTEK: jatuh tempo tanggal 3, masa tenggang sampai tanggal 6,
-kalau belum bayar diisolir otomatis tanggal 6 jam 12:00 WIB. Tanggal 15,
+kalau belum bayar diisolir otomatis tanggal 6 jam 18:00 WIB. Tanggal 15,
 angka bulan berjalan (Total User/Omset/Sudah Bayar/Belum Bayar) di-snapshot
 ke tabel `laporan_bulanan` (buat Laporan Keuangan Pemilik di app), baru
 setelah itu status "Sudah Bayar" di-reset (bukan awal siklus, cuma
@@ -78,9 +78,9 @@ ekspektasi.
 2. Klik **Create a new cron job**.
 3. Isi:
    - **Name**: `mikrotik-daily-billing-cycle`
-   - **Schedule**: `0 5 * * *` (jalan tiap hari jam 12:00 WIB — cron
-     Supabase pakai UTC, WIB = UTC+7, jadi jam 05:00 UTC = 12:00 WIB.
-     Sesuai aturan bisnisnya: isolir tanggal 6 jam 12:00 siang)
+   - **Schedule**: `0 11 * * *` (jalan tiap hari jam 18:00 WIB — cron
+     Supabase pakai UTC, WIB = UTC+7, jadi jam 11:00 UTC = 18:00 WIB.
+     Sesuai aturan bisnisnya: isolir tanggal 6 jam 18:00 sore)
    - **Type**: HTTP Request
    - **Method**: POST
    - **URL**: `https://<project-ref>.supabase.co/functions/v1/mikrotik-daily-billing-cycle`
